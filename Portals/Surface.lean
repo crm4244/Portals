@@ -25,13 +25,12 @@ theorem frontier_eq_self (hS : Surface S) : frontier S = S := by
 theorem closure_eq_self (hS : Surface S) : closure S = S :=
   IsClosed.closure_eq (IsClosed hS)
 
-
+/-
 theorem IsOpen_compl (hS : Surface S) : IsOpen Sᶜ := isOpen_compl_iff.mpr hS.1
 
 theorem IsOpen_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) : IsOpen (U \ S) :=
   IsOpen.sdiff hU (IsClosed hS)
-
-
+-/
 
 theorem inter_closure_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
     S ∩ closure U ⊆ frontier (U \ S) := by
@@ -52,6 +51,16 @@ theorem inter_closure_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : Is
       (Set.subset_empty_iff.mp hVUi)
   · exact fun h => ((Set.mem_diff p).mp (interior_subset h)).2 hpS
 
+theorem inter_closure_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
+    S ∩ closure U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
+  frontier_subset_closure (
+    inter_closure_subset_frontier_diff hS hU (
+      (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, hpU⟩))
 
+theorem inter_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
+    S ∩ U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
+  frontier_subset_closure (
+    inter_closure_subset_frontier_diff hS hU (
+      (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, subset_closure hpU⟩))
 
 end Surface

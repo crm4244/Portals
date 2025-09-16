@@ -38,24 +38,20 @@ theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n :=
     rw [Nat.le_iff_lt_or_eq] at h
     cases h with
     | inl h =>
-      rw [← Nat.le_iff_lt_add_one] at h
-      apply subset_trans subset_closure
-      apply subset_trans (nth_closure_nested hE m)
-      exact ih h
+      exact subset_trans subset_closure (
+        subset_trans (nth_closure_nested hE m) (ih (Nat.le_iff_lt_add_one.mpr h)))
     | inr h =>
       rw [h]
 
 theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
-    IsCompact (closure (E n)) := by
-  have h := nested hE (Nat.zero_le (n-1))
-  cases n with
-  | zero =>
-    exact hE.2.2.1
-  | succ n =>
-    apply IsCompact.of_isClosed_subset hE.2.2.1 isClosed_closure
-    apply subset_trans (nth_closure_nested hE n)
-    apply subset_trans h
-    exact subset_closure
+    IsCompact (closure (E n)) :=
+  match n with
+  | 0 =>
+    hE.2.2.1
+  | n+1 =>
+    IsCompact.of_isClosed_subset hE.2.2.1 isClosed_closure (
+      subset_trans (nth_closure_nested hE n) (
+        subset_trans (nested hE (Nat.zero_le n)) subset_closure))
 
 theorem center_unique (hE : Encapsulation E) {p : X} (hp : IsCenter E p)
     {q : X} (hq : IsCenter E q) : p=q := hE.2.2.2.2 p hp q hq
@@ -64,65 +60,39 @@ theorem center_exists (hE : Encapsulation E) :
     ∃ p, IsCenter E p := by
   have h : (⋂ n, closure (E n)).Nonempty := by
     apply IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
-    · intro n
-      exact subset_trans (nth_closure_nested hE n) subset_closure
-    · intro n
-      obtain ⟨p, hp⟩ := nth_Nonempty hE n
-      use p
-      apply subset_closure
-      exact hp
+    · exact fun n => subset_trans (nth_closure_nested hE n) subset_closure
+    · exact fun n => match nth_Nonempty hE n with | ⟨p, hp⟩ => ⟨p, subset_closure hp⟩
     · exact nth_compact_closure hE 0
-    · intro n
-      exact isClosed_closure
-  obtain ⟨p, hp⟩ := h
-  use p
-  unfold IsCenter
-  rw [Set.mem_iInter] at hp ⊢
-  intro n
-  apply Set.mem_of_mem_of_subset (hp (n+1))
-  exact nth_closure_nested hE n
+    · exact fun n => isClosed_closure
+  exact match h with | ⟨p, hp⟩ => ⟨p, Set.mem_iInter.mpr (
+    fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n+1)) (nth_closure_nested hE n))⟩
 
-noncomputable def center (hE : Encapsulation E) : X :=
-  Classical.choose (center_exists hE)
+noncomputable def center (hE : Encapsulation E) : X := Classical.choose (center_exists hE)
 
-theorem IsCenter_center (hE : Encapsulation E) :
-    IsCenter E (center hE) := by
-  apply Classical.choose_spec
+theorem IsCenter_center (hE : Encapsulation E) : IsCenter E (center hE) :=
+  Classical.choose_spec (center_exists hE)
 
 theorem center_exists_unique (hE : Encapsulation E) :
-    ∃! p, IsCenter E p := by
-  use center hE
-  split_ands
-  · apply IsCenter_center
-  · intro y hy
-    exact center_unique hE hy (IsCenter_center hE)
+    ∃! p, IsCenter E p :=
+    ⟨center hE, IsCenter_center hE, fun _ h => center_unique hE h (IsCenter_center hE)⟩
 
 theorem i_SubSequence_is_Encapsulation (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
     Encapsulation (E ∘ α) := by
   split_ands
-  · intro n
-    exact nth_Nonempty hE (α n)
-  · intro n
-    exact nth_IsOpen hE (α n)
+  · exact fun n => nth_Nonempty hE (α n)
+  · exact fun n => nth_IsOpen hE (α n)
   · exact nth_compact_closure hE (α 0)
-  · have h := hE
-    intro n
+  · intro n
     specialize hα (Nat.lt_add_one n)
     have hn1 := nth_closure_nested hE (α (n+1) - 1)
     have hα2 := Nat.lt_of_le_of_lt (Nat.zero_le (α n)) hα
     rw [Nat.sub_add_cancel] at hn1
-    · apply subset_trans hn1
-      apply nested h
-      rw [Nat.le_sub_one_iff_lt hα2]
-      exact hα
-    apply Nat.le_of_pred_lt hα2
+    · exact subset_trans hn1 (nested hE ((Nat.le_sub_one_iff_lt hα2).mpr hα))
+    · exact Nat.le_of_pred_lt hα2
   · intro p hp q hq
     apply center_unique hE
-    all_goals unfold IsCenter at hp hq ⊢
-    all_goals rw [Set.mem_iInter] at hp hq ⊢
-    all_goals intro n
-    · exact nested hE (StrictMono.id_le hα n) (hp n)
-    · exact nested hE (StrictMono.id_le hα n) (hq n)
+    · exact Set.mem_iInter.mpr (fun n => nested hE (StrictMono.id_le hα n) (Set.mem_iInter.mp hp n))
+    · exact Set.mem_iInter.mpr (fun n => nested hE (StrictMono.id_le hα n) (Set.mem_iInter.mp hq n))
 
 
 end Encapsulation
