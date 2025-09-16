@@ -1,5 +1,8 @@
 import MathLib.Topology.Sets.Closeds
 
+
+
+
 variable {X : Type} [hX : TopologicalSpace X]
 
 def Encapsulation.IsCenter (E : ℕ → Set X) (p : X) := p ∈ ⋂ n, E n
@@ -13,19 +16,18 @@ def Encapsulation (E : ℕ → Set X) :=
 
 variable {E : ℕ → Set X}
 
+
+
+
 namespace Encapsulation
 
-theorem nth_Nonempty (hE : Encapsulation E) (n : ℕ) : (E n).Nonempty := by
-  rcases hE with ⟨h, _⟩
-  exact h n
 
-theorem nth_IsOpen (hE : Encapsulation E) (n : ℕ) : IsOpen (E n) := by
-  rcases hE with ⟨_, h, _⟩
-  exact h n
+theorem nth_Nonempty (hE : Encapsulation E) (n : ℕ) : (E n).Nonempty := hE.1 n
 
-theorem nth_closure_nested (hE : Encapsulation E) (n : ℕ) : closure (E (n + 1)) ⊆ E n := by
-  rcases hE with ⟨_, _, _, h, _⟩
-  exact h n
+theorem nth_IsOpen (hE : Encapsulation E) (n : ℕ) : IsOpen (E n) := hE.2.1 n
+
+theorem nth_closure_nested (hE : Encapsulation E) (n : ℕ) : closure (E (n + 1)) ⊆ E n :=
+  hE.2.2.2.1 n
 
 theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n := by
   induction m with
@@ -46,20 +48,17 @@ theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n :=
 theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
     IsCompact (closure (E n)) := by
   have h := nested hE (Nat.zero_le (n-1))
-  rcases hE with ⟨_, _, hc0, hn, _⟩
   cases n with
   | zero =>
-    exact hc0
+    exact hE.2.2.1
   | succ n =>
-    apply IsCompact.of_isClosed_subset hc0 isClosed_closure
-    apply subset_trans (hn n)
+    apply IsCompact.of_isClosed_subset hE.2.2.1 isClosed_closure
+    apply subset_trans (nth_closure_nested hE n)
     apply subset_trans h
     exact subset_closure
 
 theorem center_unique (hE : Encapsulation E) {p : X} (hp : IsCenter E p)
-    {q : X} (hq : IsCenter E q) : p=q := by
-  rcases hE with ⟨_, _, _, _, h⟩
-  exact h p hp q hq
+    {q : X} (hq : IsCenter E q) : p=q := hE.2.2.2.2 p hp q hq
 
 theorem center_exists (hE : Encapsulation E) :
     ∃ p, IsCenter E p := by
