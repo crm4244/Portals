@@ -1,5 +1,5 @@
-
-import MathLib.Topology.Sets.Closeds
+import Mathlib.Topology.Closure
+import Mathlib.Topology.Connected.Basic
 
 
 
@@ -62,5 +62,9 @@ theorem inter_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) 
   frontier_subset_closure (
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, subset_closure hpU⟩))
+
+
+
+
 
 end Surface
