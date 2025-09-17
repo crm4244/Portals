@@ -2,23 +2,35 @@ import Mathlib.Topology.Closure
 import Mathlib.Topology.Connected.Basic
 import Mathlib.Topology.Constructions
 
+variable {X : Type} [hX : TopologicalSpace X]
 
 
-def components {α : Type} [TopologicalSpace α] (A : Set α) : Set (Set α) :=
-  {C | ∃ p, connectedComponentIn A p = C}
 
-theorem sUnion_components_eq_self {α : Type} [TopologicalSpace α] (A : Set α) :
+def components (A : Set X) : Set (Set X) :=
+  {C | ∃ p ∈ A, connectedComponentIn A p = C}
+
+theorem sUnion_components_eq_self (A : Set X) :
     ⋃₀ components A = A := by
   apply Set.eq_of_subset_of_subset
-  · exact fun q ⟨_, ⟨_, rfl⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
+  · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
   · exact (fun q hq => ⟨connectedComponentIn A q,
       by
       unfold components
-      simp only [Set.mem_setOf_eq, exists_apply_eq_apply],
+      simp only [Set.mem_setOf_eq]
+      exact ⟨q, ⟨hq, rfl⟩⟩,
     mem_connectedComponentIn hq⟩)
 
+theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B := by
+  rintro ⟨_, ⟨_, rfl⟩⟩
+  exact connectedComponentIn_subset B _
 
-variable {X : Type} [hX : TopologicalSpace X]
+theorem Nonempty_compnts_Nonempty {A : Set X} (hA : Nonempty A) :
+    ∀ C ∈ components A, Nonempty C := by
+  rintro _ ⟨p, ⟨hpA, rfl⟩⟩
+  exact ⟨p, mem_connectedComponentIn hpA⟩
+
+
+
 
 class Surface (S : Set X) where
   isClosed : IsClosed S
@@ -95,6 +107,44 @@ theorem inter_closure_subset_cmpnts_closure_finite (hS : Surface S) {U : Set X} 
     (Set.mem_inter_iff p S (closure U)).mpr hpScU)
   rw [← sUnion_components_eq_self (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
   exact hpUS
+
+/-
+Claim: If the sets A, B have B ⊆ A and C is a connected component of A \ S,
+  and K is a connected component of C ∩ B, then K is a connected component of B \ S.
+
+Proof. Since K is a connected subset of C ∩ B = (C \ S) ∩ B = C ∩ (B \ S) ⊆ B \ S,
+  we may let H ⊇ K be a connected component of B / S. Note that H and C are
+  connected subsets of B / S ⊆ A \ S, and H ∩ C ⊇ K ≠ {}.
+  By maximality of C in A \ S, we have H ⊆ C. We also know that H ⊆ B \ S, and so
+  H ⊆ C ∩ (B \ S) = (C \ S) ∩ B = C ∩ B. Because K ⊆ H and K is maximal in C ∩ B, H = K.
+  Therefore K is a connected component of B \ S.
+QED
+-/
+
+theorem maximality {A B C : Set X} (hB : B ∈ components A) (hC : IsPreconnected C) (hCA : C ⊆ A)
+    (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
+  rcases hCB with ⟨x, hxCB⟩
+  rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
+  rw [connectedComponentIn_eq hxCB.2]
+  exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
+
+
+theorem __ {A B C K : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
+    (hK : K ∈ components (C ∩ B)) : K ∈ components (B \ S) := by
+  have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB =>
+    ⟨hkCB.2, (Set.inter_subset_inter_left B (mem_cmpnts_subset hC) hkCB).1.2⟩
+  have hK2 := hK
+  rcases hK with ⟨k, ⟨hkCB, rfl⟩⟩
+  exact ⟨k, ⟨hCBBS hkCB,
+    Set.eq_of_subset_of_subset
+      (maximality hK2 isPreconnected_connectedComponentIn
+        (Set.subset_inter_iff.mpr ⟨
+          maximality hC isPreconnected_connectedComponentIn
+            (subset_trans (connectedComponentIn_subset _ k) (Set.diff_subset_diff_left hBA))
+            ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), hkCB.1⟩⟩,
+          subset_trans (connectedComponentIn_subset _ k) Set.diff_subset⟩)
+        ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), mem_connectedComponentIn hkCB⟩⟩)
+      (connectedComponentIn_mono k hCBBS)⟩⟩
 
 
 
