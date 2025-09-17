@@ -6,28 +6,31 @@ import Mathlib.Topology.Constructions
 
 variable {X : Type} [hX : TopologicalSpace X]
 
-def Surface (S : Set X) := IsClosed S ∧ interior S = ∅
+class Surface (S : Set X) where
+  isClosed : IsClosed S
+  interior_eq_empty : interior S = ∅
 
+/-
 def Surface.puncturedComponents (S U : Set X) : Set (Set X) :=
   {C | ∃ p : U \ S, connectedComponent p = C}
+-/
 
-variable {S : Set X} [hS : Surface S]
+variable {S : Set X}
 
-instTopologicalSpaceSubtype
+--instTopologicalSpaceSubtype
+
+
+
 
 namespace Surface
 
 
-theorem IsClosed (hS : Surface S) : IsClosed S := hS.1
-
-theorem interior_eq_empty (hS : Surface S) : interior S = ∅ := hS.2
-
 theorem frontier_eq_self (hS : Surface S) : frontier S = S := by
-  rw [frontier, hS.2, Set.diff_empty]
+  rw [frontier, hS.interior_eq_empty, Set.diff_empty]
   exact closure_eq_iff_isClosed.mpr hS.1
 
 theorem closure_eq_self (hS : Surface S) : closure S = S :=
-  IsClosed.closure_eq (IsClosed hS)
+  IsClosed.closure_eq (hS.isClosed)
 
 /-
 theorem IsOpen_compl (hS : Surface S) : IsOpen Sᶜ := isOpen_compl_iff.mpr hS.1
@@ -49,7 +52,7 @@ theorem inter_closure_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : Is
     apply Set.nonempty_of_not_subset
     intro hVU
     have hVUi := (IsOpen.subset_interior_iff (IsOpen.inter hV hU)).mpr hVU
-    rw [interior_eq_empty hS] at hVUi
+    rw [hS.interior_eq_empty] at hVUi
     exact Set.nonempty_iff_ne_empty.mp
       (mem_closure_iff.mp hpU V hV hpV)
       (Set.subset_empty_iff.mp hVUi)
@@ -78,7 +81,7 @@ theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
   p ∈ cl(U \ S) = cl(Union({C_i(U \ S)}) = Union({cl(C) | C ∈ {C_i(U \ S)}).
 -/
 
-
+/-
 theorem ___ (hS : Surface S) {U : Set X} (hU : IsOpen U)
   (hUSC_fin : Finset (puncturedComponents S U))
   {p : X} (hpS : p ∈ S) (hpU : p ∈ closure U) :
@@ -88,6 +91,7 @@ theorem ___ (hS : Surface S) {U : Set X} (hU : IsOpen U)
 
 
   sorry
+-/
 
 
 end Surface
