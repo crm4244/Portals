@@ -1,5 +1,6 @@
 import Mathlib.Topology.Closure
 import Mathlib.Topology.Connected.Basic
+import Mathlib.Topology.Constructions
 
 
 
@@ -7,9 +8,12 @@ variable {X : Type} [hX : TopologicalSpace X]
 
 def Surface (S : Set X) := IsClosed S ∧ interior S = ∅
 
-variable {S : Set X}
+def Surface.puncturedComponents (S U : Set X) : Set (Set X) :=
+  {C | ∃ p : U \ S, connectedComponent p = C}
 
+variable {S : Set X} [hS : Surface S]
 
+instTopologicalSpaceSubtype
 
 namespace Surface
 
@@ -51,20 +55,39 @@ theorem inter_closure_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : Is
       (Set.subset_empty_iff.mp hVUi)
   · exact fun h => ((Set.mem_diff p).mp (interior_subset h)).2 hpS
 
+
 theorem inter_closure_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
     S ∩ closure U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
   frontier_subset_closure (
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, hpU⟩))
 
-theorem inter_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
+
+theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
     S ∩ U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
   frontier_subset_closure (
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, subset_closure hpU⟩))
 
+/-
+  Let U be an open set and p ∈ S have p ∈ cl(U).
+  Suppose U / S has finitely many connected components.
+  Then there is a connected component C of U \ S with p ∈ cl(C).
+
+  Proof. Note p ∈ cl(U \ S) by an earlier result. The claim follows from the observation that
+  p ∈ cl(U \ S) = cl(Union({C_i(U \ S)}) = Union({cl(C) | C ∈ {C_i(U \ S)}).
+-/
 
 
+theorem ___ (hS : Surface S) {U : Set X} (hU : IsOpen U)
+  (hUSC_fin : Finset (puncturedComponents S U))
+  {p : X} (hpS : p ∈ S) (hpU : p ∈ closure U) :
+    ∃ q, q ∈ U \ S ∧ p ∈ closure (connectedComponent q) := by
+  have hpUS : p ∈ closure (U \ S) := inter_closure_subset_closure_diff hS hU (
+    (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, hpU⟩)
+
+
+  sorry
 
 
 end Surface
