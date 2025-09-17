@@ -4,20 +4,30 @@ import Mathlib.Topology.Constructions
 
 
 
+def components {α : Type} [TopologicalSpace α] (A : Set α) : Set (Set α) :=
+  {C | ∃ p, connectedComponentIn A p = C}
+
+theorem sUnion_components_eq_self {α : Type} [TopologicalSpace α] (A : Set α) :
+    ⋃₀ components A = A := by
+  apply Set.eq_of_subset_of_subset
+  · exact fun q ⟨_, ⟨_, rfl⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
+  · exact (fun q hq => ⟨connectedComponentIn A q,
+      by
+      unfold components
+      simp only [Set.mem_setOf_eq, exists_apply_eq_apply],
+    mem_connectedComponentIn hq⟩)
+
+
 variable {X : Type} [hX : TopologicalSpace X]
 
 class Surface (S : Set X) where
   isClosed : IsClosed S
   interior_eq_empty : interior S = ∅
 
-/-
-def Surface.puncturedComponents (S U : Set X) : Set (Set X) :=
-  {C | ∃ p : U \ S, connectedComponent p = C}
--/
+
 
 variable {S : Set X}
 
---instTopologicalSpaceSubtype
 
 
 
@@ -76,22 +86,23 @@ theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
   Let U be an open set and p ∈ S have p ∈ cl(U).
   Suppose U / S has finitely many connected components.
   Then there is a connected component C of U \ S with p ∈ cl(C).
-
-  Proof. Note p ∈ cl(U \ S) by an earlier result. The claim follows from the observation that
-  p ∈ cl(U \ S) = cl(Union({C_i(U \ S)}) = Union({cl(C) | C ∈ {C_i(U \ S)}).
 -/
-
-/-
-theorem ___ (hS : Surface S) {U : Set X} (hU : IsOpen U)
-  (hUSC_fin : Finset (puncturedComponents S U))
-  {p : X} (hpS : p ∈ S) (hpU : p ∈ closure U) :
-    ∃ q, q ∈ U \ S ∧ p ∈ closure (connectedComponent q) := by
+theorem inter_closure_subset_cmpnts_closure_finite (hS : Surface S) {U : Set X} (hU : IsOpen U)
+    (hUSC_fin : Finite (components (U \ S))) :
+    S ∩ closure U ⊆ ⋃ C ∈ components (U \ S), closure C := by
+  intro p hpScU
   have hpUS : p ∈ closure (U \ S) := inter_closure_subset_closure_diff hS hU (
-    (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, hpU⟩)
+    (Set.mem_inter_iff p S (closure U)).mpr hpScU)
+  rw [← sUnion_components_eq_self (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
+  exact hpUS
 
 
-  sorry
--/
+
+
+
+
+
+
 
 
 end Surface

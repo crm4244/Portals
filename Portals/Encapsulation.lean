@@ -57,7 +57,7 @@ theorem center_exists (hE : Encapsulation E) :
   exact match h with | ⟨p, hp⟩ => ⟨p, Set.mem_iInter.mpr (
     fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n+1)) (nth_closure_nested n))⟩
 
-theorem isubsequence_is_Encapsulation (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
+theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
     Encapsulation (E ∘ α) := Encapsulation.mk
   (fun n => hE.nth_Nonempty (α n))
   (fun n => hE.nth_IsOpen (α n))
