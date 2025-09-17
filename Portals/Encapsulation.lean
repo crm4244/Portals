@@ -86,4 +86,6 @@ theorem center_exists_unique (hE : Encapsulation E) :
     ∃! p, IsCenter E p :=
     ⟨center hE, IsCenter_center hE, fun _ h => center_unique h (IsCenter_center hE)⟩
 
+
+
 end Encapsulation

@@ -24,11 +24,6 @@ theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B := by
   rintro ⟨_, ⟨_, rfl⟩⟩
   exact connectedComponentIn_subset B _
 
-theorem Nonempty_compnts_Nonempty {A : Set X} (hA : Nonempty A) :
-    ∀ C ∈ components A, Nonempty C := by
-  rintro _ ⟨p, ⟨hpA, rfl⟩⟩
-  exact ⟨p, mem_connectedComponentIn hpA⟩
-
 
 
 
@@ -129,7 +124,7 @@ theorem maximality {A B C : Set X} (hB : B ∈ components A) (hC : IsPreconnecte
   exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
 
 
-theorem __ {A B C K : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
+theorem connectedComponentIn_lemma_1 {A B C K : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
     (hK : K ∈ components (C ∩ B)) : K ∈ components (B \ S) := by
   have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB =>
     ⟨hkCB.2, (Set.inter_subset_inter_left B (mem_cmpnts_subset hC) hkCB).1.2⟩
