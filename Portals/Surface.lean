@@ -103,6 +103,19 @@ theorem inter_closure_subset_cmpnts_closure_finite (hS : Surface S) {U : Set X} 
   rw [← sUnion_components_eq_self (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
   exact hpUS
 
+end Surface
+
+
+
+theorem maximality {A B C : Set X} (hB : B ∈ components A) (hC : IsPreconnected C) (hCA : C ⊆ A)
+    (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
+  rcases hCB with ⟨x, hxCB⟩
+  rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
+  rw [connectedComponentIn_eq hxCB.2]
+  exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
+
+
+
 /-
 Claim: If the sets A, B have B ⊆ A and C is a connected component of A \ S,
   and K is a connected component of C ∩ B, then K is a connected component of B \ S.
@@ -115,13 +128,6 @@ Proof. Since K is a connected subset of C ∩ B = (C \ S) ∩ B = C ∩ (B \ S) 
   Therefore K is a connected component of B \ S.
 QED
 -/
-
-theorem maximality {A B C : Set X} (hB : B ∈ components A) (hC : IsPreconnected C) (hCA : C ⊆ A)
-    (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
-  rcases hCB with ⟨x, hxCB⟩
-  rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
-  rw [connectedComponentIn_eq hxCB.2]
-  exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
 
 
 theorem connectedComponentIn_lemma_1 {A B C K : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
@@ -141,13 +147,32 @@ theorem connectedComponentIn_lemma_1 {A B C K : Set X} (hBA : B ⊆ A) (hC : C �
         ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), mem_connectedComponentIn hkCB⟩⟩)
       (connectedComponentIn_mono k hCBBS)⟩⟩
 
+/-
+  Claim: Let the sets A, B have B ⊆ A.
+  Let C1 and C2 be connected components of A \ S and B \ S respectively. Suppose C1 ∩ C2 != {}.
+  Then C2 ⊆ C1, and furthermore C2 is a connected component of C1 ∩ B.
 
+  Proof. Note (C1 ∩ B) ∩ C2 = C1 ∩ (B ∩ C2) = C1 ∩ C2 ≠ {}.
+  Let x ∈ (C1 ∩ B) ∩ C2 and let K be the connected component of C1 ∩ B which contains x.
+  By the first claim, K is a connected component of B \ S.
+  Now K and C2 are both connected components of B \ S, and K ∩ C2 ⊇ {x} ≠ {}.
+  So, K = C2, and therefore C2 is a connected component of C1 ∩ B, and also C2 ⊆ C1 as desired.
 
+  QED
+-/
 
+theorem connectedComponentIn_lemma_2 {A B C D : Set X} (hBA : B ⊆ A) (hCAS : C ∈ components (A \ S))
+    (hDBS : D ∈ components (B \ S)) (hCDinter : (C ∩ D).Nonempty) : D ∈ components (C ∩ B) := by
+  rcases hCDinter with ⟨p, hpC, hpD⟩
+  have hpB := subset_trans (mem_cmpnts_subset hDBS) Set.diff_subset hpD
+  have hKBS := connectedComponentIn_lemma_1 hBA hCAS ⟨p, ⟨⟨hpC, hpB⟩, rfl⟩⟩
+  have hD : D = connectedComponentIn (B \ S) p := by
+    rcases hDBS with ⟨_, _, rfl⟩
+    apply connectedComponentIn_eq hpD
 
-
-
-
-
-
-end Surface
+  rcases hD
+  exact ⟨p, ⟨⟨hpC, hpB⟩, Set.eq_of_subset_of_subset
+    (maximality hDBS isPreconnected_connectedComponentIn (mem_cmpnts_subset hKBS)
+      ⟨p, mem_connectedComponentIn ⟨hpC, hpB⟩, hpD⟩)
+    (maximality hKBS isPreconnected_connectedComponentIn (mem_cmpnts_subset hDBS)
+      ⟨p, hpD, mem_connectedComponentIn ⟨hpC, hpB⟩⟩)⟩⟩
