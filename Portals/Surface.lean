@@ -1,18 +1,12 @@
-import Mathlib.Topology.Closure
-import Mathlib.Topology.Connected.Basic
-import Mathlib.Topology.Constructions
+import Portals.Basic
+
+
 
 variable {X : Type} [hX : TopologicalSpace X]
-
-
-
-
 
 class Surface (S : Set X) where
   isClosed : IsClosed S
   interior_eq_empty : interior S = ∅
-
-
 
 variable {S : Set X}
 
@@ -21,6 +15,7 @@ variable {S : Set X}
 
 
 namespace Surface
+
 
 
 theorem frontier_eq_self (hS : Surface S) : frontier S = S := by
@@ -70,6 +65,7 @@ theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, subset_closure hpU⟩))
 
+
 /-
   Let U be an open set and p ∈ S have p ∈ cl(U).
   Suppose U / S has finitely many connected components.
@@ -83,6 +79,7 @@ theorem inter_closure_subset_cmpnts_closure (hS : Surface S) {U : Set X} (hU : I
     (Set.mem_inter_iff p S (closure U)).mpr hpScU)
   rw [← sUnion_cmpnts (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
   exact hpUS
+
 
 
 end Surface
