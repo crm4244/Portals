@@ -1,39 +1,107 @@
+import Mathlib.Topology.Connected.Basic
 
 
 
-import MathLib.Topology.Basic
-import MathLib.Topology.Connected.Basic
-/-import MathLib.Topology.Compactness.LocallyCompact-/
-import MathLib.Topology.Separation.Hausdorff
+variable {X : Type} [hX : TopologicalSpace X]
 
-
-variable {X : Type} [hX1 : TopologicalSpace X] [hX2 : Hausdorff X] [hX3 : LocallyCompact X]
-
-def Surface (S : Set X) := IsClosed S ∧ IsEmpty (Interior S)
+def components (A : Set X) : Set (Set X) :=
+  {C | ∃ p ∈ A, connectedComponentIn A p = C}
 
 
 
 
+theorem connectedComponentIn_mem_cmpnts {A : Set X} {p : X} (hpA : p ∈ A) :
+    connectedComponentIn A p ∈ components A := ⟨p, ⟨hpA, rfl⟩⟩
 
-def ESide (a : ℕ → Set X) :=
-  ∃ E, (
-    Encapsulation E ∧
-    (∀ n, ∃ q, q ∈ E n ∧ a n = connectedComponent q) ∧
-    (∀ n, a (n + 1) ⊆ a n)
-  )
+theorem sUnion_cmpnts (A : Set X) :
+    ⋃₀ components A = A := by
+  apply Set.eq_of_subset_of_subset
+  · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
+  · exact (fun q hq => ⟨connectedComponentIn A q,
+      connectedComponentIn_mem_cmpnts hq, mem_connectedComponentIn hq⟩)
 
-
-
-lemma ESide_center_exists (a : ℕ → Set X) : ESide a → ∃ c, c ∈ (⋂ n, closure (a n)) := sorry
-
-
-
-lemma ESide_center_unique (a : ℕ → Set X) : ESide a →
-  ∀ c d, (c ∈ ⋂ n, closure (a n) ∧ d ∈ ⋂ n, closure (a n) → c=d) := sorry
+theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B := by
+  rintro ⟨_, ⟨_, rfl⟩⟩
+  exact connectedComponentIn_subset B _
 
 
+theorem connectedComponentIn_maximal {A B C : Set X} (hB : B ∈ components A)
+    (hC : IsPreconnected C) (hCA : C ⊆ A) (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
+  rcases hCB with ⟨x, hxCB⟩
+  rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
+  rw [connectedComponentIn_eq hxCB.2]
+  exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
 
-  /-
-  IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
-  Cantor's Intersection Theorem
-  -/
+
+/-
+  If the sets A, B have B ⊆ A and C is a connected component of A \ S,
+  and K is a connected component of C ∩ B, then K is a connected component of B \ S.
+-/
+theorem connectedComponentIn_lemma_1 {A B C K S : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
+    (hK : K ∈ components (C ∩ B)) : K ∈ components (B \ S) := by
+  have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB =>
+    ⟨hkCB.2, (Set.inter_subset_inter_left B (mem_cmpnts_subset hC) hkCB).1.2⟩
+  have hK2 := hK
+  rcases hK with ⟨k, ⟨hkCB, rfl⟩⟩
+  exact ⟨k, ⟨hCBBS hkCB,
+    Set.eq_of_subset_of_subset
+      (connectedComponentIn_maximal hK2 isPreconnected_connectedComponentIn
+        (Set.subset_inter_iff.mpr ⟨
+          connectedComponentIn_maximal hC isPreconnected_connectedComponentIn
+            (subset_trans (connectedComponentIn_subset _ k) (Set.diff_subset_diff_left hBA))
+            ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), hkCB.1⟩⟩,
+          subset_trans (connectedComponentIn_subset _ k) Set.diff_subset⟩)
+        ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), mem_connectedComponentIn hkCB⟩⟩)
+      (connectedComponentIn_mono k hCBBS)⟩⟩
+
+
+/-
+  Let the sets A, B have B ⊆ A.
+  Let C1 and C2 be connected components of A \ S and B \ S respectively. Suppose C1 ∩ C2 != {}.
+  Then C2 ⊆ C1, and furthermore C2 is a connected component of C1 ∩ B.
+-/
+theorem connectedComponentIn_lemma_2 {A B C D S : Set X} (hBA : B ⊆ A)
+    (hCAS : C ∈ components (A \ S)) (hDBS : D ∈ components (B \ S))
+    (hCDinter : (C ∩ D).Nonempty) : D ∈ components (C ∩ B) := by
+  rcases hCDinter with ⟨p, hpC, hpD⟩
+  have hpB := subset_trans (mem_cmpnts_subset hDBS) Set.diff_subset hpD
+  have hKBS := connectedComponentIn_lemma_1 hBA hCAS
+    (connectedComponentIn_mem_cmpnts ⟨hpC, hpB⟩)
+  have hD : D = connectedComponentIn (B \ S) p := by
+    rcases hDBS with ⟨_, _, rfl⟩
+    exact connectedComponentIn_eq hpD
+  cases hD
+  have hpCB : p ∈ connectedComponentIn (C ∩ B) p := mem_connectedComponentIn ⟨hpC, hpB⟩
+  exact ⟨p, ⟨⟨hpC, hpB⟩, Set.eq_of_subset_of_subset
+    (connectedComponentIn_maximal hDBS isPreconnected_connectedComponentIn
+      (mem_cmpnts_subset hKBS) ⟨p, hpCB, hpD⟩)
+    (connectedComponentIn_maximal hKBS isPreconnected_connectedComponentIn
+      (mem_cmpnts_subset hDBS) ⟨p, hpD, hpCB⟩)⟩⟩
+
+
+theorem connectedComponentIn_lemma_2_1 {A B C D S : Set X} (hBA : B ⊆ A)
+    (hCAS : C ∈ components (A \ S)) (hDBS : D ∈ components (B \ S))
+    (hCDinter : (C ∩ D).Nonempty) : D ⊆ C :=
+  subset_trans
+    (mem_cmpnts_subset (connectedComponentIn_lemma_2 hBA hCAS hDBS hCDinter))
+    Set.inter_subset_left
+
+
+/-
+  If A, B are open sets with B ⊆ A and D is a connected component of B \ S,
+  then there is a unique connected component K of A \ S with D ⊆ K.
+-/
+theorem connectedComponentIn_lemma_3 {A B D S : Set X} (hBA : B ⊆ A)
+    (hDBS : D ∈ components (B \ S)) : ∃! C ∈ components (A \ S), D ⊆ C := by
+  rcases hDBS with ⟨p, hpBS, rfl⟩
+  have hpAS : p ∈ A \ S := ⟨hBA hpBS.1, hpBS.2⟩
+  use connectedComponentIn (A \ S) p
+  have hA1 := connectedComponentIn_mem_cmpnts hpAS
+  have hB1 := connectedComponentIn_mem_cmpnts hpBS
+  have hA2 := mem_connectedComponentIn hpAS
+  have hB2 := mem_connectedComponentIn hpBS
+  split_ands
+  · exact hA1
+  · exact connectedComponentIn_lemma_2_1 hBA hA1 hB1 ⟨p, hA2, hB2⟩
+  · rintro H ⟨⟨q, ⟨hqAS, rfl⟩⟩, hDH⟩
+    exact connectedComponentIn_eq (hDH hB2)

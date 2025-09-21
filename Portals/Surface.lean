@@ -6,22 +6,6 @@ variable {X : Type} [hX : TopologicalSpace X]
 
 
 
-def components (A : Set X) : Set (Set X) :=
-  {C | ∃ p ∈ A, connectedComponentIn A p = C}
-
-theorem connectedComponentIn_mem_cmpnts {A : Set X} {p : X} (hpA : p ∈ A) :
-    connectedComponentIn A p ∈ components A := ⟨p, ⟨hpA, rfl⟩⟩
-
-theorem sUnion_cmpnts (A : Set X) :
-    ⋃₀ components A = A := by
-  apply Set.eq_of_subset_of_subset
-  · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
-  · exact (fun q hq => ⟨connectedComponentIn A q,
-      connectedComponentIn_mem_cmpnts hq, mem_connectedComponentIn hq⟩)
-
-theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B := by
-  rintro ⟨_, ⟨_, rfl⟩⟩
-  exact connectedComponentIn_subset B _
 
 
 class Surface (S : Set X) where
@@ -91,119 +75,14 @@ theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
   Suppose U / S has finitely many connected components.
   Then there is a connected component C of U \ S with p ∈ cl(C).
 -/
-theorem inter_closure_subset_cmpnts_closure_finite (hS : Surface S) {U : Set X} (hU : IsOpen U)
+theorem inter_closure_subset_cmpnts_closure (hS : Surface S) {U : Set X} (hU : IsOpen U)
     (hUSC_fin : Finite (components (U \ S))) :
     S ∩ closure U ⊆ ⋃ C ∈ components (U \ S), closure C := by
   intro p hpScU
   have hpUS : p ∈ closure (U \ S) := inter_closure_subset_closure_diff hS hU (
     (Set.mem_inter_iff p S (closure U)).mpr hpScU)
-  rw [← sUnion_components_eq_self (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
+  rw [← sUnion_cmpnts (U \ S), Set.Finite.closure_sUnion hUSC_fin] at hpUS
   exact hpUS
 
+
 end Surface
-
-
-
-theorem maximality {A B C : Set X} (hB : B ∈ components A) (hC : IsPreconnected C) (hCA : C ⊆ A)
-    (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
-  rcases hCB with ⟨x, hxCB⟩
-  rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
-  rw [connectedComponentIn_eq hxCB.2]
-  exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
-
-
-
-/-
-Claim: If the sets A, B have B ⊆ A and C is a connected component of A \ S,
-  and K is a connected component of C ∩ B, then K is a connected component of B \ S.
-
-Proof. Since K is a connected subset of C ∩ B = (C \ S) ∩ B = C ∩ (B \ S) ⊆ B \ S,
-  we may let H ⊇ K be a connected component of B / S. Note that H and C are
-  connected subsets of B / S ⊆ A \ S, and H ∩ C ⊇ K ≠ {}.
-  By maximality of C in A \ S, we have H ⊆ C. We also know that H ⊆ B \ S, and so
-  H ⊆ C ∩ (B \ S) = (C \ S) ∩ B = C ∩ B. Because K ⊆ H and K is maximal in C ∩ B, H = K.
-  Therefore K is a connected component of B \ S.
-QED
--/
-
-
-theorem connectedComponentIn_lemma_1 {A B C K : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
-    (hK : K ∈ components (C ∩ B)) : K ∈ components (B \ S) := by
-  have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB =>
-    ⟨hkCB.2, (Set.inter_subset_inter_left B (mem_cmpnts_subset hC) hkCB).1.2⟩
-  have hK2 := hK
-  rcases hK with ⟨k, ⟨hkCB, rfl⟩⟩
-  exact ⟨k, ⟨hCBBS hkCB,
-    Set.eq_of_subset_of_subset
-      (maximality hK2 isPreconnected_connectedComponentIn
-        (Set.subset_inter_iff.mpr ⟨
-          maximality hC isPreconnected_connectedComponentIn
-            (subset_trans (connectedComponentIn_subset _ k) (Set.diff_subset_diff_left hBA))
-            ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), hkCB.1⟩⟩,
-          subset_trans (connectedComponentIn_subset _ k) Set.diff_subset⟩)
-        ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), mem_connectedComponentIn hkCB⟩⟩)
-      (connectedComponentIn_mono k hCBBS)⟩⟩
-
-/-
-  Claim: Let the sets A, B have B ⊆ A.
-  Let C1 and C2 be connected components of A \ S and B \ S respectively. Suppose C1 ∩ C2 != {}.
-  Then C2 ⊆ C1, and furthermore C2 is a connected component of C1 ∩ B.
-
-  Proof. Note (C1 ∩ B) ∩ C2 = C1 ∩ (B ∩ C2) = C1 ∩ C2 ≠ {}.
-  Let x ∈ (C1 ∩ B) ∩ C2 and let K be the connected component of C1 ∩ B which contains x.
-  By the first claim, K is a connected component of B \ S.
-  Now K and C2 are both connected components of B \ S, and K ∩ C2 ⊇ {x} ≠ {}.
-  So, K = C2, and therefore C2 is a connected component of C1 ∩ B, and also C2 ⊆ C1 as desired.
-
-  QED
--/
-
-theorem connectedComponentIn_lemma_2 {A B C D : Set X} (hBA : B ⊆ A) (hCAS : C ∈ components (A \ S))
-    (hDBS : D ∈ components (B \ S)) (hCDinter : (C ∩ D).Nonempty) : D ∈ components (C ∩ B) := by
-  rcases hCDinter with ⟨p, hpC, hpD⟩
-  have hpB := subset_trans (mem_cmpnts_subset hDBS) Set.diff_subset hpD
-  have hKBS := connectedComponentIn_lemma_1 hBA hCAS (connectedComponentIn_mem_cmpnts ⟨hpC, hpB⟩)
-  have hD : D = connectedComponentIn (B \ S) p := by
-    rcases hDBS with ⟨_, _, rfl⟩
-    apply connectedComponentIn_eq hpD
-
-  rcases hD
-  exact ⟨p, ⟨⟨hpC, hpB⟩, Set.eq_of_subset_of_subset
-    (maximality hDBS isPreconnected_connectedComponentIn (mem_cmpnts_subset hKBS)
-      ⟨p, mem_connectedComponentIn ⟨hpC, hpB⟩, hpD⟩)
-    (maximality hKBS isPreconnected_connectedComponentIn (mem_cmpnts_subset hDBS)
-      ⟨p, hpD, mem_connectedComponentIn ⟨hpC, hpB⟩⟩)⟩⟩
-
-
-theorem connectedComponentIn_lemma_2_1 {A B C D : Set X} (hBA : B ⊆ A)
-    (hCAS : C ∈ components (A \ S)) (hDBS : D ∈ components (B \ S))
-    (hCDinter : (C ∩ D).Nonempty) : D ⊆ C :=
-  subset_trans
-    (mem_cmpnts_subset (connectedComponentIn_lemma_2 hBA hCAS hDBS hCDinter))
-    Set.inter_subset_left
-
-
-/-
-  Claim: If A, B are open sets with B ⊆ A and D is a connected component of B \ S,
-  then there is a unique connected component K of A \ S with D ⊆ K.
-
-  Proof. Let p ∈ D ⊆ B \ S ⊆ A \ S. Let K be the connected component of A \ S containing p.
-  Since p ∈ D ∩ K, D ⊆ K by above. To see that K is unique,
-  let H be another connected component of A \ S with D ⊆ H.
-  Note K and H are maximal in A \ S and K ∩ H ⊇ C != {}. So, K = H.
-
-  QED
--/
-
-theorem connectedComponentIn_lemma_3 {A B D : Set X} (hBA : B ⊆ A) (hDBS : D ∈ components (B \ S)) :
-   ∃! C ∈ components (A \ S), D ⊆ C := by
-  rcases hDBS with ⟨p, hpBS, rfl⟩
-  have hpAS : p ∈ A \ S := ⟨hBA hpBS.1, hpBS.2⟩
-  use connectedComponentIn (A \ S) p
-  split_ands
-  · use p
-  · exact connectedComponentIn_lemma_2_1 hBA (connectedComponentIn_mem_cmpnts hpAS)
-      (connectedComponentIn_mem_cmpnts hpBS)
-      ⟨p, mem_connectedComponentIn hpAS, mem_connectedComponentIn hpBS⟩
-  · rintro H ⟨⟨q, ⟨hqAS, rfl⟩⟩, hDH⟩
-    exact connectedComponentIn_eq (hDH (mem_connectedComponentIn hpBS))
