@@ -9,22 +9,19 @@ variable {X : Type} [hX : TopologicalSpace X]
 def components (A : Set X) : Set (Set X) :=
   {C | ∃ p ∈ A, connectedComponentIn A p = C}
 
-theorem sUnion_components_eq_self (A : Set X) :
+theorem connectedComponentIn_mem_cmpnts {A : Set X} {p : X} (hpA : p ∈ A) :
+    connectedComponentIn A p ∈ components A := ⟨p, ⟨hpA, rfl⟩⟩
+
+theorem sUnion_cmpnts (A : Set X) :
     ⋃₀ components A = A := by
   apply Set.eq_of_subset_of_subset
   · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
   · exact (fun q hq => ⟨connectedComponentIn A q,
-      by
-      unfold components
-      simp only [Set.mem_setOf_eq]
-      exact ⟨q, ⟨hq, rfl⟩⟩,
-    mem_connectedComponentIn hq⟩)
+      connectedComponentIn_mem_cmpnts hq, mem_connectedComponentIn hq⟩)
 
 theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B := by
   rintro ⟨_, ⟨_, rfl⟩⟩
   exact connectedComponentIn_subset B _
-
-
 
 
 class Surface (S : Set X) where
@@ -165,7 +162,7 @@ theorem connectedComponentIn_lemma_2 {A B C D : Set X} (hBA : B ⊆ A) (hCAS : C
     (hDBS : D ∈ components (B \ S)) (hCDinter : (C ∩ D).Nonempty) : D ∈ components (C ∩ B) := by
   rcases hCDinter with ⟨p, hpC, hpD⟩
   have hpB := subset_trans (mem_cmpnts_subset hDBS) Set.diff_subset hpD
-  have hKBS := connectedComponentIn_lemma_1 hBA hCAS ⟨p, ⟨⟨hpC, hpB⟩, rfl⟩⟩
+  have hKBS := connectedComponentIn_lemma_1 hBA hCAS (connectedComponentIn_mem_cmpnts ⟨hpC, hpB⟩)
   have hD : D = connectedComponentIn (B \ S) p := by
     rcases hDBS with ⟨_, _, rfl⟩
     apply connectedComponentIn_eq hpD
@@ -176,3 +173,37 @@ theorem connectedComponentIn_lemma_2 {A B C D : Set X} (hBA : B ⊆ A) (hCAS : C
       ⟨p, mem_connectedComponentIn ⟨hpC, hpB⟩, hpD⟩)
     (maximality hKBS isPreconnected_connectedComponentIn (mem_cmpnts_subset hDBS)
       ⟨p, hpD, mem_connectedComponentIn ⟨hpC, hpB⟩⟩)⟩⟩
+
+
+theorem connectedComponentIn_lemma_2_1 {A B C D : Set X} (hBA : B ⊆ A)
+    (hCAS : C ∈ components (A \ S)) (hDBS : D ∈ components (B \ S))
+    (hCDinter : (C ∩ D).Nonempty) : D ⊆ C :=
+  subset_trans
+    (mem_cmpnts_subset (connectedComponentIn_lemma_2 hBA hCAS hDBS hCDinter))
+    Set.inter_subset_left
+
+
+/-
+  Claim: If A, B are open sets with B ⊆ A and D is a connected component of B \ S,
+  then there is a unique connected component K of A \ S with D ⊆ K.
+
+  Proof. Let p ∈ D ⊆ B \ S ⊆ A \ S. Let K be the connected component of A \ S containing p.
+  Since p ∈ D ∩ K, D ⊆ K by above. To see that K is unique,
+  let H be another connected component of A \ S with D ⊆ H.
+  Note K and H are maximal in A \ S and K ∩ H ⊇ C != {}. So, K = H.
+
+  QED
+-/
+
+theorem connectedComponentIn_lemma_3 {A B D : Set X} (hBA : B ⊆ A) (hDBS : D ∈ components (B \ S)) :
+   ∃! C ∈ components (A \ S), D ⊆ C := by
+  rcases hDBS with ⟨p, hpBS, rfl⟩
+  have hpAS : p ∈ A \ S := ⟨hBA hpBS.1, hpBS.2⟩
+  use connectedComponentIn (A \ S) p
+  split_ands
+  · use p
+  · exact connectedComponentIn_lemma_2_1 hBA (connectedComponentIn_mem_cmpnts hpAS)
+      (connectedComponentIn_mem_cmpnts hpBS)
+      ⟨p, mem_connectedComponentIn hpAS, mem_connectedComponentIn hpBS⟩
+  · rintro H ⟨⟨q, ⟨hqAS, rfl⟩⟩, hDH⟩
+    exact connectedComponentIn_eq (hDH (mem_connectedComponentIn hpBS))
