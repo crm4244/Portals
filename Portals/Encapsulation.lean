@@ -5,15 +5,15 @@ import Mathlib.Topology.Sets.Closeds
 
 variable {X : Type} [hX : TopologicalSpace X]
 
-def Encapsulation.IsCenter (E : ℕ → Set X) (p : X) := p ∈ ⋂ n, E n
+def Encapsulation.isCenter (E : ℕ → Set X) (p : X) := p ∈ ⋂ n, E n
 
 class Encapsulation (E : ℕ → Set X) where
   nth_Nonempty (n : ℕ) : (E n).Nonempty
   nth_IsOpen (n : ℕ) : IsOpen (E n)
   compact_closure_base_case : IsCompact (closure (E 0))
   nth_closure_nested (n : ℕ) : closure (E (n + 1)) ⊆ E n
-  center_unique {p : X} (hp : Encapsulation.IsCenter E p)
-    {q : X} (hq : Encapsulation.IsCenter E q) : p = q
+  center_unique {p : X} (hp : Encapsulation.isCenter E p)
+    {q : X} (hq : Encapsulation.isCenter E q) : p = q
 
 variable {E : ℕ → Set X}
 
@@ -21,6 +21,7 @@ variable {E : ℕ → Set X}
 
 
 namespace Encapsulation
+
 
 
 theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n := by
@@ -37,6 +38,7 @@ theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n :=
     | inr h =>
       rw [h]
 
+
 theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
     IsCompact (closure (E n)) :=
   match n with
@@ -46,8 +48,9 @@ theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
       subset_trans (nth_closure_nested n) (
         subset_trans (nested hE (Nat.zero_le n)) subset_closure))
 
+
 theorem center_exists (hE : Encapsulation E) :
-    ∃ p, IsCenter E p := by
+    ∃ p, isCenter E p := by
   have h : (⋂ n, closure (E n)).Nonempty := by
     apply IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
     · exact fun n => subset_trans (nth_closure_nested n) subset_closure
@@ -56,6 +59,7 @@ theorem center_exists (hE : Encapsulation E) :
     · exact fun n => isClosed_closure
   exact match h with | ⟨p, hp⟩ => ⟨p, Set.mem_iInter.mpr (
     fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n+1)) (nth_closure_nested n))⟩
+
 
 theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
     Encapsulation (E ∘ α) := Encapsulation.mk
@@ -71,7 +75,7 @@ theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (
     · exact subset_trans hn1 (nested hE ((Nat.le_sub_one_iff_lt hα2).mpr hα))
     · exact Nat.le_of_pred_lt hα2)
   ( @fun p hp q hq =>
-    let hx := fun x (hx : IsCenter (E ∘ α) x) => Set.mem_iInter.mpr (
+    let hx := fun x (hx : isCenter (E ∘ α) x) => Set.mem_iInter.mpr (
       fun n => nested hE (StrictMono.id_le hα n) (Set.mem_iInter.mp hx n))
     hE.center_unique (hx p hp) (hx q hq)
   )
@@ -79,12 +83,13 @@ theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (
 
 noncomputable def center (hE : Encapsulation E) : X := Classical.choose (@center_exists _ _ _ hE)
 
-theorem IsCenter_center (hE : Encapsulation E) : IsCenter E (center hE) :=
+
+theorem isCenter_center (hE : Encapsulation E) : isCenter E (center hE) :=
   Classical.choose_spec (center_exists hE)
 
-theorem center_exists_unique (hE : Encapsulation E) :
-    ∃! p, IsCenter E p :=
-    ⟨center hE, IsCenter_center hE, fun _ h => center_unique h (IsCenter_center hE)⟩
+
+theorem center_exists_unique (hE : Encapsulation E) : ∃! p, isCenter E p :=
+    ⟨center hE, isCenter_center hE, fun _ h => center_unique h (isCenter_center hE)⟩
 
 
 
