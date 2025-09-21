@@ -26,9 +26,26 @@ variable {S : Set X} {a : ℕ → Set X}
 namespace ESide
 
 
+/-
+  Claim: If P ∈ S has the sequence C[n] ∈ sides(P, O[n]) then Intersection(cl(C[n])) = {P}.
 
-theorem isCenter_iff_isCenter_generator (ha : ESide S a) (p : X) {E} (_ : IsGenerator S a E) :
+  Proof. For every n, since C[n+1] ⊆ C[n], cl(C[n+1]) ⊆ cl(C[n]).
+  Let m>0 and suppose that cl(C[n+1]) = cl(C[n]) for all n>m.
+  Then by induction every n>=m has cl(C[m]) = cl(C[n-1]) ⊆ cl(O[n-1]) ⊆ O[n].
+  By induction again, every n<m has cl(C[m]) ⊆ cl(O[m]) ⊆ O[n].
+  So, C[m] ⊆ Intersection(O[n]) = {P} ⊆ S.
+  But, C[m] was constructed as a nonempty subset of O[n] \ S.
+  Contradiction. We must instead have an infinite number of n’s with cl(C[n+1]) ⊂ cl(C[n]).
+  Note cl(C[n]) is compact since it is a closed subset of the compact set cl(O[n]).
+  We may now apply Cantor’s Intersection Theorem to see that Intersection(cl(C[n])) is nonempty.
+  Let Q ∈ Intersection(cl(C[n])). Then for every n>0 we have Q ∈ cl(C[n+1]) ⊆ cl(O[n+1]) ⊆ O[n].
+  So, Q ∈ Intersection(O[n]) = {P}. So, Q = P.
+
+  QED
+-/
+theorem isCenter_iff_isCenter_generator (ha : ESide S a) (p : X) {E} (hE : IsGenerator S a E) :
     isCenter a p ↔ Encapsulation.isCenter E p := by
+
   sorry
 
 
@@ -55,6 +72,10 @@ noncomputable def center (ha : ESide S a) := Classical.choose (center_exists ha)
 theorem isCenter_center (ha : ESide S a) : isCenter a (center ha) :=
   Classical.choose_spec (center_exists ha)
 
+
+theorem nested (ha : ESide S a) {n m : ℕ} (h : n ≤ m) : a m ⊆ a n := by
+  --induction
+  sorry
 
 
 end ESide

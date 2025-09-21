@@ -2,10 +2,11 @@ import Mathlib.Topology.Sets.Closeds
 
 
 
-
 variable {X : Type} [hX : TopologicalSpace X]
 
+
 def Encapsulation.isCenter (E : ℕ → Set X) (p : X) := p ∈ ⋂ n, E n
+
 
 class Encapsulation (E : ℕ → Set X) where
   nth_Nonempty (n : ℕ) : (E n).Nonempty
@@ -15,8 +16,8 @@ class Encapsulation (E : ℕ → Set X) where
   center_unique {p : X} (hp : Encapsulation.isCenter E p)
     {q : X} (hq : Encapsulation.isCenter E q) : p = q
 
-variable {E : ℕ → Set X}
 
+variable {E : ℕ → Set X}
 
 
 
@@ -43,7 +44,7 @@ theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
     IsCompact (closure (E n)) :=
   match n with
   | 0 => compact_closure_base_case
-  | n+1 =>
+  | n + 1 =>
     IsCompact.of_isClosed_subset compact_closure_base_case isClosed_closure (
       subset_trans (nth_closure_nested n) (
         subset_trans (nested hE (Nat.zero_le n)) subset_closure))
@@ -77,8 +78,7 @@ theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (
   ( @fun p hp q hq =>
     let hx := fun x (hx : isCenter (E ∘ α) x) => Set.mem_iInter.mpr (
       fun n => nested hE (StrictMono.id_le hα n) (Set.mem_iInter.mp hx n))
-    hE.center_unique (hx p hp) (hx q hq)
-  )
+    hE.center_unique (hx p hp) (hx q hq))
 
 
 noncomputable def center (hE : Encapsulation E) : X := Classical.choose (@center_exists _ _ _ hE)
@@ -91,6 +91,27 @@ theorem isCenter_center (hE : Encapsulation E) : isCenter E (center hE) :=
 theorem center_exists_unique (hE : Encapsulation E) : ∃! p, isCenter E p :=
     ⟨center hE, isCenter_center hE, fun _ h => center_unique h (isCenter_center hE)⟩
 
+
+
+/-
+  Let O[n] be an encapsulation of a point P in S,and let A be an open neighborhood of P.
+  Then there is a k>0 with O[k] ⊆ A.
+
+  Proof. Fix n>0. We have cl(O[n] \ A) ⊆ cl(O[n]) compact, and cl(O[n+1] \ A) ⊆ cl(O[n] \ A).
+  Note that Intersection(cl(O[n] \ A)) ⊇ cl(Intersection(O[n] \ A)) =
+  cl(Intersection(O[n]) \ A) = cl({P} \ A) = {}.
+  We may apply Cantor’s Intersection Theorem in the contrapositive form
+  to see that there are only finitely many n with strict inclusion cl(O[n+1] \ A) ⊂ cl(O[n] \ A).
+  Let k>0 have cl(O[m+1] \ A) = cl(O[m] \ A) for all m >= k. Now, consider the set B = cl(O[k] \ A).
+  If n < k, we have B = cl(O[k] \ A) ⊆ cl(O[n] \ A) by nesting.
+  If n >= k we have B ⊆ B = cl(O[k] \ A) = cl(O[n] \ A).
+  So, B ⊆ cl(O[n] \ A) ∀ n>0 and B ⊆ Intersection(cl(O[n] \ A)) ⊆ Intersection(cl(O[n])) = {P}.
+  To see that P not in B = cl(O[k] \ A), note that P is in the interiors of O[k] and A.
+  Finally, we have B empty and so O[k] \ A ⊆ cl(O[k] \ A) = B = {}, which means O[k] ⊆ A as desired.
+
+  QED
+-/
+--theorem TODO
 
 
 end Encapsulation
