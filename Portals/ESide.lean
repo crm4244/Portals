@@ -8,7 +8,7 @@ variable {X : Type} [hX : TopologicalSpace X]
 
 class ESide.IsGenerator (S : Set X) (a : ℕ → Set X) (E : ℕ → Set X) where
   isEncapsulation : Encapsulation E
-  nth_componentIn : ∀ n, a n ∈ components ((E n) \ S)
+  nth_mem_cmpnts : ∀ n, a n ∈ components ((E n) \ S)
 
 
 class ESide (S : Set X) (a : ℕ → Set X) where
@@ -16,7 +16,7 @@ class ESide (S : Set X) (a : ℕ → Set X) where
   nth_nested (n : ℕ) : a (n + 1) ⊆ a n
 
 
-def ESide.isCenter (a : ℕ → Set X) (p : X) := ∀ n, p ∈ closure (a n)
+def ESide.isCenter (a : ℕ → Set X) (p : X) := p ∈ ⋂ n, closure (a n)
 
 
 variable {S : Set X} {a : ℕ → Set X}
@@ -24,6 +24,10 @@ variable {S : Set X} {a : ℕ → Set X}
 
 
 namespace ESide
+
+
+theorem nth_subset_generator {E} (hE : IsGenerator S a E) (n : ℕ) : a n ⊆ E n :=
+  fun _ hp => (mem_cmpnts_subset (hE.nth_mem_cmpnts n) hp).1
 
 
 /-
@@ -43,23 +47,32 @@ namespace ESide
 
   QED
 -/
-theorem isCenter_iff_isCenter_generator (ha : ESide S a) (p : X) {E} (hE : IsGenerator S a E) :
-    isCenter a p ↔ Encapsulation.isCenter E p := by
-
-  sorry
-
-
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
   match ha.exists_generator with
-    | ⟨_, hE⟩ => match hE.isEncapsulation.center_exists with
-      | ⟨p, hpE⟩ => ⟨p, (isCenter_iff_isCenter_generator ha p hE).mpr hpE⟩
+  | ⟨_, hE⟩ => IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
+    (fun n => closure (a n))
+    (fun n => closure_mono (ha.nth_nested n))
+    (fun n => closure_nonempty_iff.mpr (mem_cmpnts_Nonempty (hE.nth_mem_cmpnts n)))
+    (IsCompact.of_isClosed_subset hE.isEncapsulation.zeroth_compact_closure
+      isClosed_closure (closure_mono (nth_subset_generator hE 0)))
+    (fun _ => isClosed_closure)
 
 
-theorem center_unique (ha : ESide S a) : ∀ p, isCenter a p → ∀ q, isCenter a q → p=q := by
-  rcases ha.exists_generator with ⟨E, hE⟩
-  intro p hp q hq
-  have f := fun r hr => (isCenter_iff_isCenter_generator ha r hE).mp hr
-  exact hE.isEncapsulation.center_unique (f p hp) (f q hq)
+theorem isCenter_iff_isCenter_generator (ha : ESide S a) {E} (hE : IsGenerator S a E) (p : X) :
+    isCenter a p ↔ Encapsulation.isCenter E p :=
+  have h : ∀ x, isCenter a x → Encapsulation.isCenter E x :=
+    fun _ hx => Set.mem_iInter.mpr fun n => subset_trans
+    (closure_mono (nth_subset_generator hE (n+1)))
+    (hE.isEncapsulation.nth_closure_nested n) (Set.mem_iInter.mp hx (n+1))
+  Iff.intro (h p) fun hp => match center_exists ha with
+    | ⟨c, hc⟩ => hE.isEncapsulation.center_unique hp (h c hc) ▸ hc
+
+
+theorem center_unique (ha : ESide S a) : ∀ p, isCenter a p → ∀ q, isCenter a q → p=q :=
+  match ha.exists_generator with
+  | ⟨_, hE⟩ =>
+    have f := fun r hr => (isCenter_iff_isCenter_generator ha hE r).mp hr
+    fun p hp q hq => hE.isEncapsulation.center_unique (f p hp) (f q hq)
 
 
 theorem center_exists_unique (ha : ESide S a) : ∃! p, isCenter a p :=
@@ -84,4 +97,4 @@ end ESide
 
 theorem Encapsulation.isCenter_ESide_center (ha : ESide S a) {E} (hE : ESide.IsGenerator S a E) :
     Encapsulation.isCenter E (ESide.center ha) :=
-  (ha.isCenter_iff_isCenter_generator ha.center hE).mp (ESide.isCenter_center ha)
+  (ha.isCenter_iff_isCenter_generator hE ha.center).mp (ESide.isCenter_center ha)

@@ -11,7 +11,7 @@ def Encapsulation.isCenter (E : ℕ → Set X) (p : X) := p ∈ ⋂ n, E n
 class Encapsulation (E : ℕ → Set X) where
   nth_Nonempty (n : ℕ) : (E n).Nonempty
   nth_IsOpen (n : ℕ) : IsOpen (E n)
-  compact_closure_base_case : IsCompact (closure (E 0))
+  zeroth_compact_closure : IsCompact (closure (E 0))
   nth_closure_nested (n : ℕ) : closure (E (n + 1)) ⊆ E n
   center_unique {p : X} (hp : Encapsulation.isCenter E p)
     {q : X} (hq : Encapsulation.isCenter E q) : p = q
@@ -43,9 +43,9 @@ theorem nested (hE : Encapsulation E) {n m : ℕ} (h : n ≤ m) : E m ⊆ E n :=
 theorem nth_compact_closure (hE : Encapsulation E) (n : Nat) :
     IsCompact (closure (E n)) :=
   match n with
-  | 0 => compact_closure_base_case
+  | 0 => zeroth_compact_closure
   | n + 1 =>
-    IsCompact.of_isClosed_subset compact_closure_base_case isClosed_closure (
+    IsCompact.of_isClosed_subset zeroth_compact_closure isClosed_closure (
       subset_trans (nth_closure_nested n) (
         subset_trans (nested hE (Nat.zero_le n)) subset_closure))
 
