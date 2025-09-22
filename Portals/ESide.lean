@@ -78,6 +78,15 @@ theorem nested (ha : ESide S a) {n m : ℕ} (h : n ≤ m) : a m ⊆ a n := by
     | inl hl => exact subset_trans (ha.nth_nested m) (ih hl)
 
 
+theorem instESide_subsequence (ha : ESide S a) {α : ℕ → ℕ} (hα : StrictMono α) : ESide S (a ∘ α) :=
+  match ha.exists_generator with
+  | ⟨E, hE⟩ => ESide.mk
+    ⟨E ∘ α, IsGenerator.mk
+      (Encapsulation.instEncapsulation_subsequence hE.isEncapsulation hα)
+      (fun n => hE.nth_mem_cmpnts (α n))⟩
+    (fun n => nested ha ((StrictMono.le_iff_le hα).mpr (Nat.le_add_right n 1)))
+
+
 
 end ESide
 

@@ -62,7 +62,7 @@ theorem center_exists (hE : Encapsulation E) :
     fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n+1)) (nth_closure_nested n))⟩
 
 
-theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
+theorem instEncapsulation_subsequence (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
     Encapsulation (E ∘ α) := Encapsulation.mk
   (fun n => hE.nth_Nonempty (α n))
   (fun n => hE.nth_IsOpen (α n))
@@ -75,7 +75,7 @@ theorem instEncapsulationSubsequence (hE : Encapsulation E) {α : ℕ → ℕ} (
     rw [Nat.sub_add_cancel] at hn1
     · exact subset_trans hn1 (nested hE ((Nat.le_sub_one_iff_lt hα2).mpr hα))
     · exact Nat.le_of_pred_lt hα2)
-  ( @fun p hp q hq =>
+  (@fun p hp q hq =>
     let hx := fun x (hx : isCenter (E ∘ α) x) => Set.mem_iInter.mpr (
       fun n => nested hE (StrictMono.id_le hα n) (Set.mem_iInter.mp hx n))
     hE.center_unique (hx p hp) (hx q hq))
