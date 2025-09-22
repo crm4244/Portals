@@ -26,27 +26,11 @@ variable {S : Set X} {a : ℕ → Set X}
 namespace ESide
 
 
+
 theorem nth_subset_generator {E} (hE : IsGenerator S a E) (n : ℕ) : a n ⊆ E n :=
   fun _ hp => (mem_cmpnts_subset (hE.nth_mem_cmpnts n) hp).1
 
 
-/-
-  Claim: If P ∈ S has the sequence C[n] ∈ sides(P, O[n]) then Intersection(cl(C[n])) = {P}.
-
-  Proof. For every n, since C[n+1] ⊆ C[n], cl(C[n+1]) ⊆ cl(C[n]).
-  Let m>0 and suppose that cl(C[n+1]) = cl(C[n]) for all n>m.
-  Then by induction every n>=m has cl(C[m]) = cl(C[n-1]) ⊆ cl(O[n-1]) ⊆ O[n].
-  By induction again, every n<m has cl(C[m]) ⊆ cl(O[m]) ⊆ O[n].
-  So, C[m] ⊆ Intersection(O[n]) = {P} ⊆ S.
-  But, C[m] was constructed as a nonempty subset of O[n] \ S.
-  Contradiction. We must instead have an infinite number of n’s with cl(C[n+1]) ⊂ cl(C[n]).
-  Note cl(C[n]) is compact since it is a closed subset of the compact set cl(O[n]).
-  We may now apply Cantor’s Intersection Theorem to see that Intersection(cl(C[n])) is nonempty.
-  Let Q ∈ Intersection(cl(C[n])). Then for every n>0 we have Q ∈ cl(C[n+1]) ⊆ cl(O[n+1]) ⊆ O[n].
-  So, Q ∈ Intersection(O[n]) = {P}. So, Q = P.
-
-  QED
--/
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
   match ha.exists_generator with
   | ⟨_, hE⟩ => IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
@@ -87,8 +71,12 @@ theorem isCenter_center (ha : ESide S a) : isCenter a (center ha) :=
 
 
 theorem nested (ha : ESide S a) {n m : ℕ} (h : n ≤ m) : a m ⊆ a n := by
-  --induction
-  sorry
+  induction m with
+  | zero => rw [Nat.le_zero.mp h]
+  | succ m ih => cases Nat.le_add_one_iff.mp h with
+    | inr hr => rw [hr]
+    | inl hl => exact subset_trans (ha.nth_nested m) (ih hl)
+
 
 
 end ESide
