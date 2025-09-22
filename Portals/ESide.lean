@@ -1,5 +1,6 @@
 import Portals.Encapsulation
 import Portals.Basic
+import Mathlib.Topology.Connected.LocallyConnected
 
 
 
@@ -85,6 +86,16 @@ theorem instESide_subsequence (ha : ESide S a) {α : ℕ → ℕ} (hα : StrictM
       (Encapsulation.instEncapsulation_subsequence hE.isEncapsulation hα)
       (fun n => hE.nth_mem_cmpnts (α n))⟩
     (fun n => nested ha ((StrictMono.le_iff_le hα).mpr (Nat.le_add_right n 1)))
+
+
+variable [hX_locallyConnected : LocallyConnectedSpace X]
+
+
+theorem nth_isOpen [hS : IsClosed S] (ha : ESide S a) (n : ℕ) : IsOpen (a n) :=
+  match ha.exists_generator with
+  | ⟨_, hE⟩ => match hE.nth_mem_cmpnts n with
+    | ⟨_, hp⟩ => hp.2 ▸ IsOpen.connectedComponentIn
+      (IsOpen.sdiff (hE.isEncapsulation.nth_IsOpen n) hS)
 
 
 
