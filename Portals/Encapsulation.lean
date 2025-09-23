@@ -59,7 +59,7 @@ theorem center_exists (hE : Encapsulation E) :
     · exact nth_compact_closure hE 0
     · exact fun n => isClosed_closure
   exact match h with | ⟨p, hp⟩ => ⟨p, Set.mem_iInter.mpr (
-    fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n+1)) (nth_closure_nested n))⟩
+    fun n => Set.mem_of_mem_of_subset (Set.mem_iInter.mp hp (n + 1)) (nth_closure_nested n))⟩
 
 
 theorem instEncapsulation_subsequence (hE : Encapsulation E) {α : ℕ → ℕ} (hα : StrictMono α) :
@@ -70,7 +70,7 @@ theorem instEncapsulation_subsequence (hE : Encapsulation E) {α : ℕ → ℕ} 
   ( by
     intro n
     specialize hα (Nat.lt_add_one n)
-    have hn1 := hE.nth_closure_nested (α (n+1) - 1)
+    have hn1 := hE.nth_closure_nested (α (n + 1) - 1)
     have hα2 := Nat.lt_of_le_of_lt (Nat.zero_le (α n)) hα
     rw [Nat.sub_add_cancel] at hn1
     · exact subset_trans hn1 (nested hE ((Nat.le_sub_one_iff_lt hα2).mpr hα))
@@ -92,26 +92,25 @@ theorem center_exists_unique (hE : Encapsulation E) : ∃! p, isCenter E p :=
     ⟨center hE, isCenter_center hE, fun _ h => center_unique h (isCenter_center hE)⟩
 
 
+theorem exists_subset_of_center_mem_IsOpen (hE : Encapsulation E) {A : Set X} :
+    IsOpen A → center hE ∈ A → ∃ n, E n ⊆ A := by
+  intro hA hcA
+  by_contra!
+  have h : (⋂ n, closure (E n) \ A).Nonempty := by
+    have hh : ∀ n, IsClosed (closure (E n) \ A) := fun _ => IsClosed.sdiff isClosed_closure hA
+    apply IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
+    · exact fun n => Set.diff_subset_diff_left (closure_mono (nested hE (Nat.le_add_right n 1)))
+    · intro n
+      contrapose! this
+      exact ⟨n, fun _ hp => Set.diff_eq_empty.mp this (subset_closure hp)⟩
+    · exact IsCompact.of_isClosed_subset hE.zeroth_compact_closure (hh 0) Set.diff_subset
+    · exact hh
+  exact match h with
+  | ⟨q, hq⟩ => (center_unique
+    (Set.mem_iInter.mpr fun n => hE.nth_closure_nested n (
+      Set.diff_subset (Set.mem_iInter.mp hq (n + 1))))
+    (isCenter_center hE) ▸ (Set.mem_iInter.mp hq 0).2) hcA
 
-/-
-  Let O[n] be an encapsulation of a point P in S,and let A be an open neighborhood of P.
-  Then there is a k>0 with O[k] ⊆ A.
-
-  Proof. Fix n>0. We have cl(O[n] \ A) ⊆ cl(O[n]) compact, and cl(O[n+1] \ A) ⊆ cl(O[n] \ A).
-  Note that Intersection(cl(O[n] \ A)) ⊇ cl(Intersection(O[n] \ A)) =
-  cl(Intersection(O[n]) \ A) = cl({P} \ A) = {}.
-  We may apply Cantor’s Intersection Theorem in the contrapositive form
-  to see that there are only finitely many n with strict inclusion cl(O[n+1] \ A) ⊂ cl(O[n] \ A).
-  Let k>0 have cl(O[m+1] \ A) = cl(O[m] \ A) for all m >= k. Now, consider the set B = cl(O[k] \ A).
-  If n < k, we have B = cl(O[k] \ A) ⊆ cl(O[n] \ A) by nesting.
-  If n >= k we have B ⊆ B = cl(O[k] \ A) = cl(O[n] \ A).
-  So, B ⊆ cl(O[n] \ A) ∀ n>0 and B ⊆ Intersection(cl(O[n] \ A)) ⊆ Intersection(cl(O[n])) = {P}.
-  To see that P not in B = cl(O[k] \ A), note that P is in the interiors of O[k] and A.
-  Finally, we have B empty and so O[k] \ A ⊆ cl(O[k] \ A) = B = {}, which means O[k] ⊆ A as desired.
-
-  QED
--/
---theorem TODO
 
 
 end Encapsulation
