@@ -18,6 +18,8 @@ class ESide (S : Set X) (a : ℕ → Set X) where
 
 
 def ESide.isCenter (a : ℕ → Set X) (p : X) := p ∈ ⋂ n, closure (a n)
+def ESide.weakly_touches (a : ℕ → Set X) (A : Set X) := ∀ n, (a n ∩ A).Nonempty
+def ESide.strongly_touches (a : ℕ → Set X) (A : Set X) := ∃ n, a n ⊆ A
 
 
 variable {S : Set X} {a : ℕ → Set X}
@@ -28,8 +30,13 @@ namespace ESide
 
 
 
-theorem nth_subset_generator {E} (hE : IsGenerator S a E) (n : ℕ) : a n ⊆ E n :=
+theorem nth_subset_generator {E : ℕ → Set X} (hE : IsGenerator S a E) (n : ℕ) : a n ⊆ E n :=
   fun _ hp => (mem_cmpnts_subset (hE.nth_mem_cmpnts n) hp).1
+
+
+theorem nth_Nonempty (ha : ESide S a) (n : ℕ) : (a n).Nonempty :=
+  match ha.exists_generator with
+  | ⟨_, hE⟩ => mem_cmpnts_Nonempty (hE.nth_mem_cmpnts n)
 
 
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
@@ -43,8 +50,8 @@ theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
     (fun _ => isClosed_closure)
 
 
-theorem isCenter_iff_isCenter_generator (ha : ESide S a) {E} (hE : IsGenerator S a E) (p : X) :
-    isCenter a p ↔ Encapsulation.isCenter E p :=
+theorem isCenter_iff_isCenter_generator (ha : ESide S a) {E : ℕ → Set X}
+    (hE : IsGenerator S a E) (p : X) : isCenter a p ↔ Encapsulation.isCenter E p :=
   have h : ∀ x, isCenter a x → Encapsulation.isCenter E x :=
     fun _ hx => Set.mem_iInter.mpr fun n => subset_trans
     (closure_mono (nth_subset_generator hE (n+1)))
@@ -86,6 +93,13 @@ theorem instESide_subsequence (ha : ESide S a) {α : ℕ → ℕ} (hα : StrictM
       (Encapsulation.instEncapsulation_subsequence hE.isEncapsulation hα)
       (fun n => hE.nth_mem_cmpnts (α n))⟩
     (fun n => nested ha ((StrictMono.le_iff_le hα).mpr (Nat.le_add_right n 1)))
+
+
+theorem weakly_touches_of_strongly_touches (ha : ESide S a) {A : Set X}
+    (hA : strongly_touches a A) : weakly_touches a A :=
+  fun n => match hA with
+  | ⟨m, hm⟩ => match (nth_Nonempty ha (Nat.max n m)) with
+  | ⟨p, hp⟩ => ⟨p, ⟨nested ha (Nat.le_max_left n m) hp, hm (nested ha (Nat.le_max_right n m) hp)⟩⟩
 
 
 variable [hX_locallyConnected : LocallyConnectedSpace X]

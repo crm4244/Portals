@@ -4,6 +4,7 @@ import Mathlib.Topology.Connected.Basic
 
 variable {X : Type} [hX : TopologicalSpace X]
 
+
 def components (A : Set X) : Set (Set X) :=
   {C | ∃ p ∈ A, connectedComponentIn A p = C}
 
@@ -19,6 +20,7 @@ theorem sUnion_cmpnts (A : Set X) : ⋃₀ components A = A := by
   · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
   · exact (fun q hq => ⟨connectedComponentIn A q,
       connectedComponentIn_mem_cmpnts hq, mem_connectedComponentIn hq⟩)
+
 
 theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B :=
   fun ⟨_, ⟨_, h⟩⟩ => h ▸ connectedComponentIn_subset B _
