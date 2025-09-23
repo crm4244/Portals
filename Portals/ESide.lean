@@ -60,15 +60,16 @@ theorem isCenter_iff_isCenter_generator (ha : ESide S a) {E : ℕ → Set X}
     | ⟨c, hc⟩ => hE.isEncapsulation.center_unique hp (h c hc) ▸ hc
 
 
-theorem center_unique (ha : ESide S a) : ∀ p, isCenter a p → ∀ q, isCenter a q → p=q :=
+theorem center_unique (ha : ESide S a) {p : X} (hp : isCenter a p)
+    {q : X} (hq : isCenter a q) : p=q :=
   match ha.exists_generator with
   | ⟨_, hE⟩ =>
     have f := fun r hr => (isCenter_iff_isCenter_generator ha hE r).mp hr
-    fun p hp q hq => hE.isEncapsulation.center_unique (f p hp) (f q hq)
+    hE.isEncapsulation.center_unique (f p hp) (f q hq)
 
 
 theorem center_exists_unique (ha : ESide S a) : ∃! p, isCenter a p :=
-  match center_exists ha with | ⟨p, hp⟩ => ⟨p, ⟨hp, fun q hq => center_unique ha q hq p hp⟩⟩
+  match center_exists ha with | ⟨p, hp⟩ => ⟨p, ⟨hp, fun _ hq => center_unique ha hq hp⟩⟩
 
 
 noncomputable def center (ha : ESide S a) := Classical.choose (center_exists ha)
@@ -76,6 +77,13 @@ noncomputable def center (ha : ESide S a) := Classical.choose (center_exists ha)
 
 theorem isCenter_center (ha : ESide S a) : isCenter a (center ha) :=
   Classical.choose_spec (center_exists ha)
+
+
+theorem center_eq_generator_center (ha : ESide S a) {E : ℕ → Set X} (hE : IsGenerator S a E) :
+    center ha = hE.isEncapsulation.center :=
+  center_unique ha (isCenter_center ha) (
+    (isCenter_iff_isCenter_generator ha hE hE.isEncapsulation.center).mpr
+    hE.isEncapsulation.isCenter_center)
 
 
 theorem nested (ha : ESide S a) {n m : ℕ} (h : n ≤ m) : a m ⊆ a n := by
@@ -95,11 +103,50 @@ theorem instESide_subsequence (ha : ESide S a) {α : ℕ → ℕ} (hα : StrictM
     (fun n => nested ha ((StrictMono.le_iff_le hα).mpr (Nat.le_add_right n 1)))
 
 
+theorem strongly_touches_of_center_mem_IsOpen (ha : ESide S a) {A : Set X} (hA : IsOpen A)
+    (hcA : center ha ∈ A) : strongly_touches a A := match ha.exists_generator with
+  | ⟨_, hE⟩ =>
+    have hnA := hE.isEncapsulation.exists_subset_of_center_mem_IsOpen hA
+      (center_eq_generator_center ha hE ▸ hcA)
+    match hnA with | ⟨n, hn⟩ => ⟨n, subset_trans (nth_subset_generator hE n) hn⟩
+
+
+omit hX in theorem nth_strongly_touches_self (n : ℕ) : strongly_touches a (a n) :=
+  ⟨n, subset_refl (a n)⟩
+
+
 theorem weakly_touches_of_strongly_touches (ha : ESide S a) {A : Set X}
     (hA : strongly_touches a A) : weakly_touches a A :=
   fun n => match hA with
   | ⟨m, hm⟩ => match (nth_Nonempty ha (Nat.max n m)) with
   | ⟨p, hp⟩ => ⟨p, ⟨nested ha (Nat.le_max_left n m) hp, hm (nested ha (Nat.le_max_right n m) hp)⟩⟩
+
+
+omit hX in theorem strongly_touches_of_strongly_touches_subset {A B : Set X}
+    (hA : strongly_touches a A) (hAB : A ⊆ B) : strongly_touches a B :=
+  match hA with | ⟨n, hn⟩ => ⟨n, subset_trans hn hAB⟩
+
+
+omit hX in theorem weakly_touches_of_weakly_touches_subset {A B : Set X}
+    (hA : weakly_touches a A) (hAB : A ⊆ B) : weakly_touches a B :=
+  fun n => match hA n with | ⟨p, hp⟩ => ⟨p, ⟨hp.1, hAB hp.2⟩⟩
+
+
+theorem inter_Nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
+    (hA : strongly_touches a A) (hB : strongly_touches a B) : (A ∩ B).Nonempty :=
+  match hA with
+  | ⟨n, hn⟩ => match hB with
+  | ⟨m, hm⟩ =>
+    have h : a (Nat.max n m) ⊆ A ∩ B := (fun _ hp =>
+      ⟨hn (nested ha (Nat.le_max_left n m) hp), hm (nested ha (Nat.le_max_right n m) hp)⟩)
+    Set.Nonempty.mono h (nth_Nonempty ha (Nat.max n m))
+
+
+theorem center_mem_closure_of_weakly_touches (ha : ESide S a) {A : Set X}
+    (hA : weakly_touches a A) : center ha ∈ closure A :=
+  mem_closure_iff.mpr fun _ hB hcB => match strongly_touches_of_center_mem_IsOpen ha hB hcB with
+    | ⟨n, hn⟩ => match hA n with
+      | ⟨p, hp⟩ => ⟨p, ⟨hn hp.1, hp.2⟩⟩
 
 
 variable [hX_locallyConnected : LocallyConnectedSpace X]
