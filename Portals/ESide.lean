@@ -20,6 +20,7 @@ class ESide (S : Set X) (a : ℕ → Set X) where
 def ESide.isCenter (a : ℕ → Set X) (p : X) := p ∈ ⋂ n, closure (a n)
 def ESide.weakly_touches (a : ℕ → Set X) (A : Set X) := ∀ n, (a n ∩ A).Nonempty
 def ESide.strongly_touches (a : ℕ → Set X) (A : Set X) := ∃ n, a n ⊆ A
+def ESide.touches (a b : ℕ → Set X) := ∀ n, (a n ∩ b n).Nonempty
 
 
 variable {S : Set X} {a : ℕ → Set X}
@@ -50,6 +51,14 @@ theorem nth_disjoint_surface (ha : ESide S a) (n : ℕ) : Disjoint (a n) S :=
   Set.disjoint_iff_inter_eq_empty.mpr (Set.eq_empty_iff_forall_notMem.mpr fun _ hp =>
   match ha.exists_generator with
   | ⟨_, hE⟩ => ((mem_cmpnts_subset (hE.nth_mem_cmpnts n)) hp.1).2 hp.2)
+
+
+theorem nth_isOpen [hX_locallyConnected : LocallyConnectedSpace X] [hS : IsClosed S]
+    (ha : ESide S a) (n : ℕ) : IsOpen (a n) :=
+  match ha.exists_generator with
+  | ⟨_, hE⟩ => match hE.nth_mem_cmpnts n with
+    | ⟨_, hp⟩ => hp.2 ▸ IsOpen.connectedComponentIn
+      (IsOpen.sdiff (hE.isEncapsulation.nth_IsOpen n) hS)
 
 
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
@@ -190,20 +199,44 @@ theorem unique_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha
     {A B C : Set X} (hA : IsOpen A) (hcA : center ha ∈ A)
     (hBAS : B ∈ components (A \ S)) (hBa : strongly_touches a B)
     (hCAS : C ∈ components (A \ S)) (hCa : strongly_touches a C) : B = C :=
-  have f α (hαa : strongly_touches a α) : weakly_touches a α :=
-    weakly_touches_of_strongly_touches ha hαa
-  unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen
-    ha hA hcA hBAS (f B hBa) hCAS (f C hCa)
+  unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen ha hA hcA
+    hBAS (weakly_touches_of_strongly_touches ha hBa)
+    hCAS (weakly_touches_of_strongly_touches ha hCa)
 
 
-variable [hX_locallyConnected : LocallyConnectedSpace X]
+theorem touches_iff_forall_weakly_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
+    touches a b ↔ ∀ n, weakly_touches a (b n) := Iff.intro
+    (fun h n m => match h (Nat.max n m) with
+      | ⟨p, hp⟩ => ⟨p, ⟨
+        nested ha (Nat.le_max_right n m) hp.1,
+        nested hb (Nat.le_max_left n m) hp.2⟩⟩)
+    (fun h n => h n n)
+
+/-
+  Let C1[m] weakly touch C2[n] forall m>0 and suppose to the contrary that
+  k>0 has C1[k] not touching C2. This means C2[m] \ C1[k] != {} for all m>0.
+  Let A be an arbitrary open neighborhood of P. Find j>0 so that O2[j] ⊆ A.
+  Since C1[k] weakly touches C2[n], C1[k] ∩ C2[j] != {}.
+  Since C1[k] and C2[j] are both connected sets and C1[k] ∩ C2[j] != {},
+  C1[k] U C2[j] is connected. By maximality of C1[k] in O1[k] \ S,
+  we must have either C2[j] U C1[k] ⊆ C1[k] or C1[k] U C2[j] !⊆ O1[k] \ S.
+  But, since C2[j] \ C1[k] != {}, C2[j] !⊆ C1[k] and in particular C2[j] U C1[k] !⊆ C1[k].
+  Instead, we must have C1[k] U C2[j] !⊆ O1[k] \ S.
+  Now, A \ O1[k] ⊇ O2[j] \ O1[k] ⊇ C2[j] \ O1[k] = (C1[k] U C2[j]) \ (O1[k] \ S) != {}.
+  Since A was arbitrary, this contradicts the openness of the set O1[k].
+-/
+theorem forall_weakly_touches_iff_forall_strongly_touches (ha : ESide S a) {b : ℕ → Set X}
+    (hb : ESide S b) : (∀ n, weakly_touches a (b n)) ↔ (∀ n, strongly_touches a (b n)) := by
+  apply Iff.intro _ (fun h n => weakly_touches_of_strongly_touches ha (h n))
+  · intro h n
+
+    sorry
 
 
-theorem nth_isOpen [hS : IsClosed S] (ha : ESide S a) (n : ℕ) : IsOpen (a n) :=
-  match ha.exists_generator with
-  | ⟨_, hE⟩ => match hE.nth_mem_cmpnts n with
-    | ⟨_, hp⟩ => hp.2 ▸ IsOpen.connectedComponentIn
-      (IsOpen.sdiff (hE.isEncapsulation.nth_IsOpen n) hS)
+theorem touches_iff_forall_strongly_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
+    touches a b ↔ ∀ n, strongly_touches a (b n) := Iff.trans
+  (touches_iff_forall_weakly_touches ha hb)
+  (forall_weakly_touches_iff_forall_strongly_touches ha hb)
 
 
 
