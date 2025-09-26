@@ -34,9 +34,22 @@ theorem nth_subset_generator {E : ℕ → Set X} (hE : IsGenerator S a E) (n : �
   fun _ hp => (mem_cmpnts_subset (hE.nth_mem_cmpnts n) hp).1
 
 
-theorem nth_Nonempty (ha : ESide S a) (n : ℕ) : (a n).Nonempty :=
+theorem nth_nonempty (ha : ESide S a) (n : ℕ) : (a n).Nonempty :=
+  match ha.exists_generator with | ⟨_, hE⟩ => mem_cmpnts_nonempty (hE.nth_mem_cmpnts n)
+
+
+theorem nth_isPreconnected (ha : ESide S a) (n : ℕ) : IsPreconnected (a n) :=
+  match ha.exists_generator with | ⟨_, hE⟩ => isPreconnected_mem_cmpnts (hE.nth_mem_cmpnts n)
+
+
+theorem nth_isConnected (ha : ESide S a) (n : ℕ) : IsConnected (a n) :=
+  match ha.exists_generator with | ⟨_, hE⟩ => isConnected_mem_cmpnts (hE.nth_mem_cmpnts n)
+
+
+theorem nth_disjoint_surface (ha : ESide S a) (n : ℕ) : Disjoint (a n) S :=
+  Set.disjoint_iff_inter_eq_empty.mpr (Set.eq_empty_iff_forall_notMem.mpr fun _ hp =>
   match ha.exists_generator with
-  | ⟨_, hE⟩ => mem_cmpnts_Nonempty (hE.nth_mem_cmpnts n)
+  | ⟨_, hE⟩ => ((mem_cmpnts_subset (hE.nth_mem_cmpnts n)) hp.1).2 hp.2)
 
 
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
@@ -44,7 +57,7 @@ theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
   | ⟨_, hE⟩ => IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
     (fun n => closure (a n))
     (fun n => closure_mono (ha.nth_nested n))
-    (fun n => closure_nonempty_iff.mpr (mem_cmpnts_Nonempty (hE.nth_mem_cmpnts n)))
+    (fun n => closure_nonempty_iff.mpr (mem_cmpnts_nonempty (hE.nth_mem_cmpnts n)))
     (IsCompact.of_isClosed_subset hE.isEncapsulation.zeroth_compact_closure
       isClosed_closure (closure_mono (nth_subset_generator hE 0)))
     (fun _ => isClosed_closure)
@@ -118,7 +131,7 @@ omit hX in theorem nth_strongly_touches_self (n : ℕ) : strongly_touches a (a n
 theorem weakly_touches_of_strongly_touches (ha : ESide S a) {A : Set X}
     (hA : strongly_touches a A) : weakly_touches a A :=
   fun n => match hA with
-  | ⟨m, hm⟩ => match (nth_Nonempty ha (Nat.max n m)) with
+  | ⟨m, hm⟩ => match (nth_nonempty ha (Nat.max n m)) with
   | ⟨p, hp⟩ => ⟨p, ⟨nested ha (Nat.le_max_left n m) hp, hm (nested ha (Nat.le_max_right n m) hp)⟩⟩
 
 
@@ -139,7 +152,7 @@ theorem inter_Nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
   | ⟨m, hm⟩ =>
     have h : a (Nat.max n m) ⊆ A ∩ B := (fun _ hp =>
       ⟨hn (nested ha (Nat.le_max_left n m) hp), hm (nested ha (Nat.le_max_right n m) hp)⟩)
-    Set.Nonempty.mono h (nth_Nonempty ha (Nat.max n m))
+    Set.Nonempty.mono h (nth_nonempty ha (Nat.max n m))
 
 
 theorem center_mem_closure_of_weakly_touches (ha : ESide S a) {A : Set X}
@@ -147,6 +160,40 @@ theorem center_mem_closure_of_weakly_touches (ha : ESide S a) {A : Set X}
   mem_closure_iff.mpr fun _ hB hcB => match strongly_touches_of_center_mem_IsOpen ha hB hcB with
     | ⟨n, hn⟩ => match hA n with
       | ⟨p, hp⟩ => ⟨p, ⟨hn hp.1, hp.2⟩⟩
+
+
+theorem exists_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha : ESide S a)
+  {A : Set X} (hA : IsOpen A) (hcA : center ha ∈ A) :
+    ∃ B ∈ components (A \ S), strongly_touches a B :=
+  match strongly_touches_of_center_mem_IsOpen ha hA hcA with
+  | ⟨n, hn⟩ =>
+    have h : a n ⊆ A \ S := fun _ hp =>
+      ⟨hn hp, fun hpS => Disjoint.ne_of_mem (nth_disjoint_surface ha n) hp hpS rfl⟩
+    match exists_subset_mem_cmpnts_of_subset h (nth_isConnected ha n) with
+    | ⟨B, hB⟩ => ⟨B, ⟨hB.1, ⟨n, hB.2⟩⟩⟩
+
+
+theorem unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen (ha : ESide S a)
+    {A B C : Set X} (hA : IsOpen A) (hcA : center ha ∈ A)
+    (hBAS : B ∈ components (A \ S)) (hBa : weakly_touches a B)
+    (hCAS : C ∈ components (A \ S)) (hCa : weakly_touches a C) : B = C :=
+  match exists_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen ha hA hcA with
+  | ⟨D, hD⟩ => match hD.2 with
+    | ⟨n, hnD⟩ =>
+      have f α (hαAS : α ∈ components (A \ S)) (hαa : weakly_touches a α) : α = D :=
+        (mem_cmpnts_eq_iff_inter_nonempty hαAS hD.1).mpr
+        (Set.inter_comm D α ▸ Set.Nonempty.mono (Set.inter_subset_inter_left α hnD) (hαa n))
+      Eq.trans (f B hBAS hBa) (Eq.symm (f C hCAS hCa))
+
+
+theorem unique_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha : ESide S a)
+    {A B C : Set X} (hA : IsOpen A) (hcA : center ha ∈ A)
+    (hBAS : B ∈ components (A \ S)) (hBa : strongly_touches a B)
+    (hCAS : C ∈ components (A \ S)) (hCa : strongly_touches a C) : B = C :=
+  have f α (hαa : strongly_touches a α) : weakly_touches a α :=
+    weakly_touches_of_strongly_touches ha hαa
+  unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen
+    ha hA hcA hBAS (f B hBa) hCAS (f C hCa)
 
 
 variable [hX_locallyConnected : LocallyConnectedSpace X]

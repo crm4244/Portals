@@ -26,16 +26,43 @@ theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B :=
   fun ⟨_, ⟨_, h⟩⟩ => h ▸ connectedComponentIn_subset B _
 
 
-theorem mem_cmpnts_Nonempty {A B : Set X} : A ∈ components B → A.Nonempty :=
+theorem mem_cmpnts_nonempty {A B : Set X} : A ∈ components B → A.Nonempty :=
   fun h => match h with | ⟨p, hp⟩ => ⟨p, (hp.2) ▸ (mem_connectedComponentIn hp.1)⟩
 
+theorem isPreconnected_mem_cmpnts {A B : Set X} (hAB : A ∈ components B) : IsPreconnected A :=
+  match hAB with | ⟨_, hp⟩ => hp.2 ▸ isPreconnected_connectedComponentIn
 
-theorem connectedComponentIn_maximal {A B C : Set X} (hB : B ∈ components A)
+
+theorem isConnected_mem_cmpnts {A B : Set X} (hAB : A ∈ components B) : IsConnected A :=
+  ⟨mem_cmpnts_nonempty hAB, isPreconnected_mem_cmpnts hAB⟩
+
+
+
+theorem mem_cmpnts_maximal {A B C : Set X} (hB : B ∈ components A)
     (hC : IsPreconnected C) (hCA : C ⊆ A) (hCB : (C ∩ B).Nonempty) : C ⊆ B := by
   rcases hCB with ⟨x, hxCB⟩
   rcases hB with ⟨p, ⟨hpA, rfl⟩⟩
   rw [connectedComponentIn_eq hxCB.2]
   exact IsPreconnected.subset_connectedComponentIn hC hxCB.1 hCA
+
+
+theorem exists_subset_mem_cmpnts_of_subset {A B : Set X} (hBA : B ⊆ A)
+    (hB : IsConnected B) : ∃ C ∈ components A, B ⊆ C :=
+  match hB.1 with
+  | ⟨p, hpB⟩ =>
+    have hpA := hBA hpB
+    have hpA2 := connectedComponentIn_mem_cmpnts hpA
+    ⟨connectedComponentIn A p, ⟨hpA2, mem_cmpnts_maximal hpA2 hB.2 hBA
+      ⟨p, ⟨hpB, mem_connectedComponentIn hpA⟩⟩⟩⟩
+
+
+theorem mem_cmpnts_eq_iff_inter_nonempty {A B C : Set X}
+    (hB : B ∈ components A) (hC : C ∈ components A) : B = C ↔ (B ∩ C).Nonempty :=
+  have f {α β} (hα : α ∈ components A) hβ hαβ : α ⊆ β :=
+    mem_cmpnts_maximal hβ (isPreconnected_mem_cmpnts hα) (mem_cmpnts_subset hα) hαβ
+  Iff.intro
+    (fun hBC => Eq.symm (Set.inter_eq_left.mpr (hBC ▸ subset_rfl : B ⊆ C)) ▸ mem_cmpnts_nonempty hB)
+    (fun hBC => Set.eq_of_subset_of_subset (f hB hC hBC) (f hC hB (Set.inter_comm B C ▸ hBC)))
 
 
 /-
@@ -50,9 +77,9 @@ theorem connectedComponentIn_lemma_1 {A B C K S : Set X} (hBA : B ⊆ A) (hC : C
   rcases hK with ⟨k, ⟨hkCB, rfl⟩⟩
   exact ⟨k, ⟨hCBBS hkCB,
     Set.eq_of_subset_of_subset
-      (connectedComponentIn_maximal hK2 isPreconnected_connectedComponentIn
+      (mem_cmpnts_maximal hK2 isPreconnected_connectedComponentIn
         (Set.subset_inter_iff.mpr ⟨
-          connectedComponentIn_maximal hC isPreconnected_connectedComponentIn
+          mem_cmpnts_maximal hC isPreconnected_connectedComponentIn
             (subset_trans (connectedComponentIn_subset _ k) (Set.diff_subset_diff_left hBA))
             ⟨k, ⟨mem_connectedComponentIn (hCBBS hkCB), hkCB.1⟩⟩,
           subset_trans (connectedComponentIn_subset _ k) Set.diff_subset⟩)
@@ -78,9 +105,9 @@ theorem connectedComponentIn_lemma_2 {A B C D S : Set X} (hBA : B ⊆ A)
   cases hD
   have hpCB : p ∈ connectedComponentIn (C ∩ B) p := mem_connectedComponentIn ⟨hpC, hpB⟩
   exact ⟨p, ⟨⟨hpC, hpB⟩, Set.eq_of_subset_of_subset
-    (connectedComponentIn_maximal hDBS isPreconnected_connectedComponentIn
+    (mem_cmpnts_maximal hDBS isPreconnected_connectedComponentIn
       (mem_cmpnts_subset hKBS) ⟨p, hpCB, hpD⟩)
-    (connectedComponentIn_maximal hKBS isPreconnected_connectedComponentIn
+    (mem_cmpnts_maximal hKBS isPreconnected_connectedComponentIn
       (mem_cmpnts_subset hDBS) ⟨p, hpD, hpCB⟩)⟩⟩
 
 
