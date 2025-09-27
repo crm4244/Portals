@@ -153,7 +153,7 @@ omit hX in theorem weakly_touches_of_weakly_touches_subset {A B : Set X}
   fun n => match hA n with | ⟨p, hp⟩ => ⟨p, ⟨hp.1, hAB hp.2⟩⟩
 
 
-theorem inter_Nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
+theorem inter_nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
     (hA : strongly_touches a A) (hB : strongly_touches a B) : (A ∩ B).Nonempty :=
   match hA with
   | ⟨n, hn⟩ => match hB with
@@ -248,6 +248,22 @@ theorem touches_iff_forall_strongly_touches [hXT2 : T2Space X] (ha : ESide S a)
   Iff.trans
     (touches_iff_forall_weakly_touches ha hb)
     (forall_weakly_touches_iff_forall_strongly_touches ha hb)
+
+
+theorem touches_refl (ha : ESide S a) : touches a a :=
+  fun n => match nth_nonempty ha n with | ⟨p, hp⟩ => ⟨p, hp, hp⟩
+
+
+omit hX in theorem touches_symm {b : ℕ → Set X} (hab : touches a b) :
+    touches b a :=
+  fun n => match hab n with | ⟨p, hpa, hpb⟩ => ⟨p, hpb, hpa⟩
+
+
+theorem touches_trans [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b)
+    {c : ℕ → Set X} (hc : ESide S c) (hab : touches a b) (hbc : touches b c) : touches a c :=
+  fun n => inter_nonempty_of_strongly_touches hb
+    ((touches_iff_forall_strongly_touches hb ha).mp (touches_symm hab) n)
+    ((touches_iff_forall_strongly_touches hb hc).mp hbc n)
 
 
 
