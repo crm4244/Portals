@@ -47,18 +47,17 @@ theorem nth_isConnected (ha : ESide S a) (n : ℕ) : IsConnected (a n) :=
   match ha.exists_generator with | ⟨_, hE⟩ => isConnected_mem_cmpnts (hE.nth_mem_cmpnts n)
 
 
-theorem nth_disjoint_surface (ha : ESide S a) (n : ℕ) : Disjoint (a n) S :=
-  Set.disjoint_iff_inter_eq_empty.mpr (Set.eq_empty_iff_forall_notMem.mpr fun _ hp =>
-  match ha.exists_generator with
-  | ⟨_, hE⟩ => ((mem_cmpnts_subset (hE.nth_mem_cmpnts n)) hp.1).2 hp.2)
-
-
 theorem nth_isOpen [hX_locallyConnected : LocallyConnectedSpace X] [hS : IsClosed S]
     (ha : ESide S a) (n : ℕ) : IsOpen (a n) :=
   match ha.exists_generator with
   | ⟨_, hE⟩ => match hE.nth_mem_cmpnts n with
     | ⟨_, hp⟩ => hp.2 ▸ IsOpen.connectedComponentIn
       (IsOpen.sdiff (hE.isEncapsulation.nth_IsOpen n) hS)
+
+
+theorem not_mem_surface_of_mem_nth (ha : ESide S a) {n : ℕ} {p : X} (hp : p ∈ a n) : p ∉ S :=
+  match ha.exists_generator with
+  | ⟨_, hE⟩ => (mem_cmpnts_subset (hE.nth_mem_cmpnts n) hp).2
 
 
 theorem center_exists (ha : ESide S a) : ∃ p, isCenter a p :=
@@ -176,8 +175,7 @@ theorem exists_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha
     ∃ B ∈ components (A \ S), strongly_touches a B :=
   match strongly_touches_of_center_mem_IsOpen ha hA hcA with
   | ⟨n, hn⟩ =>
-    have h : a n ⊆ A \ S := fun _ hp =>
-      ⟨hn hp, fun hpS => Disjoint.ne_of_mem (nth_disjoint_surface ha n) hp hpS rfl⟩
+    have h : a n ⊆ A \ S := fun _ hp => ⟨hn hp, not_mem_surface_of_mem_nth ha hp⟩
     match exists_subset_mem_cmpnts_of_subset h (nth_isConnected ha n) with
     | ⟨B, hB⟩ => ⟨B, ⟨hB.1, ⟨n, hB.2⟩⟩⟩
 
@@ -205,38 +203,51 @@ theorem unique_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha
 
 
 theorem touches_iff_forall_weakly_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    touches a b ↔ ∀ n, weakly_touches a (b n) := Iff.intro
+    touches a b ↔ ∀ n, weakly_touches a (b n) :=
+  Iff.intro
     (fun h n m => match h (Nat.max n m) with
       | ⟨p, hp⟩ => ⟨p, ⟨
         nested ha (Nat.le_max_right n m) hp.1,
         nested hb (Nat.le_max_left n m) hp.2⟩⟩)
     (fun h n => h n n)
 
-/-
-  Let C1[m] weakly touch C2[n] forall m>0 and suppose to the contrary that
-  k>0 has C1[k] not touching C2. This means C2[m] \ C1[k] != {} for all m>0.
-  Let A be an arbitrary open neighborhood of P. Find j>0 so that O2[j] ⊆ A.
-  Since C1[k] weakly touches C2[n], C1[k] ∩ C2[j] != {}.
-  Since C1[k] and C2[j] are both connected sets and C1[k] ∩ C2[j] != {},
-  C1[k] U C2[j] is connected. By maximality of C1[k] in O1[k] \ S,
-  we must have either C2[j] U C1[k] ⊆ C1[k] or C1[k] U C2[j] !⊆ O1[k] \ S.
-  But, since C2[j] \ C1[k] != {}, C2[j] !⊆ C1[k] and in particular C2[j] U C1[k] !⊆ C1[k].
-  Instead, we must have C1[k] U C2[j] !⊆ O1[k] \ S.
-  Now, A \ O1[k] ⊇ O2[j] \ O1[k] ⊇ C2[j] \ O1[k] = (C1[k] U C2[j]) \ (O1[k] \ S) != {}.
-  Since A was arbitrary, this contradicts the openness of the set O1[k].
--/
-theorem forall_weakly_touches_iff_forall_strongly_touches (ha : ESide S a) {b : ℕ → Set X}
-    (hb : ESide S b) : (∀ n, weakly_touches a (b n)) ↔ (∀ n, strongly_touches a (b n)) := by
-  apply Iff.intro _ (fun h n => weakly_touches_of_strongly_touches ha (h n))
-  · intro h n
 
-    sorry
+theorem center_eq_center_of_touches [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X}
+    (hb : ESide S b) (hab : touches a b) : center ha = center hb :=
+  Classical.byContradiction (fun hCenterNeq => match hXT2.t2 hCenterNeq with
+  | ⟨_, _, hU, hV, haU, hbV, hUV⟩ => match strongly_touches_of_center_mem_IsOpen ha hU haU with
+  | ⟨k, hk⟩ => match strongly_touches_of_center_mem_IsOpen hb hV hbV with
+  | ⟨j, hj⟩ => match (touches_iff_forall_weakly_touches ha hb).mp hab j k with
+  | ⟨_, hp⟩ => Set.disjoint_iff_forall_ne.mp hUV (hk hp.1) (hj hp.2) rfl)
 
 
-theorem touches_iff_forall_strongly_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    touches a b ↔ ∀ n, strongly_touches a (b n) := Iff.trans
-  (touches_iff_forall_weakly_touches ha hb)
-  (forall_weakly_touches_iff_forall_strongly_touches ha hb)
+theorem forall_weakly_touches_iff_forall_strongly_touches [hXT2 : T2Space X]
+  (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
+    (∀ n, weakly_touches a (b n)) ↔ (∀ n, strongly_touches a (b n)) :=
+  Iff.intro
+    (fun hWeak n => Classical.byContradiction (fun hStrong =>
+      match ha.exists_generator with
+      | ⟨Ea, hEa⟩ => match hb.exists_generator with
+      | ⟨Eb, hEb⟩ =>
+      have hGenCenterEq : hEa.isEncapsulation.center = hEb.isEncapsulation.center := by
+        rw [← center_eq_generator_center ha hEa, ← center_eq_generator_center hb hEb]
+        exact center_eq_center_of_touches ha hb
+          ((touches_iff_forall_weakly_touches ha hb).mpr hWeak)
+      match (hEa.isEncapsulation.exists_subset_of_center_mem_IsOpen
+        (hEb.isEncapsulation.nth_IsOpen n)
+        (hGenCenterEq ▸ hEb.isEncapsulation.center_mem_nth n)) with
+      | ⟨k, hk⟩ => match Set.not_subset.mp (not_exists.mp hStrong k) with
+      | ⟨p, hp⟩ => hp.2 (mem_cmpnts_maximal (hEb.nth_mem_cmpnts n) (ha.nth_isPreconnected k)
+        (fun p hp => ⟨hk (nth_subset_generator hEa k hp), not_mem_surface_of_mem_nth ha hp⟩)
+        (hWeak n k) hp.1)))
+    (fun h n => weakly_touches_of_strongly_touches ha (h n))
+
+
+theorem touches_iff_forall_strongly_touches [hXT2 : T2Space X] (ha : ESide S a)
+    {b : ℕ → Set X} (hb : ESide S b) : touches a b ↔ ∀ n, strongly_touches a (b n) :=
+  Iff.trans
+    (touches_iff_forall_weakly_touches ha hb)
+    (forall_weakly_touches_iff_forall_strongly_touches ha hb)
 
 
 

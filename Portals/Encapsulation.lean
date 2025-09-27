@@ -92,6 +92,14 @@ theorem center_exists_unique (hE : Encapsulation E) : ∃! p, isCenter E p :=
     ⟨center hE, isCenter_center hE, fun _ h => center_unique h (isCenter_center hE)⟩
 
 
+theorem center_mem_nth (hE : Encapsulation E) (n : ℕ) : center hE ∈ E n :=
+  Set.mem_iInter.mp (isCenter_center hE) n
+
+
+theorem eq_center_iff_isCenter (hE : Encapsulation E) (p : X) : p = center hE ↔ isCenter E p :=
+  Iff.intro (fun hp => hp ▸ isCenter_center hE) (fun hp => center_unique hp hE.isCenter_center)
+
+
 theorem exists_subset_of_center_mem_IsOpen (hE : Encapsulation E) {A : Set X} :
     IsOpen A → center hE ∈ A → ∃ n, E n ⊆ A := by
   intro hA hcA
