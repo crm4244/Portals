@@ -18,8 +18,8 @@ class ESide (S : Set X) (a : ℕ → Set X) where
 
 
 def ESide.isCenter (a : ℕ → Set X) (p : X) := p ∈ ⋂ n, closure (a n)
-def ESide.weakly_touches (a : ℕ → Set X) (A : Set X) := ∀ n, (a n ∩ A).Nonempty
-def ESide.strongly_touches (a : ℕ → Set X) (A : Set X) := ∃ n, a n ⊆ A
+def ESide.wtouches (a : ℕ → Set X) (A : Set X) := ∀ n, (a n ∩ A).Nonempty
+def ESide.stouches (a : ℕ → Set X) (A : Set X) := ∃ n, a n ⊆ A
 def ESide.touches (a b : ℕ → Set X) := ∀ n, (a n ∩ b n).Nonempty
 
 
@@ -82,7 +82,7 @@ theorem isCenter_iff_isCenter_generator (ha : ESide S a) {E : ℕ → Set X}
 
 
 theorem center_unique (ha : ESide S a) {p : X} (hp : isCenter a p)
-    {q : X} (hq : isCenter a q) : p=q :=
+    {q : X} (hq : isCenter a q) : p = q :=
   match ha.exists_generator with
   | ⟨_, hE⟩ =>
     have f := fun r hr => (isCenter_iff_isCenter_generator ha hE r).mp hr
@@ -124,37 +124,37 @@ theorem instESide_subsequence (ha : ESide S a) {α : ℕ → ℕ} (hα : StrictM
     (fun n => nested ha ((StrictMono.le_iff_le hα).mpr (Nat.le_add_right n 1)))
 
 
-theorem strongly_touches_of_center_mem_IsOpen (ha : ESide S a) {A : Set X} (hA : IsOpen A)
-    (hcA : center ha ∈ A) : strongly_touches a A := match ha.exists_generator with
+theorem stouches_of_center_mem_IsOpen (ha : ESide S a) {A : Set X} (hA : IsOpen A)
+    (hcA : center ha ∈ A) : stouches a A := match ha.exists_generator with
   | ⟨_, hE⟩ =>
     have hnA := hE.isEncapsulation.exists_subset_of_center_mem_IsOpen hA
       (center_eq_generator_center ha hE ▸ hcA)
     match hnA with | ⟨n, hn⟩ => ⟨n, subset_trans (nth_subset_generator hE n) hn⟩
 
 
-omit hX in theorem nth_strongly_touches_self (n : ℕ) : strongly_touches a (a n) :=
+omit hX in theorem nth_stouches_self (n : ℕ) : stouches a (a n) :=
   ⟨n, subset_refl (a n)⟩
 
 
-theorem weakly_touches_of_strongly_touches (ha : ESide S a) {A : Set X}
-    (hA : strongly_touches a A) : weakly_touches a A :=
+theorem wtouches_of_stouches (ha : ESide S a) {A : Set X}
+    (hA : stouches a A) : wtouches a A :=
   fun n => match hA with
   | ⟨m, hm⟩ => match (nth_nonempty ha (Nat.max n m)) with
   | ⟨p, hp⟩ => ⟨p, ⟨nested ha (Nat.le_max_left n m) hp, hm (nested ha (Nat.le_max_right n m) hp)⟩⟩
 
 
-omit hX in theorem strongly_touches_of_strongly_touches_subset {A B : Set X}
-    (hA : strongly_touches a A) (hAB : A ⊆ B) : strongly_touches a B :=
+omit hX in theorem stouches_of_stouches_subset {A B : Set X}
+    (hA : stouches a A) (hAB : A ⊆ B) : stouches a B :=
   match hA with | ⟨n, hn⟩ => ⟨n, subset_trans hn hAB⟩
 
 
-omit hX in theorem weakly_touches_of_weakly_touches_subset {A B : Set X}
-    (hA : weakly_touches a A) (hAB : A ⊆ B) : weakly_touches a B :=
+omit hX in theorem wtouches_of_wtouches_subset {A B : Set X}
+    (hA : wtouches a A) (hAB : A ⊆ B) : wtouches a B :=
   fun n => match hA n with | ⟨p, hp⟩ => ⟨p, ⟨hp.1, hAB hp.2⟩⟩
 
 
-theorem inter_nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
-    (hA : strongly_touches a A) (hB : strongly_touches a B) : (A ∩ B).Nonempty :=
+theorem inter_nonempty_of_stouches (ha : ESide S a) {A B : Set X}
+    (hA : stouches a A) (hB : stouches a B) : (A ∩ B).Nonempty :=
   match hA with
   | ⟨n, hn⟩ => match hB with
   | ⟨m, hm⟩ =>
@@ -163,47 +163,47 @@ theorem inter_nonempty_of_strongly_touches (ha : ESide S a) {A B : Set X}
     Set.Nonempty.mono h (nth_nonempty ha (Nat.max n m))
 
 
-theorem center_mem_closure_of_weakly_touches (ha : ESide S a) {A : Set X}
-    (hA : weakly_touches a A) : center ha ∈ closure A :=
-  mem_closure_iff.mpr fun _ hB hcB => match strongly_touches_of_center_mem_IsOpen ha hB hcB with
+theorem center_mem_closure_of_wtouches (ha : ESide S a) {A : Set X}
+    (hA : wtouches a A) : center ha ∈ closure A :=
+  mem_closure_iff.mpr fun _ hB hcB => match stouches_of_center_mem_IsOpen ha hB hcB with
     | ⟨n, hn⟩ => match hA n with
       | ⟨p, hp⟩ => ⟨p, ⟨hn hp.1, hp.2⟩⟩
 
 
-theorem exists_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha : ESide S a)
+theorem exists_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen (ha : ESide S a)
   {A : Set X} (hA : IsOpen A) (hcA : center ha ∈ A) :
-    ∃ B ∈ components (A \ S), strongly_touches a B :=
-  match strongly_touches_of_center_mem_IsOpen ha hA hcA with
+    ∃ B ∈ components (A \ S), stouches a B :=
+  match stouches_of_center_mem_IsOpen ha hA hcA with
   | ⟨n, hn⟩ =>
     have h : a n ⊆ A \ S := fun _ hp => ⟨hn hp, not_mem_surface_of_mem_nth ha hp⟩
     match exists_subset_mem_cmpnts_of_subset h (nth_isConnected ha n) with
     | ⟨B, hB⟩ => ⟨B, ⟨hB.1, ⟨n, hB.2⟩⟩⟩
 
 
-theorem unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen (ha : ESide S a)
+theorem unique_mem_cmpnts_diff_surface_wtouches_of_center_mem_IsOpen (ha : ESide S a)
     {A B C : Set X} (hA : IsOpen A) (hcA : center ha ∈ A)
-    (hBAS : B ∈ components (A \ S)) (hBa : weakly_touches a B)
-    (hCAS : C ∈ components (A \ S)) (hCa : weakly_touches a C) : B = C :=
-  match exists_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen ha hA hcA with
+    (hBAS : B ∈ components (A \ S)) (hBa : wtouches a B)
+    (hCAS : C ∈ components (A \ S)) (hCa : wtouches a C) : B = C :=
+  match exists_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen ha hA hcA with
   | ⟨D, hD⟩ => match hD.2 with
     | ⟨n, hnD⟩ =>
-      have f α (hαAS : α ∈ components (A \ S)) (hαa : weakly_touches a α) : α = D :=
+      have f α (hαAS : α ∈ components (A \ S)) (hαa : wtouches a α) : α = D :=
         (mem_cmpnts_eq_iff_inter_nonempty hαAS hD.1).mpr
         (Set.inter_comm D α ▸ Set.Nonempty.mono (Set.inter_subset_inter_left α hnD) (hαa n))
       Eq.trans (f B hBAS hBa) (Eq.symm (f C hCAS hCa))
 
 
-theorem unique_mem_cmpnts_diff_surface_strongly_touches_of_center_mem_IsOpen (ha : ESide S a)
+theorem unique_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen (ha : ESide S a)
     {A B C : Set X} (hA : IsOpen A) (hcA : center ha ∈ A)
-    (hBAS : B ∈ components (A \ S)) (hBa : strongly_touches a B)
-    (hCAS : C ∈ components (A \ S)) (hCa : strongly_touches a C) : B = C :=
-  unique_mem_cmpnts_diff_surface_weakly_touches_of_center_mem_IsOpen ha hA hcA
-    hBAS (weakly_touches_of_strongly_touches ha hBa)
-    hCAS (weakly_touches_of_strongly_touches ha hCa)
+    (hBAS : B ∈ components (A \ S)) (hBa : stouches a B)
+    (hCAS : C ∈ components (A \ S)) (hCa : stouches a C) : B = C :=
+  unique_mem_cmpnts_diff_surface_wtouches_of_center_mem_IsOpen ha hA hcA
+    hBAS (wtouches_of_stouches ha hBa)
+    hCAS (wtouches_of_stouches ha hCa)
 
 
-theorem touches_iff_forall_weakly_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    touches a b ↔ ∀ n, weakly_touches a (b n) :=
+theorem touches_iff_forall_wtouches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
+    touches a b ↔ ∀ n, wtouches a (b n) :=
   Iff.intro
     (fun h n m => match h (Nat.max n m) with
       | ⟨p, hp⟩ => ⟨p, ⟨
@@ -215,15 +215,15 @@ theorem touches_iff_forall_weakly_touches (ha : ESide S a) {b : ℕ → Set X} (
 theorem center_eq_center_of_touches [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X}
     (hb : ESide S b) (hab : touches a b) : center ha = center hb :=
   Classical.byContradiction (fun hCenterNeq => match hXT2.t2 hCenterNeq with
-  | ⟨_, _, hU, hV, haU, hbV, hUV⟩ => match strongly_touches_of_center_mem_IsOpen ha hU haU with
-  | ⟨k, hk⟩ => match strongly_touches_of_center_mem_IsOpen hb hV hbV with
-  | ⟨j, hj⟩ => match (touches_iff_forall_weakly_touches ha hb).mp hab j k with
+  | ⟨_, _, hU, hV, haU, hbV, hUV⟩ => match stouches_of_center_mem_IsOpen ha hU haU with
+  | ⟨k, hk⟩ => match stouches_of_center_mem_IsOpen hb hV hbV with
+  | ⟨j, hj⟩ => match (touches_iff_forall_wtouches ha hb).mp hab j k with
   | ⟨_, hp⟩ => Set.disjoint_iff_forall_ne.mp hUV (hk hp.1) (hj hp.2) rfl)
 
 
-theorem forall_weakly_touches_iff_forall_strongly_touches [hXT2 : T2Space X]
+theorem forall_wtouches_iff_forall_stouches [hXT2 : T2Space X]
   (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    (∀ n, weakly_touches a (b n)) ↔ (∀ n, strongly_touches a (b n)) :=
+    (∀ n, wtouches a (b n)) ↔ (∀ n, stouches a (b n)) :=
   Iff.intro
     (fun hWeak n => Classical.byContradiction (fun hStrong =>
       match ha.exists_generator with
@@ -232,7 +232,7 @@ theorem forall_weakly_touches_iff_forall_strongly_touches [hXT2 : T2Space X]
       have hGenCenterEq : hEa.isEncapsulation.center = hEb.isEncapsulation.center := by
         rw [← center_eq_generator_center ha hEa, ← center_eq_generator_center hb hEb]
         exact center_eq_center_of_touches ha hb
-          ((touches_iff_forall_weakly_touches ha hb).mpr hWeak)
+          ((touches_iff_forall_wtouches ha hb).mpr hWeak)
       match (hEa.isEncapsulation.exists_subset_of_center_mem_IsOpen
         (hEb.isEncapsulation.nth_IsOpen n)
         (hGenCenterEq ▸ hEb.isEncapsulation.center_mem_nth n)) with
@@ -240,14 +240,14 @@ theorem forall_weakly_touches_iff_forall_strongly_touches [hXT2 : T2Space X]
       | ⟨p, hp⟩ => hp.2 (mem_cmpnts_maximal (hEb.nth_mem_cmpnts n) (ha.nth_isPreconnected k)
         (fun p hp => ⟨hk (nth_subset_generator hEa k hp), not_mem_surface_of_mem_nth ha hp⟩)
         (hWeak n k) hp.1)))
-    (fun h n => weakly_touches_of_strongly_touches ha (h n))
+    (fun h n => wtouches_of_stouches ha (h n))
 
 
-theorem touches_iff_forall_strongly_touches [hXT2 : T2Space X] (ha : ESide S a)
-    {b : ℕ → Set X} (hb : ESide S b) : touches a b ↔ ∀ n, strongly_touches a (b n) :=
+theorem touches_iff_forall_stouches [hXT2 : T2Space X] (ha : ESide S a)
+    {b : ℕ → Set X} (hb : ESide S b) : touches a b ↔ ∀ n, stouches a (b n) :=
   Iff.trans
-    (touches_iff_forall_weakly_touches ha hb)
-    (forall_weakly_touches_iff_forall_strongly_touches ha hb)
+    (touches_iff_forall_wtouches ha hb)
+    (forall_wtouches_iff_forall_stouches ha hb)
 
 
 theorem touches_refl (ha : ESide S a) : touches a a :=
@@ -261,9 +261,29 @@ omit hX in theorem touches_symm {b : ℕ → Set X} (hab : touches a b) :
 
 theorem touches_trans [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b)
     {c : ℕ → Set X} (hc : ESide S c) (hab : touches a b) (hbc : touches b c) : touches a c :=
-  fun n => inter_nonempty_of_strongly_touches hb
-    ((touches_iff_forall_strongly_touches hb ha).mp (touches_symm hab) n)
-    ((touches_iff_forall_strongly_touches hb hc).mp hbc n)
+  fun n => inter_nonempty_of_stouches hb
+    ((touches_iff_forall_stouches hb ha).mp (touches_symm hab) n)
+    ((touches_iff_forall_stouches hb hc).mp hbc n)
+
+
+theorem touches_subsequence (ha : ESide S a) {α : ℕ → ℕ}
+    (hαStrictMono : StrictMono α) : touches a (a ∘ α) :=
+  fun n => match nth_nonempty ha (α n) with
+  | ⟨p, hp⟩ => ⟨p, nested ha (hαStrictMono.id_le n) hp, hp⟩
+
+
+theorem stouches_of_touches_of_stouches [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X}
+  (hb : ESide S b) (hab : touches a b) {A : Set X} (haA : stouches a A) :
+    stouches b A :=
+  match haA with
+  | ⟨n, hn⟩ => match (touches_iff_forall_stouches hb ha).mp (touches_symm hab) n with
+  | ⟨k, hk⟩ => ⟨k, subset_trans hk hn⟩
+
+
+theorem eq_of_touches {b : ℕ → Set X} (hab : touches a b) {E : ℕ → Set X}
+    (hEa : IsGenerator S a E) (hEb : IsGenerator S b E) : a = b :=
+  funext fun n => (mem_cmpnts_eq_iff_inter_nonempty
+    (hEa.nth_mem_cmpnts n) (hEb.nth_mem_cmpnts n)).mpr (hab n)
 
 
 
