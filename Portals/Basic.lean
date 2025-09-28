@@ -29,13 +29,13 @@ theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B :=
 theorem mem_cmpnts_nonempty {A B : Set X} : A ∈ components B → A.Nonempty :=
   fun h => match h with | ⟨p, hp⟩ => ⟨p, (hp.2) ▸ (mem_connectedComponentIn hp.1)⟩
 
+
 theorem isPreconnected_mem_cmpnts {A B : Set X} (hAB : A ∈ components B) : IsPreconnected A :=
   match hAB with | ⟨_, hp⟩ => hp.2 ▸ isPreconnected_connectedComponentIn
 
 
 theorem isConnected_mem_cmpnts {A B : Set X} (hAB : A ∈ components B) : IsConnected A :=
   ⟨mem_cmpnts_nonempty hAB, isPreconnected_mem_cmpnts hAB⟩
-
 
 
 theorem mem_cmpnts_maximal {A B C : Set X} (hB : B ∈ components A)
