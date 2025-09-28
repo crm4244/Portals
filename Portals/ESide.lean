@@ -202,14 +202,21 @@ theorem unique_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen (ha : ESide
     hCAS (wtouches_of_stouches ha hCa)
 
 
-theorem touches_iff_forall_wtouches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    touches a b ↔ ∀ n, wtouches a (b n) :=
-  Iff.intro
-    (fun h n m => match h (Nat.max n m) with
-      | ⟨p, hp⟩ => ⟨p, ⟨
-        nested ha (Nat.le_max_right n m) hp.1,
-        nested hb (Nat.le_max_left n m) hp.2⟩⟩)
-    (fun h n => h n n)
+omit hX in theorem touches_of_forall_wtouches {b : ℕ → Set X} :
+  (∀ n, wtouches a (b n)) → touches a b := fun h n => h n n
+
+
+theorem touches_of_forall_stouches (ha : ESide S a)
+    {b : ℕ → Set X} : (∀ n, stouches a (b n)) → touches a b :=
+  fun hW n => inter_nonempty_of_stouches ha (nth_stouches_self n) (hW n)
+
+
+theorem forall_wtouches_of_touches (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
+  touches a b → ∀ n, wtouches a (b n) :=
+  (fun h n m => match h (Nat.max n m) with
+    | ⟨p, hp⟩ => ⟨p, ⟨
+      nested ha (Nat.le_max_right n m) hp.1,
+      nested hb (Nat.le_max_left n m) hp.2⟩⟩)
 
 
 theorem center_eq_of_touches [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X}
@@ -217,37 +224,35 @@ theorem center_eq_of_touches [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Se
   Classical.byContradiction (fun hCenterNeq => match hXT2.t2 hCenterNeq with
   | ⟨_, _, hU, hV, haU, hbV, hUV⟩ => match stouches_of_center_mem_IsOpen ha hU haU with
   | ⟨k, hk⟩ => match stouches_of_center_mem_IsOpen hb hV hbV with
-  | ⟨j, hj⟩ => match (touches_iff_forall_wtouches ha hb).mp hab j k with
+  | ⟨j, hj⟩ => match forall_wtouches_of_touches ha hb hab j k with
   | ⟨_, hp⟩ => Set.disjoint_iff_forall_ne.mp hUV (hk hp.1) (hj hp.2) rfl)
 
 
-theorem forall_wtouches_iff_forall_stouches [hXT2 : T2Space X]
-  (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b) :
-    (∀ n, wtouches a (b n)) ↔ (∀ n, stouches a (b n)) :=
-  Iff.intro
-    (fun hWeak n => Classical.byContradiction (fun hStrong =>
-      match ha.exists_generator with
-      | ⟨Ea, hEa⟩ => match hb.exists_generator with
-      | ⟨Eb, hEb⟩ =>
-      have hGenCenterEq : hEa.isEncapsulation.center = hEb.isEncapsulation.center := by
-        rw [← center_eq_generator_center ha hEa, ← center_eq_generator_center hb hEb]
-        exact center_eq_of_touches ha hb
-          ((touches_iff_forall_wtouches ha hb).mpr hWeak)
-      match (hEa.isEncapsulation.exists_subset_of_center_mem_IsOpen
-        (hEb.isEncapsulation.nth_IsOpen n)
-        (hGenCenterEq ▸ hEb.isEncapsulation.center_mem_nth n)) with
-      | ⟨k, hk⟩ => match Set.not_subset.mp (not_exists.mp hStrong k) with
-      | ⟨p, hp⟩ => hp.2 (mem_cmpnts_maximal (hEb.nth_mem_cmpnts n) (ha.nth_isPreconnected k)
-        (fun p hp => ⟨hk (nth_subset_generator hEa k hp), not_mem_surface_of_mem_nth ha hp⟩)
-        (hWeak n k) hp.1)))
-    (fun h n => wtouches_of_stouches ha (h n))
+theorem forall_wtouches_of_forall_stouches (ha : ESide S a) {b : ℕ → Set X} :
+    (∀ n, stouches a (b n)) → (∀ n, wtouches a (b n)) := fun h n => wtouches_of_stouches ha (h n)
 
 
-theorem touches_iff_forall_stouches [hXT2 : T2Space X] (ha : ESide S a)
-    {b : ℕ → Set X} (hb : ESide S b) : touches a b ↔ ∀ n, stouches a (b n) :=
-  Iff.trans
-    (touches_iff_forall_wtouches ha hb)
-    (forall_wtouches_iff_forall_stouches ha hb)
+theorem forall_stouches_of_forall_wtouches [hXT2 : T2Space X] (ha : ESide S a)
+    {b : ℕ → Set X} (hb : ESide S b) : (∀ n, wtouches a (b n)) → (∀ n, stouches a (b n)) :=
+  fun hWeak n => Classical.byContradiction (fun hStrong =>
+    match ha.exists_generator with
+    | ⟨Ea, hEa⟩ => match hb.exists_generator with
+    | ⟨Eb, hEb⟩ =>
+    have hGenCenterEq : hEa.isEncapsulation.center = hEb.isEncapsulation.center := by
+      rw [← center_eq_generator_center ha hEa, ← center_eq_generator_center hb hEb]
+      exact center_eq_of_touches ha hb (touches_of_forall_wtouches hWeak)
+    match (hEa.isEncapsulation.exists_subset_of_center_mem_IsOpen
+      (hEb.isEncapsulation.nth_IsOpen n)
+      (hGenCenterEq ▸ hEb.isEncapsulation.center_mem_nth n)) with
+    | ⟨k, hk⟩ => match Set.not_subset.mp (not_exists.mp hStrong k) with
+    | ⟨p, hp⟩ => hp.2 (mem_cmpnts_maximal (hEb.nth_mem_cmpnts n) (ha.nth_isPreconnected k)
+      (fun p hp => ⟨hk (nth_subset_generator hEa k hp), not_mem_surface_of_mem_nth ha hp⟩)
+      (hWeak n k) hp.1))
+
+
+theorem forall_stouches_of_touches [hXT2 : T2Space X] (ha : ESide S a)
+    {b : ℕ → Set X} (hb : ESide S b) : touches a b → ∀ n, stouches a (b n) :=
+  fun h => forall_stouches_of_forall_wtouches ha hb (forall_wtouches_of_touches ha hb h)
 
 
 theorem touches_refl (ha : ESide S a) : touches a a :=
@@ -262,8 +267,8 @@ omit hX in theorem touches_symm {b : ℕ → Set X} (hab : touches a b) :
 theorem touches_trans [hXT2 : T2Space X] (ha : ESide S a) {b : ℕ → Set X} (hb : ESide S b)
     {c : ℕ → Set X} (hc : ESide S c) (hab : touches a b) (hbc : touches b c) : touches a c :=
   fun n => inter_nonempty_of_stouches hb
-    ((touches_iff_forall_stouches hb ha).mp (touches_symm hab) n)
-    ((touches_iff_forall_stouches hb hc).mp hbc n)
+    (forall_stouches_of_touches hb ha (touches_symm hab) n)
+    (forall_stouches_of_touches hb hc hbc n)
 
 
 theorem touches_subsequence (ha : ESide S a) {α : ℕ → ℕ}
@@ -276,7 +281,7 @@ theorem stouches_of_touches_of_stouches [hXT2 : T2Space X] (ha : ESide S a) {b :
   (hb : ESide S b) (hab : touches a b) {A : Set X} (haA : stouches a A) :
     stouches b A :=
   match haA with
-  | ⟨n, hn⟩ => match (touches_iff_forall_stouches hb ha).mp (touches_symm hab) n with
+  | ⟨n, hn⟩ => match forall_stouches_of_touches hb ha (touches_symm hab) n with
   | ⟨k, hk⟩ => ⟨k, subset_trans hk hn⟩
 
 
@@ -329,15 +334,14 @@ def _recursive_helper (ha : ESide S a) {E E' : ℕ → Set X} (hE : IsGenerator 
     ⟨Classical.choose hD, hDSpec.1, hDSpec.2.1⟩
 
 
-theorem exists_reencapsulation [hXT2 : T2Space X] (ha : ESide S a)
-  {E E' : ℕ → Set X} (hE : IsGenerator S a E) (hE' : Encapsulation E')
-  (hEE' : hE.isEncapsulation.center = hE'.center) :
+theorem exists_reencapsulation (ha : ESide S a) {E E' : ℕ → Set X} (hE : IsGenerator S a E)
+  (hE' : Encapsulation E') (hEE' : hE.isEncapsulation.center = hE'.center) :
     ∃ a', ESide S a' ∧ IsGenerator S a' E' ∧ touches a a' :=
   let r := _recursive_helper ha hE hE' hEE'
   have hE'b := IsGenerator.mk hE' fun n => (r n).2.1
   have hb : ESide S fun n => (r n).fst := ESide.mk ⟨E', hE'b⟩
     (fun n => (Classical.choose_spec (_helper2 ha hE hE' hEE' n (r n).1 (r n).2.1 (r n).2.2)).2.2)
-  ⟨fun n => (r n).1, hb, hE'b, (touches_iff_forall_stouches ha hb).mpr fun n => (r n).2.2⟩
+  ⟨fun n => (r n).1, hb, hE'b, touches_of_forall_stouches ha fun n => (r n).2.2⟩
 
 
 
