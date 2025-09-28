@@ -299,60 +299,45 @@ lemma _helper2 (ha : ESide S a) {E E' : ℕ → Set X} (hE : IsGenerator S a E)
     ∃ D ∈ components (E' (n + 1) \ S), (∃ k, a k ⊆ D) ∧ D ⊆ C :=
   fun n _ hC ⟨k, hk⟩ => match _helper ha hE hE' hEE' (n + 1) with
   | ⟨j, hj⟩ =>
-  have hakj := (fun _ hp =>
-    ⟨hj (nested ha (Nat.le_max_right k j) hp), not_mem_surface_of_mem_nth ha hp⟩)
-  match exists_subset_mem_cmpnts_of_subset hakj (nth_isConnected ha _) with
-  | ⟨D, hD⟩ => ⟨D, hD.1, ⟨Nat.max k j, hD.2⟩,
-    mem_cmpnts_maximal hC (isPreconnected_mem_cmpnts hD.1)
-      (fun _ hp => ⟨hE'.nested (Nat.le_succ n) (mem_cmpnts_subset hD.1 hp).1,
-        (mem_cmpnts_subset hD.1 hp).2⟩)
-      (match nth_nonempty ha (Nat.max k j) with
-        | ⟨p, hp⟩ => ⟨p, hD.2 hp, hk (nested ha (Nat.le_max_left k j) hp)⟩)⟩
+    have hakj := (fun _ hp =>
+      ⟨hj (nested ha (Nat.le_max_right k j) hp), not_mem_surface_of_mem_nth ha hp⟩)
+    match exists_subset_mem_cmpnts_of_subset hakj (nth_isConnected ha _) with
+    | ⟨D, hD⟩ => ⟨D, hD.1, ⟨Nat.max k j, hD.2⟩,
+      mem_cmpnts_maximal hC (isPreconnected_mem_cmpnts hD.1)
+        (fun _ hp => ⟨hE'.nested (Nat.le_succ n) (mem_cmpnts_subset hD.1 hp).1,
+          (mem_cmpnts_subset hD.1 hp).2⟩)
+        (match nth_nonempty ha (Nat.max k j) with
+          | ⟨p, hp⟩ => ⟨p, hD.2 hp, hk (nested ha (Nat.le_max_left k j) hp)⟩)⟩
 
 
-def _recursive_map (ha : ESide S a) {E E' : ℕ → Set X} (hE : IsGenerator S a E)
+def _recursive_helper (ha : ESide S a) {E E' : ℕ → Set X} (hE : IsGenerator S a E)
   (hE' : Encapsulation E') (hEE' : hE.isEncapsulation.center = hE'.center) (m : ℕ) :
     Σ' (C : Set X), C ∈ components (E' m \ S) ∧ (∃ k, a k ⊆ C) :=
   match m with
   | 0 =>
-    let i := Classical.choose (_helper ha hE hE' hEE' 0)
-    have hi := Classical.choose_spec (_helper ha hE hE' hEE' 0)
-    have hak : a i ⊆ E' 0 \ S := fun _ hp => ⟨hi hp, not_mem_surface_of_mem_nth ha hp⟩
-    have hC := exists_subset_mem_cmpnts_of_subset hak (nth_isConnected ha i)
-    have hCSpec := Classical.choose_spec hC
+    let f0 := _helper ha hE hE' hEE' 0
+    let i := Classical.choose f0
+    let hak := fun _ hp => ⟨Classical.choose_spec f0 hp, not_mem_surface_of_mem_nth ha hp⟩
+    let hC := exists_subset_mem_cmpnts_of_subset hak (nth_isConnected ha i)
+    let hCSpec := Classical.choose_spec hC
     ⟨Classical.choose hC, hCSpec.1, i, hCSpec.2⟩
   | n + 1 =>
-    ⟨Classical.choose (_helper2 ha hE hE' hEE' n
-      (_recursive_map ha hE hE' hEE' n).1
-      (_recursive_map ha hE hE' hEE' n).2.1
-      (_recursive_map ha hE hE' hEE' n).2.2),
-    (Classical.choose_spec (_helper2 ha hE hE' hEE' n
-      (_recursive_map ha hE hE' hEE' n).1
-      (_recursive_map ha hE hE' hEE' n).2.1
-      (_recursive_map ha hE hE' hEE' n).2.2)).1,
-    (Classical.choose_spec (_helper2 ha hE hE' hEE' n
-      (_recursive_map ha hE hE' hEE' n).1
-      (_recursive_map ha hE hE' hEE' n).2.1
-      (_recursive_map ha hE hE' hEE' n).2.2)).2.1⟩
+    let h := _helper2 ha hE hE' hEE' n
+    let C_tuple := _recursive_helper ha hE hE' hEE' n
+    let hD := h C_tuple.1 C_tuple.2.1 C_tuple.2.2
+    let hDSpec := Classical.choose_spec hD
+    ⟨Classical.choose hD, hDSpec.1, hDSpec.2.1⟩
 
 
 theorem exists_reencapsulation [hXT2 : T2Space X] (ha : ESide S a)
   {E E' : ℕ → Set X} (hE : IsGenerator S a E) (hE' : Encapsulation E')
   (hEE' : hE.isEncapsulation.center = hE'.center) :
     ∃ a', ESide S a' ∧ IsGenerator S a' E' ∧ touches a a' :=
-
-  have hE'b := IsGenerator.mk hE' fun n => (_recursive_map ha hE hE' hEE' n).2.1
-  have hb : ESide S fun n => (_recursive_map ha hE hE' hEE' n).fst := by
-    apply ESide.mk
-    · exact ⟨E', hE'b⟩
-    · intro n
-      exact (Classical.choose_spec (
-        _helper2 ha hE hE' hEE' n (_recursive_map ha hE hE' hEE' n).1
-        (_recursive_map ha hE hE' hEE' n).2.1
-        (_recursive_map ha hE hE' hEE' n).2.2)).2.2
-
-  ⟨fun n => (_recursive_map ha hE hE' hEE' n).1, hb, hE'b, (touches_iff_forall_stouches ha hb).mpr
-    fun n => (_recursive_map ha hE hE' hEE' n).2.2⟩
+  let r := _recursive_helper ha hE hE' hEE'
+  have hE'b := IsGenerator.mk hE' fun n => (r n).2.1
+  have hb : ESide S fun n => (r n).fst := ESide.mk ⟨E', hE'b⟩
+    (fun n => (Classical.choose_spec (_helper2 ha hE hE' hEE' n (r n).1 (r n).2.1 (r n).2.2)).2.2)
+  ⟨fun n => (r n).1, hb, hE'b, (touches_iff_forall_stouches ha hb).mpr fun n => (r n).2.2⟩
 
 
 
