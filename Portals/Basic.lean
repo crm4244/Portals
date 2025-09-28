@@ -17,17 +17,17 @@ theorem connectedComponentIn_mem_cmpnts {A : Set X} {p : X} (hpA : p ∈ A) :
 
 theorem sUnion_cmpnts (A : Set X) : ⋃₀ components A = A := by
   apply Set.eq_of_subset_of_subset
-  · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ => connectedComponentIn_subset A _ hqC
-  · exact (fun q hq => ⟨connectedComponentIn A q,
+  · exact fun q ⟨_, ⟨_, ⟨_, rfl⟩⟩, hqC⟩ ↦ connectedComponentIn_subset A _ hqC
+  · exact (fun q hq ↦ ⟨connectedComponentIn A q,
       connectedComponentIn_mem_cmpnts hq, mem_connectedComponentIn hq⟩)
 
 
 theorem mem_cmpnts_subset {A B : Set X} : A ∈ components B → A ⊆ B :=
-  fun ⟨_, ⟨_, h⟩⟩ => h ▸ connectedComponentIn_subset B _
+  fun ⟨_, ⟨_, h⟩⟩ ↦ h ▸ connectedComponentIn_subset B _
 
 
 theorem mem_cmpnts_nonempty {A B : Set X} : A ∈ components B → A.Nonempty :=
-  fun h => match h with | ⟨p, hp⟩ => ⟨p, (hp.2) ▸ (mem_connectedComponentIn hp.1)⟩
+  fun h ↦ match h with | ⟨p, hp⟩ => ⟨p, (hp.2) ▸ (mem_connectedComponentIn hp.1)⟩
 
 
 theorem isPreconnected_mem_cmpnts {A B : Set X} (hAB : A ∈ components B) : IsPreconnected A :=
@@ -61,8 +61,8 @@ theorem mem_cmpnts_eq_iff_inter_nonempty {A B C : Set X}
   have f {α β} (hα : α ∈ components A) hβ hαβ : α ⊆ β :=
     mem_cmpnts_maximal hβ (isPreconnected_mem_cmpnts hα) (mem_cmpnts_subset hα) hαβ
   Iff.intro
-    (fun hBC => Eq.symm (Set.inter_eq_left.mpr (hBC ▸ subset_rfl : B ⊆ C)) ▸ mem_cmpnts_nonempty hB)
-    (fun hBC => Set.eq_of_subset_of_subset (f hB hC hBC) (f hC hB (Set.inter_comm B C ▸ hBC)))
+    (fun hBC ↦ Eq.symm (Set.inter_eq_left.mpr (hBC ▸ subset_rfl : B ⊆ C)) ▸ mem_cmpnts_nonempty hB)
+    (fun hBC ↦ Set.eq_of_subset_of_subset (f hB hC hBC) (f hC hB (Set.inter_comm B C ▸ hBC)))
 
 
 /-
@@ -71,7 +71,7 @@ theorem mem_cmpnts_eq_iff_inter_nonempty {A B C : Set X}
 -/
 theorem connectedComponentIn_lemma_1 {A B C K S : Set X} (hBA : B ⊆ A) (hC : C ∈ components (A \ S))
     (hK : K ∈ components (C ∩ B)) : K ∈ components (B \ S) := by
-  have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB =>
+  have hCBBS : C ∩ B ⊆ B \ S := fun k hkCB ↦
     ⟨hkCB.2, (Set.inter_subset_inter_left B (mem_cmpnts_subset hC) hkCB).1.2⟩
   have hK2 := hK
   rcases hK with ⟨k, ⟨hkCB, rfl⟩⟩

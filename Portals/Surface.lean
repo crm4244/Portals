@@ -49,18 +49,18 @@ theorem inter_closure_subset_frontier_diff (hS : Surface S) {U : Set X} (hU : Is
     exact Set.nonempty_iff_ne_empty.mp
       (mem_closure_iff.mp hpU V hV hpV)
       (Set.subset_empty_iff.mp hVUi)
-  · exact fun h => ((Set.mem_diff p).mp (interior_subset h)).2 hpS
+  · exact fun h ↦ ((Set.mem_diff p).mp (interior_subset h)).2 hpS
 
 
 theorem inter_closure_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
-    S ∩ closure U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
+    S ∩ closure U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ ↦
   frontier_subset_closure (
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, hpU⟩))
 
 
 theorem inter_subset_closure_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) :
-    S ∩ U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ =>
+    S ∩ U ⊆ closure (U \ S) := fun p ⟨hpS, hpU⟩ ↦
   frontier_subset_closure (
     inter_closure_subset_frontier_diff hS hU (
       (Set.mem_inter_iff p S (closure U)).mpr ⟨hpS, subset_closure hpU⟩))
