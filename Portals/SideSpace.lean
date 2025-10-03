@@ -1,37 +1,55 @@
-import Portals.ESide
+import Portals.IsESide
+import Mathlib.Topology.Bases
 
 
 variable {X : Type} [hX : TopologicalSpace X] [hX2 : T2Space X]
 
 
-def ESides (S : Set X) := {a : ℕ → Set X | ESide S a}
-def ESides_touch (S : Set X) : (ESides S) → (ESides S) → Prop :=
-  fun ⟨a, _⟩ ⟨b, _⟩ => ESide.touches a b
+def ESide (S : Set X) : Type := { e : ℕ → Set X // IsESide S e }
 
-def isEquivalence_ESides_touch (S : Set X) : Equivalence (ESides_touch S) := Equivalence.mk
-    (fun ⟨_, ha⟩ => ESide.touches_refl ha)
-    (fun hab => ESide.touches_symm hab)
-    (@fun ⟨_, ha⟩ ⟨_, hb⟩ ⟨_, hc⟩ hab hbc => ESide.touches_trans ha hb hc hab hbc)
+def ESide.touches (S : Set X) : ESide S → ESide S → Prop :=
+  fun ⟨a, _⟩ ⟨b, _⟩ => IsESide.touches a b
 
-
-def ESide_Setoid (S : Set X) := Setoid.mk (ESides_touch S) (isEquivalence_ESides_touch S)
-
-/-
-def ESideSpace (S : Set X) : TopologicalSpace (ESides S) := TopologicalSpace.generateFrom
-  {{b' : ESides S | ESide.stouches (b' : ℕ → Set X) ((a' : ℕ → Set X) n)} | (n : ℕ) (a' : ESides S)}
--/
-
-
-#check fun S => (fun a => Quotient.mk (ESide_Setoid S) a)
-
-def Sides (S : Set X) : ESides S → Quotient (ESide_Setoid S) := sorry
+def ESide.Equivalence (S : Set X) : Equivalence (ESide.touches S) := Equivalence.mk
+  (IsESide.touches_refl ·.2)
+  IsESide.touches_symm
+  (@fun ⟨_, ha⟩ ⟨_, hb⟩ ⟨_, hc⟩ hab hbc => IsESide.touches_trans ha hb hc hab hbc)
 
 
 
 
-def SideSpace (S : Set X) : TopologicalSpace (Sides S) := TopologicalSpace.generateFrom
-  sorry
+def Side (S : Set X) := Quotient (Setoid.mk (ESide.touches S) (ESide.Equivalence S))
 
 
 
-#check Setoid.mk
+namespace Side
+
+
+noncomputable def center (S : Set X) (a : Side S) : X :=
+  Quotient.liftOn a (IsESide.center ·.2) (IsESide.center_eq_of_touches ·.2 ·.2 ·)
+
+
+def stouches (S : Set X) (a : Side S) (A : Set X) : Prop :=
+  Quotient.liftOn a (IsESide.stouches ·.1 ·)
+    (fun e1 e2 he ↦ funext fun _ ↦ eq_iff_iff.mpr (Iff.intro
+        (IsESide.stouches_of_touches_of_stouches e1.2 e2.2 he ·)
+        (IsESide.stouches_of_touches_of_stouches e2.2 e1.2
+          ((ESide.Equivalence S).symm he) ·)))
+  A
+
+
+--def wtouches (S : Set X) (a : Side S) (A : Set X) : Prop :=
+-- needs a theorem from the IsESide file: "IsESide.wtouches_of_touches_of_wtouches"
+
+
+end Side
+
+
+
+def SideSpace (S : Set X) : TopologicalSpace (Side S) :=
+  TopologicalSpace.generateFrom {{a : Side S | Side.stouches S a (e.1 n)} | (n : ℕ) (e : ESide S)}
+
+
+-- center is continuous
+-- center, restricted to a A : Set X where Disjoint A S, is homeomorphic on its image
+-- SideSpace is a T2Space
