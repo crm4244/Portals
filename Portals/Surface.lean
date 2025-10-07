@@ -1,12 +1,25 @@
-import Portals.Basic
+import Portals.Side
 
 
 
-variable {X : Type} [hX : TopologicalSpace X]
+variable {X : Type} [hX : TopologicalSpace X] [hX2 : T2Space X]
+
+
+class Surface.Realizer (S : Set X) where
+  get {p : X} (hp : p ∈ S) : Set X
+  isOpen {p : X} (hp : p ∈ S) : IsOpen (get hp)
+  mem_self {p : X} (hp : p ∈ S) : p ∈ (get hp)
+  bijective_toComponents : Function.Bijective
+    fun a : {x : Side S // x.center ∈ S} ↦
+      Side.toComponent a.1 (isOpen a.2) (mem_self a.2)
+
 
 class Surface (S : Set X) where
   isClosed : IsClosed S
-  interior_eq_empty : interior S = ∅
+  surjective_center : Function.Surjective (fun a : Side S ↦ a.center)
+  realizer : Surface.Realizer S
+
+
 
 variable {S : Set X}
 
@@ -16,6 +29,12 @@ variable {S : Set X}
 
 namespace Surface
 
+
+
+-- theorem: any open neighborhood of p ∈ S has a realizer subset
+
+
+theorem interior_eq_empty (hS : Surface S) : interior S = ∅ := sorry
 
 
 theorem frontier_eq_self (hS : Surface S) : frontier S = S := by

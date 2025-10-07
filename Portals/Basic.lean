@@ -124,7 +124,7 @@ theorem connectedComponentIn_lemma_2_1 {A B C D S : Set X} (hBA : B ⊆ A)
   then there is a unique connected component K of A \ S with D ⊆ K.
 -/
 theorem connectedComponentIn_lemma_3 {A B D S : Set X} (hBA : B ⊆ A)
-    (hDBS : D ∈ components (B \ S)) : ∃! C ∈ components (A \ S), D ⊆ C := by
+    (hDBS : D ∈ components (B \ S)) : ∃! K ∈ components (A \ S), D ⊆ K := by
   rcases hDBS with ⟨p, hpBS, rfl⟩
   have hpAS : p ∈ A \ S := ⟨hBA hpBS.1, hpBS.2⟩
   use connectedComponentIn (A \ S) p
