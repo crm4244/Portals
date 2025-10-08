@@ -50,6 +50,8 @@ noncomputable def center {S : Set X} (a : Side S) : X :=
   Quotient.liftOn a (IsESide.center ·.2) (IsESide.center_eq_of_touches ·.2 ·.2 ·)
 
 
+noncomputable def center' (S : Set X) : Side S → X := fun a ↦ center a
+
 
 -- comoponent realizing neighborhoods, existence and uniqueness
 theorem exists_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen {S : Set X} (a : Side S)
@@ -76,15 +78,15 @@ theorem toComponent_unique {S : Set X} (a : Side S) {A B : Set X} (hA : IsOpen A
   B = toComponent a hA hcA := sorry
 
 
-theorem center_continuous (S : Set X) : Continuous (@center _ _ _ S) := sorry
+theorem center_continuous (S : Set X) : Continuous (center' S) := sorry
 
 
 noncomputable def center_nmem_homeomorph_of_surjective (S : Set X)
-  (hSurj : Function.Surjective (@center _ _ _ S)) :
-    Homeomorph (Subtype ((@center _ _ _ S)⁻¹' Sᶜ)) (Subtype Sᶜ) :=
+  (hSurj : Function.Surjective (center' S)) :
+    Homeomorph ((center' S)⁻¹' Sᶜ) (Subtype Sᶜ) :=
   have hCenterUnique {p : X} (hp : p ∈ Sᶜ) {a b : Side S}
     (ha : a.center = p) (hb : b.center = p) : a = b := sorry
-  let eq : Equiv (Subtype ((@center _ _ _ S)⁻¹' Sᶜ)) (Subtype Sᶜ) := Equiv.mk
+  let eq : Equiv (Subtype ((center' S)⁻¹' Sᶜ)) (Subtype Sᶜ) := Equiv.mk
     (fun a => ⟨center a.1, a.2⟩)
     (fun p => ⟨Classical.choose (hSurj p), fun h => (Classical.choose_spec (hSurj p) ▸ p.2) h⟩)
     (fun ⟨a, ha⟩ => by

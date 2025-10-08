@@ -1,27 +1,94 @@
 import Portals.Side
 
-
-
 variable {X : Type} [hX : TopologicalSpace X] [hX2 : T2Space X]
 
 
-class Surface.Realizer (S : Set X) where
-  get {p : X} (hp : p ∈ S) : Set X
-  isOpen {p : X} (hp : p ∈ S) : IsOpen (get hp)
-  mem_self {p : X} (hp : p ∈ S) : p ∈ (get hp)
-  bijective_toComponents : Function.Bijective
-    fun a : {x : Side S // x.center ∈ S} ↦
-      Side.toComponent a.1 (isOpen a.2) (mem_self a.2)
+
+namespace Surface
+
+
+
+
+class PreRealizer (S : Set X) (p : X) where
+  set : Set X
+  isOpen : IsOpen set
+  origin_mem : p ∈ set
+
+
+
+namespace PreRealizer
+
+
+variable {S : Set X} {p : X}
+
+
+def toComponent (PR : PreRealizer S p) : (Side.center' S)⁻¹' PR.set → Set X :=
+  fun a ↦ a.1.toComponent PR.isOpen a.2
+
+def toComponent_at_origin (PR : PreRealizer S p) : (Side.center' S)⁻¹' {p} → Set X :=
+  fun a ↦ PR.toComponent ⟨a.1, Set.mem_preimage.mpr (Eq.subst (Eq.symm a.2) PR.origin_mem)⟩
+
+
+end PreRealizer
+
+
+
+
+class Realizer (S : Set X) (p : X) where
+  preRealizer : PreRealizer S p
+  bijective_toComponent_of_center_eq_origin :
+    Function.Bijective preRealizer.toComponent_at_origin
+
+
+
+namespace Realizer
+
+
+variable {S : Set X} {p : X} {hp : p ∈ S}
+
+def set (R : Realizer S p) : Set X := R.preRealizer.set
+def isOpen (R : Realizer S p) : IsOpen R.set := R.preRealizer.isOpen
+def origin_mem (R : Realizer S p) : p ∈ R.set := R.preRealizer.origin_mem
+
+def toComponent (R : Realizer S p) : (Side.center' S)⁻¹' R.set → Set X :=
+  R.preRealizer.toComponent
+
+def toComponent_at_origin (R : Realizer S p) : (Side.center' S)⁻¹' {p} → Set X :=
+  R.preRealizer.toComponent_at_origin
+
+noncomputable def equiv_toComponent_of_center_eq_origin (R : Realizer S p) :=
+  Equiv.ofBijective R.toComponent_at_origin R.bijective_toComponent_of_center_eq_origin
+
+noncomputable def fromComponent (R : Realizer S p) : Set X → (Side.center' S)⁻¹' {p} :=
+  R.equiv_toComponent_of_center_eq_origin.invFun
+
+
+theorem inverse_fromComponent_left (R : Realizer S p) :
+    Function.LeftInverse R.fromComponent R.toComponent_at_origin :=
+  R.equiv_toComponent_of_center_eq_origin.left_inv
+
+theorem inverse_fromComponent_right (R : Realizer S p) :
+    Function.RightInverse R.fromComponent R.toComponent_at_origin :=
+  R.equiv_toComponent_of_center_eq_origin.right_inv
+
+
+noncomputable def toOrigin (R : Realizer S p) :
+  (Side.center' S)⁻¹' R.set → (Side.center' S)⁻¹' {p} := R.fromComponent ∘ R.toComponent
+
+
+end Realizer
+
+
+
+end Surface
+
+
+
 
 
 class Surface (S : Set X) where
-  isClosed : IsClosed S
   surjective_center : Function.Surjective (fun a : Side S ↦ a.center)
-  realizer : Surface.Realizer S
-
-
-
-variable {S : Set X}
+  realizer (p : X) : Surface.Realizer S p
 
 
 
@@ -30,13 +97,20 @@ variable {S : Set X}
 namespace Surface
 
 
+variable {S : Set X}
 
+
+-- theorem: nondegenerate portals have closed surfaces
 -- theorem: any open neighborhood of p ∈ S has a realizer subset
 
 
 theorem interior_eq_empty (hS : Surface S) : interior S = ∅ := sorry
 
 
+/-
+
+
+-- these hold for nondegenerate portals
 theorem frontier_eq_self (hS : Surface S) : frontier S = S := by
   rw [frontier, hS.interior_eq_empty, Set.diff_empty]
   exact closure_eq_iff_isClosed.mpr hS.1
@@ -44,7 +118,7 @@ theorem frontier_eq_self (hS : Surface S) : frontier S = S := by
 theorem closure_eq_self (hS : Surface S) : closure S = S :=
   IsClosed.closure_eq (hS.isClosed)
 
-/-
+
 theorem IsOpen_compl (hS : Surface S) : IsOpen Sᶜ := isOpen_compl_iff.mpr hS.1
 
 theorem IsOpen_diff (hS : Surface S) {U : Set X} (hU : IsOpen U) : IsOpen (U \ S) :=
