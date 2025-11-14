@@ -54,19 +54,19 @@ noncomputable def center' (S : Set X) : Side S → X := fun a ↦ center a
 
 
 -- comoponent realizing neighborhoods, existence and uniqueness
-theorem exists_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen {S : Set X} (a : Side S)
+theorem exists_mem_cmpnts_diff_stouches_of_center_mem_IsOpen {S : Set X} (a : Side S)
   {A : Set X} (hA : IsOpen A) (hcA : center a ∈ A) :
     ∃ C ∈ components (A \ S), stouches a C := sorry
 
 
-theorem unique_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen {S : Set X} (a : Side S)
+theorem unique_mem_cmpnts_diff_stouches_of_center_mem_IsOpen {S : Set X} (a : Side S)
     {A B C : Set X} (hA : IsOpen A) (hcA : center a ∈ A)
     (hBAS : B ∈ components (A \ S)) (hBa : stouches a B)
     (hCAS : C ∈ components (A \ S)) (hCa : stouches a C) : B = C := sorry
 
 
 def toComponent {S : Set X} (a : Side S) {A : Set X} (hA : IsOpen A) (hcA : center a ∈ A) : Set X :=
-  Classical.choose (exists_mem_cmpnts_diff_surface_stouches_of_center_mem_IsOpen a hA hcA)
+  Classical.choose (exists_mem_cmpnts_diff_stouches_of_center_mem_IsOpen a hA hcA)
 
 
 theorem toComponent_component {S : Set X} (a : Side S) {A : Set X} (hA : IsOpen A)
