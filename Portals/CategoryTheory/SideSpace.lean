@@ -1,6 +1,10 @@
 import Portals.CategoryTheory.EtaleSpace
 import Portals.Legacy.Basic
 
+import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
+import Mathlib.Order.Filter.Germ.Basic
+
+
 
 -- Here's an outline of the things i need to write
 
@@ -26,7 +30,7 @@ import Portals.Legacy.Basic
 -- local consistency
 -- the other local condition about unique representation
 -- groupoid form
--- Material space as the orbitspace of the groupoid
+-- Material space as the orbit space of the groupoid
 
 -- the union surface
 -- the recommendation maps
@@ -42,43 +46,67 @@ import Portals.Legacy.Basic
 -- local consistency
 -- etc
 
-open Topology TopologicalSpace CategoryTheory Opposite TopCat
+
+
+open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 
 
 #check connectedComponentIn_lemma_3
 #check components
 #check ConnectedComponents
-
-
--- build the category of connected subsets of X
-
-
+#check Quot.map
+#check Presheaf.germ
 
 
 
-def ComponentsPresheaf {X S : TopCat} (i : S ⟶ X) : (Opens X)ᵒᵖ ⥤ Set (Set X) :=
-  let componentSubsets (U : (Opens X)ᵒᵖ) : Set (Set X) :=
-    { Subtype.val '' (ConnectedComponents.mk ⁻¹' {C}) |
-      C : ConnectedComponents (U.unop.1 \ Set.range i.hom.toFun : Set X) }
 
-  have f V U : componentSubsets V → True := by
-    unfold componentSubsets
-    intro ⟨C, hC⟩
-    simp only [Set.mem_setOf_eq] at hC
 
-    rcases hC with ⟨⟨x, b⟩, rfl⟩
-    sorry
-  {
-    obj := componentSubsets
-    map := Lean.IR.Sorry.State.mk.noConfusion
-    map_id := sorry
-    map_comp := sorry
-  }
 
-  by
-      intro V U j
 
-        -- use Classical.choose
+#check default
+#check Inhabited
+#check fun X [TopologicalSpace X] (A : Set (ConnectedComponents X)) ↦ ConnectedComponents.mk ⁻¹' A
 
-        sorry
-      exact sorry -- turn f into a morphism of sets
+
+/- this is the one i want to use -/
+def precosheaf {X : TopCat} (S : Set X) : Opens X ⥤ Type :=
+{
+  obj := fun U ↦ ConnectedComponents (Subtype (U.1 \ Sᶜ))
+  map := fun {V U} f ↦
+    let t : Subtype (V.1 \ Sᶜ) → Subtype (U.1 \ Sᶜ) := fun v ↦ ⟨v.1, f.le v.2.1, v.2.2⟩
+    Continuous.connectedComponentsMap
+      (Continuous.subtype_mk continuous_subtype_val _ : Continuous t)
+  map_id := by intro; ext ⟨_⟩; rfl
+  map_comp := by intros; ext ⟨_⟩; rfl
+}
+
+
+
+noncomputable def precosheaf2 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := {
+  obj := fun f ↦ ConnectedComponents ↑(pullback i f.hom)
+  map := fun {g f} t ↦
+    let t' := pullback.map i g.hom i f.hom (𝟙 _) t.left (𝟙 _) rfl (by cat_disch)
+    Quot.map t' (fun a b hab ↦
+      connectedComponent_eq ((hab ▸ Continuous.image_connectedComponent_subset
+      (ConcreteCategory.hom t').continuous a) ⟨b, mem_connectedComponent, rfl⟩))
+  map_id := by intro; ext ⟨_⟩; cat_disch
+  map_comp := by
+    intros
+    ext ⟨_⟩
+    simp only [Functor.id_obj, Over.comp_left, types_comp_apply, Quot.map]
+    rw [← ConcreteCategory.comp_apply]
+    rw [pullback.map_comp]
+    rfl
+}
+
+
+
+/- a working version that doesnt account for S -/
+def precosheaf3 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := {
+  obj := fun U ↦ ConnectedComponents U.left
+  map := fun {V U} f ↦ Quot.map f.left (fun a b hab ↦
+    connectedComponent_eq ((hab ▸ Continuous.image_connectedComponent_subset
+    (ConcreteCategory.hom f.left).continuous a) ⟨b, mem_connectedComponent, rfl⟩))
+  map_id := by intro; ext ⟨_⟩; rfl
+  map_comp := by intros; ext ⟨_⟩; rfl
+}

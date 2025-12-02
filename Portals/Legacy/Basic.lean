@@ -135,5 +135,4 @@ theorem connectedComponentIn_lemma_3 {A B D S : Set X} (hBA : B ⊆ A)
   split_ands
   · exact hA1
   · exact connectedComponentIn_lemma_2_1 hBA hA1 hB1 ⟨p, hA2, hB2⟩
-  · rintro H ⟨⟨q, ⟨hqAS, rfl⟩⟩, hDH⟩
-    exact connectedComponentIn_eq (hDH hB2)
+  · exact fun _ ⟨⟨_, ⟨_, heq⟩⟩, hDH⟩ ↦ heq ▸ connectedComponentIn_eq (heq ▸ hDH hB2)
