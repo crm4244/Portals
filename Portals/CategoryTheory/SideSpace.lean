@@ -1,8 +1,10 @@
-import Portals.CategoryTheory.EtaleSpace
-import Portals.Legacy.Basic
+--import Portals.CategoryTheory.EtaleSpace
+--import Portals.Legacy.Basic
 
+import Mathlib.Topology.Sets.Opens
+import Mathlib.Topology.IsLocalHomeomorph
 import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
-import Mathlib.Order.Filter.Germ.Basic
+--import Mathlib.Order.Filter.Germ.Basic
 
 
 
@@ -51,36 +53,107 @@ import Mathlib.Order.Filter.Germ.Basic
 open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 
 
-#check connectedComponentIn_lemma_3
-#check components
-#check ConnectedComponents
-#check Quot.map
-#check Presheaf.germ
 
 
+variable {X : Type} [TopologicalSpace X]
 
 
-
-
-
-#check default
-#check Inhabited
-#check fun X [TopologicalSpace X] (A : Set (ConnectedComponents X)) ↦ ConnectedComponents.mk ⁻¹' A
 
 
 /- this is the one i want to use -/
-def precosheaf {X : TopCat} (S : Set X) : Opens X ⥤ Type :=
-{
-  obj := fun U ↦ ConnectedComponents (Subtype (U.1 \ Sᶜ))
-  map := fun {V U} f ↦
-    let t : Subtype (V.1 \ Sᶜ) → Subtype (U.1 \ Sᶜ) := fun v ↦ ⟨v.1, f.le v.2.1, v.2.2⟩
-    Continuous.connectedComponentsMap
-      (Continuous.subtype_mk continuous_subtype_val _ : Continuous t)
+def precosheaf (S : Set X) : Opens X ⥤ Type := {
+  obj := fun U ↦ ConnectedComponents (Subtype (U.1 \ S))
+  map := fun {V U} f ↦ Continuous.connectedComponentsMap
+    (Continuous.subtype_mk continuous_subtype_val fun ⟨_, hV, hS⟩ ↦ ⟨f.le hV, hS⟩)
   map_id := by intro; ext ⟨_⟩; rfl
   map_comp := by intros; ext ⟨_⟩; rfl
 }
 
 
+
+
+
+-- for now im just writing in the behavior i need.
+-- later this will use the co-etale space construction.
+def Sides (S : Set X) : Type := sorry
+instance instTopologicalSpaceSideSpace (S : Set X) : TopologicalSpace (Sides S) := sorry
+
+
+namespace Sides
+
+
+def touching_component (S : Set X) : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
+
+
+section center
+variable {S : Set X}
+
+def center : Sides S → X := sorry
+def center' (S : Set X) := center (S := S)
+
+def center_isLocalHomeomorph : IsLocalHomeomorph (center' S) := sorry
+def center_continuous : Continuous (center' S) := sorry
+def center_fiber_discrete (p : X) : DiscreteTopology {σ : Sides S // σ.center = p} := sorry
+
+end center
+
+
+def restrict_surface (S : Set X) (U : Set X) : Set U := Subtype.val ⁻¹' S
+def restricted_sides_at (S U : Set X) (p : X) : Set (Sides (restrict_surface S U)) :=
+  {σ : Sides (restrict_surface S U) | σ.center = p}
+def restricted_touching_component_at (S U : Set X) (p : X) :
+    restricted_sides_at S U p → ConnectedComponents (Subtype (restrict_surface S U)ᶜ) :=
+  (restricted_sides_at S U p).restrict (touching_component (restrict_surface S U))
+
+
+section map
+variable {Y : Type} [TopologicalSpace Y] {f : X → Y}
+
+def map (S : Set X) (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
+
+def map_comm (S : Set X) (hf : IsOpenEmbedding f) :
+  center' (f '' S) ∘ map S hf = f ∘ center' S := sorry
+def homeomorph_pullback_center (S : Set X) (hf : IsOpenEmbedding f) :
+  Homeomorph (Sides S) (pullback (C := TopCat) (ofHom ⟨f, hf.continuous⟩)
+  (ofHom ⟨center' (f '' S), center_isLocalHomeomorph.continuous⟩)) := sorry
+
+end map
+
+
+section lift
+variable {S : Set X} {U : Opens X}
+
+def lift : Sides (restrict_surface S U) → Sides S := sorry
+def lift' (S : Set X) (U : Opens X) := lift (S := S) (U := U)
+
+lemma lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift' S U =
+  map (restrict_surface S U) (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
+
+def lift_comm (S : Set X) (U : Opens X) :
+    center' S ∘ lift' S U = Subtype.val ∘ center' (restrict_surface S U) :=
+  lift_eq_map_subtypeVal S U ▸ map_comm _ _
+
+end lift
+
+
+def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
+  Homeomorph (center' S ⁻¹' U) (Sides (restrict_surface S U)) := sorry
+
+
+def other_lift {S T : Set X} : S ⊆ T → Sides T → Sides S := sorry
+def other_lift_comm {S T : Set X} (h : S ⊆ T) : center' T = center' S ∘ other_lift h := sorry
+
+
+end Sides
+
+
+
+
+
+
+
+
+/-
 
 noncomputable def precosheaf2 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := {
   obj := fun f ↦ ConnectedComponents ↑(pullback i f.hom)
@@ -102,7 +175,7 @@ noncomputable def precosheaf2 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := 
 
 
 /- a working version that doesnt account for S -/
-def precosheaf3 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := {
+def precosheaf3 {X : TopCat} : Over X ⥤ Type := {
   obj := fun U ↦ ConnectedComponents U.left
   map := fun {V U} f ↦ Quot.map f.left (fun a b hab ↦
     connectedComponent_eq ((hab ▸ Continuous.image_connectedComponent_subset
@@ -110,3 +183,6 @@ def precosheaf3 {X S : TopCat} (i : S ⟶ X) : Over X ⥤ Type := {
   map_id := by intro; ext ⟨_⟩; rfl
   map_comp := by intros; ext ⟨_⟩; rfl
 }
+
+
+-/
