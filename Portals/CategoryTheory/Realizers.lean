@@ -25,9 +25,12 @@ class ComponentRealizer (S : Set X) (p : X) where
     (restricted_touching_component_at S set p)
 
 
+
 namespace ComponentRealizer
 
+
 variable {S : Set X} {p : X}
+
 
 
 theorem restricted_touching_component_at_bijective (R : ComponentRealizer S p) :
@@ -40,14 +43,15 @@ theorem restricted_touching_component_at_bijective (R : ComponentRealizer S p) :
   } : Equiv _ _ ).bijective
 
 
-def side_transfer (R : ComponentRealizer S p) {σ : Sides S} (hσ : σ.center ∈ R.set) :
+noncomputable def side_transfer (R : ComponentRealizer S p) {σ : Sides S} (hσ : σ.center ∈ R.set) :
     {a : Sides S // a.center = p} :=
-  have hom := homeomorph_thing S ⟨R.set, R.isOpen_set⟩
+  let U : Opens X := ⟨_, R.isOpen_set⟩
+  have hom := homeomorph_pullback_center_restrict S U
   have τ_q := touching_component (restrict_surface S R.set)
   have τ_p_inv := R.touching_component_inv
-  have ρ := τ_p_inv (τ_q (hom ⟨σ, hσ⟩))
-  have h_comm := congr_fun (lift_comm S ⟨R.set, R.isOpen_set⟩) ρ
-  ⟨_, ρ.2 ▸ Function.comp_apply ▸ Function.comp_apply ▸ h_comm⟩
+  have a := τ_p_inv (τ_q (hom.symm ⟨σ, hσ⟩))
+  ⟨a.1.lift, a.2 ▸ lift_comm U a.1⟩
+
 
 
 end ComponentRealizer

@@ -48,8 +48,9 @@ omit [TopologicalSpace X] in theorem symm_inv_left (γ : GluingPattern S G)
 
 
 -- a convinent alias for the side_transfer function
-def _t [R : RealizingSurface S] {p r : X} (hrp : r ∈ (R.realizer p).set)
-    {σ : Sides S} (hσ : σ.center = r) : { a // Sides.center S a = p } :=
+
+noncomputable def _t [R : RealizingSurface S] {p r : X} (hrp : r ∈ (R.realizer p).set)
+    {σ : Sides S} (hσ : σ.center = r) : { a : Sides S // a.center = p } :=
   side_transfer (R.realizer p) (hσ ▸ hrp)
 
 

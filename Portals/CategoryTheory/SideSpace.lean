@@ -89,10 +89,9 @@ section center
 variable {S : Set X}
 
 def center : Sides S → X := sorry
-def center' (S : Set X) := center (S := S)
 
-def center_isLocalHomeomorph : IsLocalHomeomorph (center' S) := sorry
-def center_continuous : Continuous (center' S) := sorry
+def center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
+def center_continuous : Continuous (center (S := S)) := sorry
 def center_fiber_discrete (p : X) : DiscreteTopology {σ : Sides S // σ.center = p} := sorry
 
 end center
@@ -107,15 +106,14 @@ def restricted_touching_component_at (S U : Set X) (p : X) :
 
 
 section map
-variable {Y : Type} [TopologicalSpace Y] {f : X → Y}
+variable {S : Set X} {Y : Type} [TopologicalSpace Y] {f : X → Y}
 
-def map (S : Set X) (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
+def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
 
-def map_comm (S : Set X) (hf : IsOpenEmbedding f) :
-  center' (f '' S) ∘ map S hf = f ∘ center' S := sorry
-def homeomorph_pullback_center (S : Set X) (hf : IsOpenEmbedding f) :
-  Homeomorph (Sides S) (pullback (C := TopCat) (ofHom ⟨f, hf.continuous⟩)
-  (ofHom ⟨center' (f '' S), center_isLocalHomeomorph.continuous⟩)) := sorry
+theorem map_comm (hf : IsOpenEmbedding f) (σ : Sides S) : (map hf σ).center = f (σ.center) := sorry
+
+def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
+  Homeomorph (Sides S) { p : Sides (f '' S) × X // center p.1 = f p.2 } := sorry
 
 end map
 
@@ -124,24 +122,31 @@ section lift
 variable {S : Set X} {U : Opens X}
 
 def lift : Sides (restrict_surface S U) → Sides S := sorry
-def lift' (S : Set X) (U : Opens X) := lift (S := S) (U := U)
 
-lemma lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift' S U =
-  map (restrict_surface S U) (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
+theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift (S := S) (U := U) =
+  map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
 
-def lift_comm (S : Set X) (U : Opens X) :
-    center' S ∘ lift' S U = Subtype.val ∘ center' (restrict_surface S U) :=
-  lift_eq_map_subtypeVal S U ▸ map_comm _ _
+theorem lift_comm (U : Opens X) {S : Set X} (σ : Sides (restrict_surface S U)) :
+    σ.lift.center = σ.center :=
+  lift_eq_map_subtypeVal S U ▸ map_comm (IsOpen.isOpenEmbedding_subtypeVal U.2) σ
 
 end lift
 
 
-def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
-  Homeomorph (center' S ⁻¹' U) (Sides (restrict_surface S U)) := sorry
+
+noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
+    Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) := by
+  have hemb : IsOpenEmbedding Subtype.val := IsOpen.isOpenEmbedding_subtypeVal U.2
+  have h := homeomorph_pullback_center (f := Subtype.val) (S := restrict_surface S U) hemb
+  have h2 := pullbackHomeoPreimage (center (S := S)) center_continuous Subtype.val hemb.isEmbedding
+  apply Subtype.range_val_subtype ▸ Homeomorph.trans h h2
 
 
-def other_lift {S T : Set X} : S ⊆ T → Sides T → Sides S := sorry
-def other_lift_comm {S T : Set X} (h : S ⊆ T) : center' T = center' S ∘ other_lift h := sorry
+
+def subsurface_colift {S T : Set X} : S ⊆ T → Sides T → Sides S := sorry
+theorem subsurface_colift_comm {S T : Set X} (h : S ⊆ T) (σ : Sides T) :
+  σ.center = (subsurface_colift h σ).center := sorry
+
 
 
 end Sides
