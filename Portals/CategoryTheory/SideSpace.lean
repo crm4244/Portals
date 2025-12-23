@@ -10,33 +10,32 @@ import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
 
 -- Here's an outline of the things i need to write
 
-
--- Define the components presheaf
+--X Define the components presheaf
 -- define sidespace of a TopCat morphism as etalespace of the sheafifcation
 -- sidesspace as a functor Top ↓ Top → Top
 -- projection into components
 -- commutativity of stuff
 
--- portal maps can be its own short file with just the definition. Maybe unneccesary
+--X portal maps can be its own short file with just the definition. Maybe unneccesary
 
 -- for another file:
--- component realizing function φ
--- component realizers as discrete fibrations
+--X component realizing function φ
+--X component realizers as discrete fibrations
 -- portal maps preserve component realizers
 -- do component realizers form a subcategory / subfunctor?
--- component transport function τ = φₚ⁻¹ ∘ φₐq
+--X component transport function τ = φₚ⁻¹ ∘ φₐq
 
 -- for later:
--- gluing pattern on an arbitrary group
--- transitivity
--- local consistency
+--X gluing pattern on an arbitrary group
+--X transitivity
+--X local consistency
 -- the other local condition about unique representation
 -- groupoid form
 -- Material space as the orbit space of the groupoid
 
--- the union surface
--- the recommendation maps
--- commutativity of τ and π. What was π again?
+--X the union surface
+--X the recommendation maps
+-- commutativity of τ and π
 
 -- the composition gluing pattern
 -- transitivity
@@ -90,9 +89,9 @@ variable {S : Set X}
 
 def center : Sides S → X := sorry
 
-def center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
+--def center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
 def center_continuous : Continuous (center (S := S)) := sorry
-def center_fiber_discrete (p : X) : DiscreteTopology {σ : Sides S // σ.center = p} := sorry
+--def center_fiber_discrete (p : X) : DiscreteTopology {σ : Sides S // σ.center = p} := sorry
 
 end center
 
@@ -123,7 +122,7 @@ variable {S : Set X} {U : Opens X}
 
 def lift : Sides (restrict_surface S U) → Sides S := sorry
 
-theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift (S := S) (U := U) =
+theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift (S := S) =
   map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
 
 theorem lift_comm (U : Opens X) {S : Set X} (σ : Sides (restrict_surface S U)) :
@@ -135,15 +134,17 @@ end lift
 
 
 noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
-    Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) := by
+    Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) :=
   have hemb : IsOpenEmbedding Subtype.val := IsOpen.isOpenEmbedding_subtypeVal U.2
-  have h := homeomorph_pullback_center (f := Subtype.val) (S := restrict_surface S U) hemb
-  have h2 := pullbackHomeoPreimage (center (S := S)) center_continuous Subtype.val hemb.isEmbedding
-  apply Subtype.range_val_subtype ▸ Homeomorph.trans h h2
+  (Subtype.range_coe_subtype ▸ SetLike.setOf_mem_eq U) ▸ Homeomorph.trans
+    (homeomorph_pullback_center (S := restrict_surface S U) hemb)
+    (pullbackHomeoPreimage center center_continuous Subtype.val hemb.isEmbedding)
 
 
 
 def subsurface_colift {S T : Set X} : S ⊆ T → Sides T → Sides S := sorry
+
+-- if we can relax the isOpenEmbedding condition on Sides.map then we can use map_comm to prove this
 theorem subsurface_colift_comm {S T : Set X} (h : S ⊆ T) (σ : Sides T) :
   σ.center = (subsurface_colift h σ).center := sorry
 
