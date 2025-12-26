@@ -34,8 +34,11 @@ variable {S : Set X}
 
 def restricted_surface (f : PortalMap S) : Set f.domain := Sides.restrict_surface S f.domain
 def surface_copy (f : PortalMap S) : Set X := f '' f.restricted_surface
-def restricted_surface_copy (f : PortalMap S) : Set (Set.range f) :=
-  Sides.restrict_surface f.surface_copy (Set.range f)
+def range (f : PortalMap S) := Set.range f
+def restricted_surface_copy (f : PortalMap S) : Set f.range :=
+  Sides.restrict_surface f.surface_copy f.range
+
+def opens_range (f : PortalMap S) : Opens X := ⟨Set.range f, f.isOpenEmbedding.isOpen_range⟩
 
 
 

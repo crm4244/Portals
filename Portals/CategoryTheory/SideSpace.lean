@@ -78,14 +78,19 @@ def Sides (S : Set X) : Type := sorry
 instance instTopologicalSpaceSideSpace (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
+
 namespace Sides
+
+variable {S : Set X}
+
+
 
 
 def touching_component (S : Set X) : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
 
 
+
 section center
-variable {S : Set X}
 
 def center : Sides S → X := sorry
 
@@ -95,39 +100,53 @@ def center_continuous : Continuous (center (S := S)) := sorry
 
 end center
 
+def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
 
-def restrict_surface (S : Set X) (U : Set X) : Set U := Subtype.val ⁻¹' S
-def restricted_sides_at (S U : Set X) (p : X) : Set (Sides (restrict_surface S U)) :=
-  {σ : Sides (restrict_surface S U) | σ.center = p}
-def restricted_touching_component_at (S U : Set X) (p : X) :
-    restricted_sides_at S U p → ConnectedComponents (Subtype (restrict_surface S U)ᶜ) :=
-  (restricted_sides_at S U p).restrict (touching_component (restrict_surface S U))
+def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
+
+def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+    Set (Sides (restrict_surface S U)) :=
+  sides_at (restrict_surface S U) ⟨p, hp⟩
+
+def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+    restricted_sides_at S hp → ConnectedComponents (Subtype (restrict_surface S U)ᶜ) :=
+  (restricted_sides_at S hp).restrict (touching_component (restrict_surface S U))
 
 
 section map
-variable {S : Set X} {Y : Type} [TopologicalSpace Y] {f : X → Y}
+variable {Y : Type} [TopologicalSpace Y] {f : X → Y}
 
 def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
 
 theorem map_comm (hf : IsOpenEmbedding f) (σ : Sides S) : (map hf σ).center = f (σ.center) := sorry
 
+theorem isOpenEmbedding_map (hf : IsOpenEmbedding f) : IsOpenEmbedding (map (S := S) hf) := sorry
+
 def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
-  Homeomorph (Sides S) { p : Sides (f '' S) × X // center p.1 = f p.2 } := sorry
+    Homeomorph (Sides S) { p : Sides (f '' S) × X // center p.1 = f p.2 } := by
+  have h : Set.univ ≃ₜ _ := (isOpenEmbedding_map (S := S) hf).homeomorphImage Set.univ
+  simp? at h
+  rw [Set.image_univ] at h
+  #check Set.univ_subtype
+  sorry
 
 end map
 
 
 section lift
-variable {S : Set X} {U : Opens X}
+variable {U : Opens X}
 
 def lift : Sides (restrict_surface S U) → Sides S := sorry
 
 theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift (S := S) =
   map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
 
-theorem lift_comm (U : Opens X) {S : Set X} (σ : Sides (restrict_surface S U)) :
+theorem lift_comm {U : Opens X} (σ : Sides (restrict_surface S U)) :
     σ.lift.center = σ.center :=
   lift_eq_map_subtypeVal S U ▸ map_comm (IsOpen.isOpenEmbedding_subtypeVal U.2) σ
+
+theorem isOpenEmbedding_lift : IsOpenEmbedding (lift (S := S) (U := U)) :=
+  lift_eq_map_subtypeVal S U ▸ isOpenEmbedding_map (IsOpen.isOpenEmbedding_subtypeVal U.2)
 
 end lift
 
@@ -141,12 +160,42 @@ noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) 
     (pullbackHomeoPreimage center center_continuous Subtype.val hemb.isEmbedding)
 
 
+theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U)) :
+    σ.lift.center ∈ U :=
+  σ.lift_comm ▸ σ.center.2
 
-def subsurface_colift {S T : Set X} : S ⊆ T → Sides T → Sides S := sorry
+
+noncomputable def restrict_of_mem {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
+    Sides (restrict_surface S U) :=
+  (Sides.homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
+
+
+theorem center_eq_of_restrict {S : Set X} {U : Opens X} {a b : Sides S}
+  (hab : a.center = b.center) (hmem : a.center ∈ U) :
+    (Sides.restrict_of_mem hmem).center = (Sides.restrict_of_mem (hab ▸ hmem)).center := by
+  -- we need something about how Subtype.val ⁻¹' is a homeomorphism
+
+  simp?
+
+  sorry
+
+
+theorem lift_restrict {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
+    (restrict_of_mem hσ).lift = σ := by
+
+  sorry
+
+theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
+    restrict_of_mem σ.center_mem_of_restricted = σ :=
+  isOpenEmbedding_lift.injective (lift_restrict σ.center_mem_of_restricted)
+
+
+def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry
 
 -- if we can relax the isOpenEmbedding condition on Sides.map then we can use map_comm to prove this
-theorem subsurface_colift_comm {S T : Set X} (h : S ⊆ T) (σ : Sides T) :
+theorem subsurface_colift_comm {T : Set X} (h : S ⊆ T) (σ : Sides T) :
   σ.center = (subsurface_colift h σ).center := sorry
+
 
 
 
