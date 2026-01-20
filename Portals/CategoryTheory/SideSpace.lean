@@ -57,13 +57,17 @@ open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 variable {X : Type} [TopologicalSpace X]
 
 
+def punctured_components (S : Set X) (U : Opens X) : Type := ConnectedComponents (Subtype (U.1 \ S))
+def restrict_components (S : Set X) {U V : Opens X} (h : V.1 ⊆ U.1) :
+    ConnectedComponents (Subtype (V.1 \ S)) → ConnectedComponents (Subtype (U.1 \ S)) :=
+  Continuous.connectedComponentsMap
+    (Continuous.subtype_mk continuous_subtype_val fun ⟨_, hV, hS⟩ ↦ ⟨h hV, hS⟩)
 
 
 /- this is the one i want to use -/
 def precosheaf (S : Set X) : Opens X ⥤ Type := {
-  obj := fun U ↦ ConnectedComponents (Subtype (U.1 \ S))
-  map := fun {V U} f ↦ Continuous.connectedComponentsMap
-    (Continuous.subtype_mk continuous_subtype_val fun ⟨_, hV, hS⟩ ↦ ⟨f.le hV, hS⟩)
+  obj := fun U ↦ punctured_components S U
+  map := fun {V U} f ↦ restrict_components S f.le
   map_id := by intro; ext ⟨_⟩; rfl
   map_comp := by intros; ext ⟨_⟩; rfl
 }

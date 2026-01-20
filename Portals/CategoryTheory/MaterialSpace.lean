@@ -205,6 +205,15 @@ theorem composedGluingattern_isLocallyConsistent
 
 #check Multipliable
 
+
+
+
+
+
+-- if we have a locally consistent component realizer, then cannonically Homeomorph U MatSpace.
+-- for any choice of representative ConnectedComponent of U\S.
+-- this is intuitively true because we can reshuffle the components to match material space.
+
 end composition_construction
 
 

@@ -3,7 +3,7 @@
 import Portals.CategoryTheory.SideSpace
 
 
-open TopologicalSpace Sides
+open Topology TopologicalSpace Sides
 
 variable {X : Type} [TopologicalSpace X]
 
@@ -84,24 +84,62 @@ theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
 section subrealizer
 
 
-def subrealizer_open (R : ComponentRealizer U S p) (V : Opens X) : Opens X := by
-  -- take the intersection U ∩ V, split it into components, use only components that touch p
-  -- recombine the components like interior(closure(union))
-  sorry
-
-def subrealizer (R : ComponentRealizer U S p) (V : Opens X) :
-    ComponentRealizer (R.subrealizer_open V) S p := by
-
-  sorry
-
-theorem subrealizer_subset_left (R : ComponentRealizer U S p) (V : Opens X) :
-    (R.subrealizer_open V).1 ⊆ U := by
-  sorry
+def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X :=
+  {
+    carrier := Subtype.val '' interior (closure (Subtype.val ''
+      ⋃ C ∈ Sides.touching_component (restrict_surface S (U ∩ V)) ''
+        (center (S := restrict_surface S (U ∩ V)) ⁻¹'
+          {⟨p, R.hub_mem, hV⟩}), { x | Quot.mk _ x = C }))
+    is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen (IsOpen.isOpenEmbedding_subtypeVal
+      (IsOpen.inter U.2 V.2))).mp isOpen_interior
+  }
 
 
-theorem subrealizer_subset_right (R : ComponentRealizer U S p) (V : Opens X) :
-    (R.subrealizer_open V).1 ⊆ V := by
-  sorry
+theorem subrealizer_subset_inter (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+    (R.subrealizing_open hV).1 ⊆ U ∩ V := fun _ ⟨x, _, h⟩ ↦ h ▸ x.2
+
+
+theorem subrealizer_subset (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+    (R.subrealizing_open hV).1 ⊆ U :=
+  fun _ h ↦ (R.subrealizer_subset_inter hV h).1
+
+
+theorem subrealizer_subset' (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+    (R.subrealizing_open hV).1 ⊆ V :=
+  fun _ h ↦ (R.subrealizer_subset_inter hV h).2
+
+
+def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+    ComponentRealizer (R.subrealizing_open hV) S p :=
+  {
+    hub_mem := by
+      unfold subrealizing_open
+      simp?
+      -- maybe by contradiction? if V gets too close to p then p is in the boundary and V isnt open
+      by_contra h
+
+      sorry
+    touching_component_inv := by
+
+      intro C
+      unfold subrealizing_open at C
+      simp at C
+
+
+      -- find the Component C' of U that C came from.
+      #check R.subrealizer_subset hV
+      #check (⟨U ∩ V, IsOpen.inter U.2 V.2⟩ : Opens X)
+      #check restrict_components S (R.subrealizer_subset hV)
+      -- map C' to a side of p in U using touching_component_inv
+      #check R.touching_component_inv
+      -- restriction to a side of p in U ∩ V using restrict_of_mem with hV
+      sorry
+
+    touching_component_inv_isInvLeft := by sorry
+
+    touching_component_inv_isInvRight := by sorry
+  }
+
 
 
 end subrealizer
