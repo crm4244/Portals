@@ -38,7 +38,7 @@ def range (f : PortalMap S) := Set.range f
 def restricted_surface_copy (f : PortalMap S) : Set f.range :=
   Sides.restrict_surface f.surface_copy f.range
 
-def opens_range (f : PortalMap S) : Opens X := ⟨Set.range f, f.isOpenEmbedding.isOpen_range⟩
+def opens_range (f : PortalMap S) : Opens X := ⟨f.range, f.isOpenEmbedding.isOpen_range⟩
 
 
 

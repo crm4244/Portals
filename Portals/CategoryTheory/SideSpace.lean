@@ -167,17 +167,7 @@ theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U
 
 noncomputable def restrict_of_mem {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
     Sides (restrict_surface S U) :=
-  (Sides.homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
-
-
-theorem center_eq_of_restrict {S : Set X} {U : Opens X} {a b : Sides S}
-  (hab : a.center = b.center) (hmem : a.center ∈ U) :
-    (Sides.restrict_of_mem hmem).center = (Sides.restrict_of_mem (hab ▸ hmem)).center := by
-  -- we need something about how Subtype.val ⁻¹' is a homeomorphism
-
-  simp?
-
-  sorry
+  (homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
 
 
 theorem lift_restrict {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
@@ -188,6 +178,11 @@ theorem lift_restrict {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
 theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
     restrict_of_mem σ.center_mem_of_restricted = σ :=
   isOpenEmbedding_lift.injective (lift_restrict σ.center_mem_of_restricted)
+
+
+theorem restrict_comm {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
+    (restrict_of_mem hσ).center = σ.center :=
+  (lift_restrict hσ ▸ lift_comm (restrict_of_mem hσ)).symm
 
 
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry
