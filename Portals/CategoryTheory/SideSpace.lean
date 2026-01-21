@@ -35,7 +35,7 @@ import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
 
 --X the union surface
 --X the recommendation maps
--- commutativity of τ and π
+--X commutativity of τ and π
 
 -- the composition gluing pattern
 -- transitivity
@@ -57,9 +57,10 @@ open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 variable {X : Type} [TopologicalSpace X]
 
 
-def punctured_components (S : Set X) (U : Opens X) : Type := ConnectedComponents (Subtype (U.1 \ S))
-def restrict_components (S : Set X) {U V : Opens X} (h : V.1 ⊆ U.1) :
-    ConnectedComponents (Subtype (V.1 \ S)) → ConnectedComponents (Subtype (U.1 \ S)) :=
+def punctured_components (S : Set X) (U : Set X) : Type := ConnectedComponents (Subtype (U \ S))
+
+def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
+    punctured_components S V → punctured_components S U :=
   Continuous.connectedComponentsMap
     (Continuous.subtype_mk continuous_subtype_val fun ⟨_, hV, hS⟩ ↦ ⟨h hV, hS⟩)
 
@@ -67,7 +68,7 @@ def restrict_components (S : Set X) {U V : Opens X} (h : V.1 ⊆ U.1) :
 /- this is the one i want to use -/
 def precosheaf (S : Set X) : Opens X ⥤ Type := {
   obj := fun U ↦ punctured_components S U
-  map := fun {V U} f ↦ restrict_components S f.le
+  map := fun {V U} f ↦ punctured_component_of_subset S f.le
   map_id := by intro; ext ⟨_⟩; rfl
   map_comp := by intros; ext ⟨_⟩; rfl
 }
@@ -79,7 +80,7 @@ def precosheaf (S : Set X) : Opens X ⥤ Type := {
 -- for now im just writing in the behavior i need.
 -- later this will use the co-etale space construction.
 def Sides (S : Set X) : Type := sorry
-instance instTopologicalSpaceSideSpace (S : Set X) : TopologicalSpace (Sides S) := sorry
+instance instTopologicalSpaceSides (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
 
@@ -90,6 +91,7 @@ variable {S : Set X}
 
 
 
+def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
 def touching_component (S : Set X) : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
 
 
@@ -98,23 +100,56 @@ section center
 
 def center : Sides S → X := sorry
 
---def center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
-def center_continuous : Continuous (center (S := S)) := sorry
---def center_fiber_discrete (p : X) : DiscreteTopology {σ : Sides S // σ.center = p} := sorry
+--theorem center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
+theorem center_continuous : Continuous (center (S := S)) := sorry
 
 end center
 
-def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
 
-def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
+
+section components
+
+def restrict_punctured (S : Set X) (U : Set X) (p : Subtype (U \ S)) :
+    Subtype (restrict_surface S U)ᶜ := ⟨⟨p.1, p.2.1⟩, p.2.2⟩
+
+def restricted_punctured_components (S : Set X) (U : Set X) : Type :=
+  ConnectedComponents (Subtype (restrict_surface S U)ᶜ)
+
+def restrict_punctured_component (S : Set X) (U : Set X) (C : punctured_components S U) :
+    restricted_punctured_components S U := by
+  apply Quotient.map (sa := connectedComponentSetoid _) (restrict_punctured S U)
+  · intro ⟨a, haU, haS⟩ ⟨b, hbU, hbS⟩ hab
+    unfold restrict_punctured
+    unfold HasEquiv.Equiv instHasEquivOfSetoid connectedComponentSetoid at ⊢ hab
+    simp? at ⊢ hab
+
+    sorry
+  exact C
+
+-- then the inverse
+-- equiv
+-- homeomorph
+
+end components
+
+
+
+section at_point
+
+def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
 
 def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
     Set (Sides (restrict_surface S U)) :=
   sides_at (restrict_surface S U) ⟨p, hp⟩
 
 def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
-    restricted_sides_at S hp → ConnectedComponents (Subtype (restrict_surface S U)ᶜ) :=
+    restricted_sides_at S hp → restricted_punctured_components S U :=
   (restricted_sides_at S hp).restrict (touching_component (restrict_surface S U))
+
+theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
+
+end at_point
+
 
 
 section map
@@ -137,13 +172,14 @@ def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
 end map
 
 
+
 section lift
 variable {U : Opens X}
 
 def lift : Sides (restrict_surface S U) → Sides S := sorry
 
-theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) : lift (S := S) =
-  map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
+theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) :
+  lift (S := S) = map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
 
 theorem lift_comm {U : Opens X} (σ : Sides (restrict_surface S U)) :
     σ.lift.center = σ.center :=
@@ -158,10 +194,10 @@ end lift
 
 noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
     Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) :=
-  have hemb : IsOpenEmbedding Subtype.val := IsOpen.isOpenEmbedding_subtypeVal U.2
+  have h : IsOpenEmbedding Subtype.val := IsOpen.isOpenEmbedding_subtypeVal U.2
   (Subtype.range_coe_subtype ▸ SetLike.setOf_mem_eq U) ▸ Homeomorph.trans
-    (homeomorph_pullback_center (S := restrict_surface S U) hemb)
-    (pullbackHomeoPreimage center center_continuous Subtype.val hemb.isEmbedding)
+    (homeomorph_pullback_center (S := restrict_surface S U) h)
+    (pullbackHomeoPreimage center center_continuous Subtype.val h.isEmbedding)
 
 
 theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U)) :

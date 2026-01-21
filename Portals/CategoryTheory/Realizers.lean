@@ -15,7 +15,7 @@ namespace Portal
 
 class ComponentRealizer (U : Opens X) (S : Set X) (hub : X) where
   hub_mem : hub ∈ U
-  touching_component_inv : ConnectedComponents (Subtype (restrict_surface S U)ᶜ) →
+  touching_component_inv : restricted_punctured_components S U →
     restricted_sides_at S hub_mem
   touching_component_inv_isInvLeft : Function.LeftInverse touching_component_inv
     (restricted_touching_component_at S hub_mem)
@@ -122,17 +122,39 @@ def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
     touching_component_inv := by
 
       intro C
-      unfold subrealizing_open at C
-      simp at C
+      --unfold subrealizing_open at C
+      --simp only [Opens.coe_mk] at C
 
 
       -- find the Component C' of U that C came from.
       #check R.subrealizer_subset hV
       #check (⟨U ∩ V, IsOpen.inter U.2 V.2⟩ : Opens X)
       #check restrict_components S (R.subrealizer_subset hV)
+
+
+
+          --TODO: move this to global scope
+      let f : Subtype (restrict_surface S ↑(R.subrealizing_open hV))ᶜ →
+          Subtype ((R.subrealizing_open hV).1 \ S) := fun ⟨⟨x, hx⟩, hS⟩ ↦ ⟨x, hx, hS⟩
+
+
+      let ff := Quotient.map (sa := connectedComponentSetoid _)
+          (sb := connectedComponentSetoid _) f (by
+        intro ⟨⟨a, ha⟩, haS⟩ ⟨⟨b, hb⟩, hbS⟩ h
+        unfold HasEquiv.Equiv instHasEquivOfSetoid connectedComponentSetoid at ⊢ h
+        simp only [f] at ⊢ h
+        --#check connectedComponentIn_eq_image (And.intro ha haS)
+        sorry)
+
+      let C' := restrict_components S (R.subrealizer_subset hV) (ff C)
+
+      #check Subtype.val '' (restrict_surface S ↑(R.subrealizing_open hV))ᶜ
+      #check (R.subrealizing_open hV).carrier \ S
+
+
       -- map C' to a side of p in U using touching_component_inv
-      #check R.touching_component_inv
-      -- restriction to a side of p in U ∩ V using restrict_of_mem with hV
+      #check R.touching_component_inv C'
+      -- restrict to a side of p in U ∩ V using restrict_of_mem with ⟨R.hub_mem, hV⟩
       sorry
 
     touching_component_inv_isInvLeft := by sorry
