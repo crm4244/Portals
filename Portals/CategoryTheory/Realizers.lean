@@ -2,16 +2,32 @@
 
 import Portals.CategoryTheory.SideSpace
 
-
-open Topology TopologicalSpace Sides
+open Topology TopologicalSpace
 
 variable {X : Type} [TopologicalSpace X]
 
 
+
+
+
+-- for some reason this isnt in the library already
+namespace Opens
+def inter (U V : Opens X) : Opens X := ⟨U.1 ∩ V.1, IsOpen.inter U.2 V.2⟩
+-- maybe add ∩ notation for this?
+end Opens
+
+
+
+
+
+
+
 namespace Portal
 
+open Sides
 
--- set --> carrier
+
+
 
 class ComponentRealizer (U : Opens X) (S : Set X) (hub : X) where
   hub_mem : hub ∈ U
@@ -35,15 +51,14 @@ variable {U : Opens X} {S : Set X} {p : X}
 def restricted_surface (R : ComponentRealizer U S p) : Set U :=
   restrict_surface S U
 
-def punctured_component (R : ComponentRealizer U S p) : Type :=
-  ConnectedComponents (Subtype (restrict_surface S U)ᶜ)
+def punctured_components (R : ComponentRealizer U S p) : Type :=
+  restricted_punctured_components S U
 
 
 
 
 def equiv (R : ComponentRealizer U S p) :
-  Equiv (restricted_sides_at S R.hub_mem)
-    (ConnectedComponents (Subtype R.restricted_surfaceᶜ)) :=
+  Equiv (restricted_sides_at S R.hub_mem) R.punctured_components :=
   {
     toFun := restricted_touching_component_at S R.hub_mem
     invFun := R.touching_component_inv
@@ -59,8 +74,8 @@ theorem restricted_touching_component_at_bijective (R : ComponentRealizer U S p)
 
 
 def touching_component (R : ComponentRealizer U S p) :
-    Sides R.restricted_surface → R.punctured_component :=
-  Sides.touching_component R.restricted_surface
+    Sides R.restricted_surface → R.punctured_components :=
+  Sides.touching_component (S := R.restricted_surface)
 
 
 def restricted_side_transfer (R : ComponentRealizer U S p) (σ : Sides R.restricted_surface) :
@@ -84,14 +99,14 @@ theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
 section subrealizer
 
 
+
 def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X :=
   {
     carrier := Subtype.val '' interior (closure (Subtype.val ''
-      ⋃ C ∈ Sides.touching_component (restrict_surface S (U ∩ V)) ''
-        (center (S := restrict_surface S (U ∩ V)) ⁻¹'
-          {⟨p, R.hub_mem, hV⟩}), { x | Quot.mk _ x = C }))
-    is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen (IsOpen.isOpenEmbedding_subtypeVal
-      (IsOpen.inter U.2 V.2))).mp isOpen_interior
+      ⋃ C ∈ Set.range (restricted_touching_component_at S (U := Opens.inter U V) ⟨R.hub_mem, hV⟩),
+        { x | Quot.mk _ x = C }))
+    is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen
+      (IsOpen.isOpenEmbedding_subtypeVal (Opens.inter U V).2)).mp isOpen_interior
   }
 
 
@@ -109,55 +124,33 @@ theorem subrealizer_subset' (R : ComponentRealizer U S p) {V : Opens X} (hV : p 
   fun _ h ↦ (R.subrealizer_subset_inter hV h).2
 
 
-def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+theorem hub_mem_of_subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
+    p ∈ R.subrealizing_open hV := by
+  unfold subrealizing_open
+  simp?
+  -- maybe by contradiction? if V gets too close to p then p is in the boundary and V isnt open
+  by_contra h
+
+  sorry
+
+
+noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
     ComponentRealizer (R.subrealizing_open hV) S p :=
   {
-    hub_mem := by
-      unfold subrealizing_open
+    hub_mem := R.hub_mem_of_subrealizer hV
+    touching_component_inv := fun C ↦
+      let σ : restricted_sides_at S R.hub_mem :=
+        R.touching_component_inv (restrict_punctured_component (punctured_component_of_subset S
+          (R.subrealizer_subset hV) (lift_restricted_punctured_component C)))
+      have h : σ.1.lift.center ∈ R.subrealizing_open hV :=
+        (lift_comm σ.1).trans (Subtype.eq_iff.mp σ.2) ▸ (R.hub_mem_of_subrealizer hV)
+      ⟨restrict_of_mem h, Subtype.eq (restrict_comm h ▸ lift_comm σ.1 ▸ Subtype.eq_iff.mp σ.2)⟩
+
+    touching_component_inv_isInvLeft := by
+      intro ⟨a, (ha : a.center = _)⟩
       simp?
-      -- maybe by contradiction? if V gets too close to p then p is in the boundary and V isnt open
-      by_contra h
 
       sorry
-    touching_component_inv := by
-
-      intro C
-      --unfold subrealizing_open at C
-      --simp only [Opens.coe_mk] at C
-
-
-      -- find the Component C' of U that C came from.
-      #check R.subrealizer_subset hV
-      #check (⟨U ∩ V, IsOpen.inter U.2 V.2⟩ : Opens X)
-      #check restrict_components S (R.subrealizer_subset hV)
-
-
-
-          --TODO: move this to global scope
-      let f : Subtype (restrict_surface S ↑(R.subrealizing_open hV))ᶜ →
-          Subtype ((R.subrealizing_open hV).1 \ S) := fun ⟨⟨x, hx⟩, hS⟩ ↦ ⟨x, hx, hS⟩
-
-
-      let ff := Quotient.map (sa := connectedComponentSetoid _)
-          (sb := connectedComponentSetoid _) f (by
-        intro ⟨⟨a, ha⟩, haS⟩ ⟨⟨b, hb⟩, hbS⟩ h
-        unfold HasEquiv.Equiv instHasEquivOfSetoid connectedComponentSetoid at ⊢ h
-        simp only [f] at ⊢ h
-        --#check connectedComponentIn_eq_image (And.intro ha haS)
-        sorry)
-
-      let C' := restrict_components S (R.subrealizer_subset hV) (ff C)
-
-      #check Subtype.val '' (restrict_surface S ↑(R.subrealizing_open hV))ᶜ
-      #check (R.subrealizing_open hV).carrier \ S
-
-
-      -- map C' to a side of p in U using touching_component_inv
-      #check R.touching_component_inv C'
-      -- restrict to a side of p in U ∩ V using restrict_of_mem with ⟨R.hub_mem, hV⟩
-      sorry
-
-    touching_component_inv_isInvLeft := by sorry
 
     touching_component_inv_isInvRight := by sorry
   }

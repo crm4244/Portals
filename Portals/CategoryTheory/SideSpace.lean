@@ -51,13 +51,15 @@ import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
 
 open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 
-
-
-
 variable {X : Type} [TopologicalSpace X]
 
+namespace Portal
 
-def punctured_components (S : Set X) (U : Set X) : Type := ConnectedComponents (Subtype (U \ S))
+
+
+
+
+def punctured_components (S U : Set X) : Type := ConnectedComponents (Subtype (U \ S))
 
 def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
     punctured_components S V → punctured_components S U :=
@@ -92,7 +94,7 @@ variable {S : Set X}
 
 
 def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
-def touching_component (S : Set X) : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
+def touching_component {S : Set X} : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
 
 
 
@@ -109,26 +111,55 @@ end center
 
 section components
 
-def restrict_punctured (S : Set X) (U : Set X) (p : Subtype (U \ S)) :
-    Subtype (restrict_surface S U)ᶜ := ⟨⟨p.1, p.2.1⟩, p.2.2⟩
-
-def restricted_punctured_components (S : Set X) (U : Set X) : Type :=
+def restricted_punctured_components (S U : Set X) : Type :=
   ConnectedComponents (Subtype (restrict_surface S U)ᶜ)
 
-def restrict_punctured_component (S : Set X) (U : Set X) (C : punctured_components S U) :
-    restricted_punctured_components S U := by
-  apply Quotient.map (sa := connectedComponentSetoid _) (restrict_punctured S U)
+def restrict_punctured_subtype {S U : Set X} :
+    Subtype (U \ S) → Subtype (restrict_surface S U)ᶜ :=
+  fun p ↦ ⟨⟨p.1, p.2.1⟩, p.2.2⟩
+
+def lift_restricted_punctured_subtype {S U : Set X} :
+    Subtype (restrict_surface S U)ᶜ → Subtype (U \ S) :=
+  fun p ↦ ⟨p.1.1, p.1.2, p.2⟩
+
+def restrict_punctured_component {S U : Set X} :
+    punctured_components S U → restricted_punctured_components S U :=
+  fun C ↦ by
+  apply Quotient.map (sa := connectedComponentSetoid _)
+    (restrict_punctured_subtype (S := S) (U := U))
   · intro ⟨a, haU, haS⟩ ⟨b, hbU, hbS⟩ hab
-    unfold restrict_punctured
+    unfold restrict_punctured_subtype
     unfold HasEquiv.Equiv instHasEquivOfSetoid connectedComponentSetoid at ⊢ hab
     simp? at ⊢ hab
 
     sorry
   exact C
 
--- then the inverse
--- equiv
--- homeomorph
+def lift_restricted_punctured_component {S U : Set X} :
+    restricted_punctured_components S U → punctured_components S U :=
+  fun C ↦ by
+  apply Quotient.map (sa := connectedComponentSetoid _)
+    (lift_restricted_punctured_subtype (S := S) (U := U))
+  · intro ⟨⟨a, haU⟩, haS⟩ ⟨⟨b, hbU⟩, hbS⟩ hab
+    unfold lift_restricted_punctured_subtype
+    unfold HasEquiv.Equiv instHasEquivOfSetoid connectedComponentSetoid at ⊢ hab
+    simp? at ⊢ hab
+
+    sorry
+  exact C
+
+
+/-
+def punctured_components_restriction_equiv (S U : Set X) :
+    Equiv (punctured_components S U) (restricted_punctured_components S U) :=
+  {
+    toFun := restrict_punctured_component S U
+    invFun := lift_restricted_punctured_component S U
+    left_inv := by sorry
+    right_inv := by sorry
+  }
+-/
+
 
 end components
 
@@ -144,7 +175,7 @@ def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
 
 def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
     restricted_sides_at S hp → restricted_punctured_components S U :=
-  (restricted_sides_at S hp).restrict (touching_component (restrict_surface S U))
+  (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
 
 theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
 
@@ -238,7 +269,7 @@ end Sides
 
 
 
-
+end Portal
 
 
 
