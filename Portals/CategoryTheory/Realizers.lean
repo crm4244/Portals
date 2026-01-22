@@ -174,7 +174,7 @@ end ComponentRealizer
 
 
 
-
+-- im tempted to get rid of this structure
 class RealizingSurface (S : Set X) (f : X → Opens X) where
   realizer (p : X) : ComponentRealizer (f p) S p
 

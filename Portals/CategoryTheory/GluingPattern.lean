@@ -57,10 +57,24 @@ noncomputable def _t {f : X → Opens X} (R : RealizingSurface S f) {p r : X} (h
 
 def isLocallyConsistent (γ : GluingPattern S G)
     {f : X → Opens X} (R : RealizingSurface S f) : Prop :=
+  ∀ {p q : X}, (h : q ∈ f p) →
+  ∀ {a b : Sides S}, (ha : a.center = q) → (hb : b.center = q) →
+    γ ((_t R h ha).trans (_t R h hb).symm) = γ (ha.trans hb.symm)
+
+
+def isLocallyConsistent' (γ : GluingPattern S G)
+    {f : X → Opens X} (R : RealizingSurface S f) : Prop :=
   ∀ {p q r : X}, (hrp : r ∈ f p) → (hrq : r ∈ f q) →
   ∀ {a b : Sides S}, (ha : a.center = r) → (hb : b.center = r) →
     γ ((_t R hrp ha).trans (_t R hrp hb).symm) = γ ((_t R hrq ha).trans (_t R hrq hb).symm)
 
+
+
+-- now that ive proved this, we can rethink the defninitions a bit
+theorem isLocallyConsistent'_of_isLocallyConsistent (γ : GluingPattern S G)
+  {f : X → Opens X} (R : RealizingSurface S f) :
+    isLocallyConsistent γ R → isLocallyConsistent' γ R :=
+  fun h _ _ _ hrp hrq _ _ ha hb ↦ (h hrp ha hb).trans (h hrq ha hb).symm
 
 end GluingPattern
 
