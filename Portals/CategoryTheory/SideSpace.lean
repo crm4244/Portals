@@ -188,17 +188,31 @@ variable {Y : Type} [TopologicalSpace Y] {f : X → Y}
 
 def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
 
-theorem map_comm (hf : IsOpenEmbedding f) (σ : Sides S) : (map hf σ).center = f (σ.center) := sorry
+theorem map_comm (hf : IsOpenEmbedding f) (σ : Sides S) : (map hf σ).center = f σ.center := sorry
 
 theorem isOpenEmbedding_map (hf : IsOpenEmbedding f) : IsOpenEmbedding (map (S := S) hf) := sorry
 
-def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
-    Homeomorph (Sides S) { p : Sides (f '' S) × X // center p.1 = f p.2 } := by
+-- we might be able to export this to the etale space file
+open Classical in noncomputable def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
+    Homeomorph (Sides S) { x : Sides (f '' S) × X // x.1.center = f x.2 } := by
   have h : Set.univ ≃ₜ _ := (isOpenEmbedding_map (S := S) hf).homeomorphImage Set.univ
-  simp? at h
   rw [Set.image_univ] at h
-  #check Set.univ_subtype
-  sorry
+  apply (Homeomorph.Set.univ (Sides S)).symm.trans
+  apply h.trans
+  exact {
+    toFun := fun ⟨a, ha⟩ ↦ ⟨⟨a, (choose ha).center⟩,
+      (map_comm hf _) ▸ congr_arg center (choose_spec ha).symm⟩
+    invFun := fun ⟨⟨σ, p⟩, h⟩ ↦ by
+      simp? at h
+      use σ
+      simp?
+      -- i think this requires reasoning about sheaves
+      sorry
+    left_inv := sorry
+    right_inv := sorry
+    continuous_toFun := sorry
+    continuous_invFun := sorry
+  }
 
 end map
 

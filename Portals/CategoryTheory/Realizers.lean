@@ -152,7 +152,15 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
 
       sorry
 
-    touching_component_inv_isInvRight := by sorry
+    touching_component_inv_isInvRight := by
+      intro C
+      simp?
+      unfold restricted_punctured_components at C
+      unfold restricted_touching_component_at Set.restrict
+      simp?
+
+
+      sorry
   }
 
 
