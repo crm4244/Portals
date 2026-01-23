@@ -71,7 +71,7 @@ instance basis_isBasis : IsTopologicalBasis (basis F) :=
 
 
 
-theorem proj_continuous (F : X.Presheaf (Type u)) :
+theorem proj_continuous {F : X.Presheaf (Type u)} :
     @Continuous (EtaleSpace F) X (topology F) X.str proj :=
   Continuous.mk fun V hV ↦
   let Vo : Opens X := ⟨V, hV⟩
@@ -97,8 +97,12 @@ theorem proj_continuous (F : X.Presheaf (Type u)) :
 
 
 
-def projMorph {F : X.Presheaf (Type u)} : obj F ⟶ X :=
-  TopCat.ofHom ⟨proj, proj_continuous F⟩
+def proj_continuousMap {F : X.Presheaf (Type u)} : ContinuousMap (EtaleSpace F) X :=
+  ⟨proj, proj_continuous⟩
+
+
+def ofHom_proj (F : X.Presheaf (Type u)) : obj F ⟶ X :=
+  TopCat.ofHom proj_continuousMap
 
 
 
@@ -106,7 +110,7 @@ open Classical in
 
 /-- Local homeomorphism structure on the projection. -/
 def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
-    IsLocalHomeomorph (proj : EtaleSpace F → X) :=
+    IsLocalHomeomorph (proj (F := F)) :=
   by
     intro ⟨x, ξ⟩
     match germ_exist F x ξ with
@@ -143,7 +147,7 @@ def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
           ) ▸ U.2
 
         continuousOn_toFun := continuousOn_iff_continuous_restrict.mpr
-          (Continuous.comp (proj_continuous F) continuous_subtype_val)
+          (Continuous.comp proj_continuous continuous_subtype_val)
 
         continuousOn_invFun := by
           unfold proj invFun inv_on_U
@@ -169,7 +173,7 @@ def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
                 hp_germ⟩, rfl⟩ _hyV
               have hyV : y ∈ V := Set.mem_preimage.mp _hyV
               apply Set.mem_preimage.mpr
-              unfold basicOpen
+              unfold basicSet
               --rw [Set.restrict_apply]
               rw [UorIgnore_of_mem ⟨y, hyU⟩]
               rw [Set.mem_setOf_eq]
@@ -199,17 +203,17 @@ def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
 
 
 
-def projIsOpenMap {F : X.Presheaf (Type u)} :
-    IsOpenMap (projMap : space F ⟶ X) := by
+def proj_isOpenMap {F : X.Presheaf (Type u)} :
+    IsOpenMap (proj (F := F)) := by
 
   sorry
 
 
 
 /-- The projection is an étale map. -/
-def isEtale {X : TopCat} {F : X.Presheaf (Type u)} :
-    IsOpenMap (projMap : space F ⟶ X) ∧ IsLocalHomeomorph (projMap : space F ⟶ X) :=
-  ⟨projIsOpenMap, projIsLocalHomeomorph⟩
+def proj_isEtale {X : TopCat} {F : X.Presheaf (Type u)} :
+    IsOpenMap (proj (F := F)) ∧ IsLocalHomeomorph (proj (F := F)) :=
+  ⟨proj_isOpenMap, projIsLocalHomeomorph⟩
 
 
 
