@@ -62,8 +62,8 @@ instance basis_isBasis : IsTopologicalBasis (basis F) :=
           hU ▸ ⟨hWU.le m, h.trans <| congr_fun (F.germ_res hWU q m) sU⟩,
           hV ▸ ⟨hWV.le m, h.trans <| (congr_arg (F.germ W q m) hW).trans <|
             congr_fun (F.germ_res hWV q m) sV⟩⟩⟩
-    sUnion_eq := Set.eq_univ_of_forall fun ⟨p, S⟩ ↦
-      have ⟨U, hpU, s, h⟩ := F.germ_exist p S
+    sUnion_eq := Set.eq_univ_of_forall fun ⟨p, ξ⟩ ↦
+      have ⟨U, hpU, s, h⟩ := F.germ_exist p ξ
       Set.mem_sUnion.mpr  ⟨basicSet U s, ⟨U, s, rfl⟩, hpU, h.symm⟩
     eq_generateFrom := rfl
   }
@@ -74,8 +74,7 @@ instance basis_isBasis : IsTopologicalBasis (basis F) :=
 theorem proj_continuous (F : X.Presheaf (Type u)) :
     @Continuous (EtaleSpace F) X (topology F) X.str proj :=
   Continuous.mk fun V hV ↦
-  let Vo := Opens.mk V hV
-
+  let Vo : Opens X := ⟨V, hV⟩
   have h : proj ⁻¹' V = ⋃ U : { U : basis F // proj '' U.1 ⊆ V }, U.1.1 := by
     apply Set.Subset.antisymm
       (fun ⟨x, ξ⟩ hp ↦ Set.mem_iUnion.mpr (
@@ -83,8 +82,8 @@ theorem proj_continuous (F : X.Presheaf (Type u)) :
         | ⟨U, hxU, s, hξ⟩ =>
           let morph := Opens.infLELeft U Vo
           let s' := F.map morph.op s
-          let O := basicOpen (U ⊓ Vo) s'
-          have hO1 : O ∈ basicOpens F := Set.mem_setOf_eq ▸ ⟨(U ⊓ Vo), s', rfl⟩
+          let O := basicSet (U ⊓ Vo) s'
+          have hO1 : O ∈ basis F := Set.mem_setOf_eq ▸ ⟨(U ⊓ Vo), s', rfl⟩
           have hO2 : proj '' (Subtype.mk O hO1).1 ⊆ V :=
             Set.image_subset_iff.mpr fun _ hq ↦ Set.mem_preimage.mpr hq.1.2
           have hxUVo : x ∈ U ⊓ Vo := Opens.mem_inf.mpr ⟨hxU, Set.mem_preimage.mp hp⟩
@@ -98,7 +97,7 @@ theorem proj_continuous (F : X.Presheaf (Type u)) :
 
 
 
-def projMap {F : X.Presheaf (Type u)} : obj F ⟶ X :=
+def projMorph {F : X.Presheaf (Type u)} : obj F ⟶ X :=
   TopCat.ofHom ⟨proj, proj_continuous F⟩
 
 

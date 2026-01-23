@@ -10,16 +10,6 @@ variable {X : Type} [TopologicalSpace X]
 
 
 
--- for some reason this isnt in the library already
-namespace Opens
-def inter (U V : Opens X) : Opens X := ⟨U.1 ∩ V.1, IsOpen.inter U.2 V.2⟩
--- maybe add ∩ notation for this?
-end Opens
-
-
-
-
-
 
 
 namespace Portal
@@ -103,10 +93,10 @@ section subrealizer
 def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X :=
   {
     carrier := Subtype.val '' interior (closure (Subtype.val ''
-      ⋃ C ∈ Set.range (restricted_touching_component_at S (U := Opens.inter U V) ⟨R.hub_mem, hV⟩),
+      ⋃ C ∈ Set.range (restricted_touching_component_at S (U := U ⊓ V) ⟨R.hub_mem, hV⟩),
         { x | Quot.mk _ x = C }))
     is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen
-      (IsOpen.isOpenEmbedding_subtypeVal (Opens.inter U V).2)).mp isOpen_interior
+      (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).2)).mp isOpen_interior
   }
 
 
