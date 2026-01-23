@@ -9,7 +9,6 @@ import Mathlib.Topology.Order
 
 namespace TopCat
 namespace Sheaf
-namespace EtaleSpace
 
 
 open CategoryTheory Opposite Presheaf Topology TopologicalSpace
@@ -20,68 +19,66 @@ universe u
 variable {X : TopCat}
 
 
-
 /-- Total space of stalks of a presheaf of Type us. -/
-def Total (F : X.Presheaf (Type u)) := Σ x : X, stalk F x
+def EtaleSpace (F : X.Presheaf (Type u)) := Σ x : X, stalk F x
 
 
-
-/-- Projection to the base space. -/
-def proj {F : X.Presheaf (Type u)} : Total F → X := Sigma.fst
-
+namespace EtaleSpace
+variable {F : X.Presheaf (Type u)}
 
 
-/-- Basic opens: germs of a section over an open. -/
-def basicOpen {F : X.Presheaf (Type u)} (U : Opens X) (s : F.obj (op U)) : Set (Total F) :=
+def proj : EtaleSpace F → X := Sigma.fst
+
+
+def basicSet (U : Opens X) (s : F.obj (op U)) : Set (EtaleSpace F) :=
   { p | ∃ hp : p.1 ∈ U, p.2 = germ F U p.1 hp s }
 
 
-
-/-- The generating set of basic opens. -/
-def basicOpens (F : X.Presheaf (Type u)) : Set (Set (Total F)) :=
-  { basicOpen U s | (U : Opens X) (s : F.obj (op U)) }
+variable (F)
 
 
 
-/-- Topology on the total space. -/
-instance topology (F : X.Presheaf (Type u)) : TopologicalSpace (Total F) :=
-  generateFrom (basicOpens F)
 
-/-
-instance basis (F : X.Presheaf (Type u)) : IsTopologicalBasis (basicOpens F) := by
-  apply IsTopologicalBasis.mk
-  · rintro _ ⟨U, s, rfl⟩ _ ⟨V, t, rfl⟩ x ⟨⟨hxU, hxs⟩, ⟨hxV, hxt⟩⟩
-    #check IsOpen.inter
-    let W : Opens X := ⟨U ∩ V, (IsOpen.inter U.2 V.2)⟩
-    have hWU : W.1 ⊆ U.1 := (fun _ ⟨h, _⟩ ↦ h : W.1 ⊆ U.1)
-    have m : W ⟶ U := hWU
-    use basicOpen W (F.restrict s sorry)
-    simp?
-    split_ands
-    · sorry
-    · unfold basicOpen
-      simp only [Opens.mem_mk, Set.mem_setOf_eq]
-      use ⟨hxU, hxV⟩
+def basis : Set (Set (EtaleSpace F)) :=
+  { basicSet U s | (U : Opens X) (s : F.obj (op U)) }
 
-      sorry
-  ·
-    sorry
-  · rfl
--/
 
-/-- The étale space as a topological space. -/
-def space (F : X.Presheaf (Type u)) : TopCat :=
-  let : TopologicalSpace (Total F) := topology F
-  TopCat.of (Total F)
+instance topology : TopologicalSpace (EtaleSpace F) :=
+  generateFrom (basis F)
+
+
+instance basis_isBasis : IsTopologicalBasis (basis F) :=
+  {
+    exists_subset_inter := by
+      rintro _ ⟨_, sU, rfl⟩ _ ⟨_, sV, rfl⟩ _ ⟨⟨_, hU⟩, ⟨_, hV⟩⟩
+      have ⟨W, hpW, hWU, hWV, hW⟩ := F.germ_eq _ _ _ sU sV (hU.symm.trans hV)
+      use basicSet W ((ConcreteCategory.hom (F.map hWU.op)) sU)
+      simp [basis, basicSet] -- this reformats it so this proof needs the simp sadly
+      -- should be able to redo it w/o simp later
+      exact ⟨⟨_, _, rfl⟩,
+        ⟨hpW, hU.trans <| congr_fun (F.germ_res _ _ _).symm _⟩,
+        fun _ m h ↦ ⟨hWU.le m, h.trans <| congr_fun (F.germ_res _ _ _) _⟩,
+        fun _ m h ↦ ⟨hWV.le m, h.trans <| (congr_arg (F.germ _ _ _) hW).trans <|
+            congr_fun (F.germ_res _ _ _) _⟩⟩
+    sUnion_eq := Set.eq_univ_of_forall fun _ ↦
+      Set.mem_sUnion.mpr ⟨basicSet _ _, ⟨_, _, rfl⟩, _, (F.germ_exist _ _).2.2.2.symm⟩
+    eq_generateFrom := rfl
+  }
+
+
+
+
+/-- The étale space as a TopCat object. -/
+def obj (F : X.Presheaf (Type u)) : TopCat := @TopCat.of (EtaleSpace F) (topology F)
 
 
 
 theorem proj_continuous (F : X.Presheaf (Type u)) :
-    @Continuous (Total F) X (topology F) X.str proj :=
+    @Continuous (EtaleSpace F) X (topology F) X.str proj :=
   Continuous.mk fun V hV ↦
   let Vo := Opens.mk V hV
 
-  have h : proj ⁻¹' V = ⋃ U : { U : basicOpens F // proj '' U.1 ⊆ V }, U.1.1 := by
+  have h : proj ⁻¹' V = ⋃ U : { U : basis F // proj '' U.1 ⊆ V }, U.1.1 := by
     apply Set.Subset.antisymm
       (fun ⟨x, ξ⟩ hp ↦ Set.mem_iUnion.mpr (
         match germ_exist F x ξ with
@@ -103,7 +100,7 @@ theorem proj_continuous (F : X.Presheaf (Type u)) :
 
 
 
-def projMap {F : X.Presheaf (Type u)} : space F ⟶ X :=
+def projMap {F : X.Presheaf (Type u)} : obj F ⟶ X :=
   TopCat.ofHom ⟨proj, proj_continuous F⟩
 
 
@@ -112,19 +109,19 @@ open Classical in
 
 /-- Local homeomorphism structure on the projection. -/
 def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
-    IsLocalHomeomorph (proj : Total F → X) :=
+    IsLocalHomeomorph (proj : EtaleSpace F → X) :=
   by
     intro ⟨x, ξ⟩
     match germ_exist F x ξ with
     | ⟨U, hxU, s, h_germ_concrete⟩ =>
-      let W := basicOpen U s
-      let inv_on_U (u : U) : Total F := ⟨u.1, germ F U u.1 u.2 s⟩
+      let W := basicSet U s
+      let inv_on_U (u : U) : EtaleSpace F := ⟨u.1, germ F U u.1 u.2 s⟩
       let UorIgnore y : U := if hyU : y ∈ U then ⟨y, hyU⟩ else ⟨x, hxU⟩
       let invFun y := inv_on_U (UorIgnore y)
       have UorIgnore_of_mem (u : U) : UorIgnore u.1 = u := dif_pos u.2
 
 
-      let f : OpenPartialHomeomorph (Total F) X := {
+      let f : OpenPartialHomeomorph (EtaleSpace F) X := {
         toFun := proj
         invFun := invFun
         source := W
@@ -162,7 +159,7 @@ def projIsLocalHomeomorph {F : X.Presheaf (Type u)} :
           have hxV : x ∈ V := sorry
           #check isOpen_generateFrom_of_mem
           #check generateFrom
-          have b : Opens.IsBasis ((fun U : basicOpens F ↦
+          have b : Opens.IsBasis ((fun U : basis F ↦
               ⟨U.1, isOpen_generateFrom_of_mem U.2⟩) '' Set.univ) := by
             sorry
           #check germ_eq_of_isBasis sorry F x hxU hxV sorry
@@ -220,5 +217,3 @@ def isEtale {X : TopCat} {F : X.Presheaf (Type u)} :
 
 
 end EtaleSpace
-end Sheaf
-end TopCat
