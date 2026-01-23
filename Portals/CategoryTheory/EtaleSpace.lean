@@ -47,29 +47,27 @@ instance topology : TopologicalSpace (EtaleSpace F) :=
   generateFrom (basis F)
 
 
+def obj (F : X.Presheaf (Type u)) : TopCat := @TopCat.of (EtaleSpace F) (topology F)
+
+
 instance basis_isBasis : IsTopologicalBasis (basis F) :=
   {
-    exists_subset_inter := by
-      rintro _ ⟨_, sU, rfl⟩ _ ⟨_, sV, rfl⟩ _ ⟨⟨_, hU⟩, ⟨_, hV⟩⟩
-      have ⟨W, hpW, hWU, hWV, hW⟩ := F.germ_eq _ _ _ sU sV (hU.symm.trans hV)
-      use basicSet W ((ConcreteCategory.hom (F.map hWU.op)) sU)
-      simp [basis, basicSet] -- this reformats it so this proof needs the simp sadly
-      -- should be able to redo it w/o simp later
-      exact ⟨⟨_, _, rfl⟩,
-        ⟨hpW, hU.trans <| congr_fun (F.germ_res _ _ _).symm _⟩,
-        fun _ m h ↦ ⟨hWU.le m, h.trans <| congr_fun (F.germ_res _ _ _) _⟩,
-        fun _ m h ↦ ⟨hWV.le m, h.trans <| (congr_arg (F.germ _ _ _) hW).trans <|
-            congr_fun (F.germ_res _ _ _) _⟩⟩
-    sUnion_eq := Set.eq_univ_of_forall fun _ ↦
-      Set.mem_sUnion.mpr ⟨basicSet _ _, ⟨_, _, rfl⟩, _, (F.germ_exist _ _).2.2.2.symm⟩
+    exists_subset_inter := fun _ ⟨_, sU, hU⟩ _ ⟨_, sV, hV⟩ ⟨p, _⟩ ⟨mU, mV⟩ ↦
+      have ⟨W, hpW, hWU, hWV, hW⟩ := F.germ_eq p (hU ▸ mU).1 (hV ▸ mV).1 sU sV
+        ((hU ▸ mU).2.symm.trans (hV ▸ mV).2)
+      ⟨basicSet W ((ConcreteCategory.hom (F.map hWU.op)) sU),
+        ⟨W, _, rfl⟩,
+        ⟨hpW, (hU ▸ mU).2.trans <| congr_fun (F.germ_res hWU p hpW).symm sU⟩,
+        fun ⟨q, _⟩ ⟨m, h⟩ ↦ ⟨
+          hU ▸ ⟨hWU.le m, h.trans <| congr_fun (F.germ_res hWU q m) sU⟩,
+          hV ▸ ⟨hWV.le m, h.trans <| (congr_arg (F.germ W q m) hW).trans <|
+            congr_fun (F.germ_res hWV q m) sV⟩⟩⟩
+    sUnion_eq := Set.eq_univ_of_forall fun ⟨p, S⟩ ↦
+      have ⟨U, hpU, s, h⟩ := F.germ_exist p S
+      Set.mem_sUnion.mpr  ⟨basicSet U s, ⟨U, s, rfl⟩, hpU, h.symm⟩
     eq_generateFrom := rfl
   }
 
-
-
-
-/-- The étale space as a TopCat object. -/
-def obj (F : X.Presheaf (Type u)) : TopCat := @TopCat.of (EtaleSpace F) (topology F)
 
 
 
