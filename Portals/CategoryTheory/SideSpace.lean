@@ -76,7 +76,7 @@ def precosheaf (S : Set X) : Opens X ⥤ Type := {
 }
 
 
-
+def presheaf (S : Set X) : (Opens X)ᵒᵖ ⥤ Typeᵒᵖ := sorry
 
 
 -- for now im just writing in the behavior i need.
