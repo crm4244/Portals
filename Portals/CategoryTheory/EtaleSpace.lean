@@ -20,7 +20,7 @@ variable {FC : C → C → Type*} {CC : C → Type v} [∀ X Y, FunLike (FC X Y)
 variable [ConcreteCategory.{v} C FC] [Limits.PreservesFilteredColimits (CategoryTheory.forget C)]
 
 
-def EtaleSpace (ℱ : X.Presheaf C) :=
+def EtaleSpace (ℱ : X.Presheaf C) : Type v :=
   Σ p : X, (CategoryTheory.forget C).obj (stalk ℱ p)
 
 
@@ -81,8 +81,8 @@ theorem proj_continuous :
     @Continuous (EtaleSpace ℱ) X (topology ℱ) X.str proj :=
   Continuous.mk fun V hV ↦
   let Vo : Opens X := ⟨V, hV⟩
-  have h : proj ⁻¹' V = ⋃ U : { U : basis ℱ // proj '' U.1 ⊆ V }, U.1.1 := by
-    apply Set.Subset.antisymm
+  have h : proj ⁻¹' V = ⋃ U : { U : basis ℱ // proj '' U.1 ⊆ V }, U.1.1 :=
+    Set.Subset.antisymm
       (fun ⟨x, ξ⟩ hp ↦ Set.mem_iUnion.mpr (
         match germ_exist ℱ x ξ with
         | ⟨U, hxU, s, hξ⟩ =>
@@ -97,7 +97,7 @@ theorem proj_continuous :
           ⟨⟨⟨O, hO1⟩, hO2⟩, hxUVo, hξ ▸ germ_res ℱ morph x hxUVo ▸
             ConcreteCategory.comp_apply _ _ _⟩))
 
-    · exact fun T ⟨U'', ⟨U, (hU : ↑↑U = U'')⟩, hT⟩ ↦
+      fun T ⟨U'', ⟨U, (hU : ↑↑U = U'')⟩, hT⟩ ↦
         Set.mem_preimage.mpr (U.2 ((Set.mem_image proj U.1.1 (proj T)).mpr ⟨T, ⟨hU ▸ hT, rfl⟩⟩))
 
   h ▸ isOpen_iUnion fun U ↦ isOpen_generateFrom_of_mem U.1.2

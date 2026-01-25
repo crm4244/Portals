@@ -1,6 +1,7 @@
---import Portals.CategoryTheory.EtaleSpace
+import Portals.CategoryTheory.EtaleSpace
 --import Portals.Legacy.Basic
 
+import Mathlib.CategoryTheory.Opposites
 import Mathlib.Topology.Sets.Opens
 import Mathlib.Topology.IsLocalHomeomorph
 import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
@@ -49,9 +50,10 @@ import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
 
 
 
-open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
+open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits Sheaf
 
-variable {X : Type} [TopologicalSpace X]
+universe u
+variable {X : Type u} [TopologicalSpace X]
 
 namespace Portal
 
@@ -59,7 +61,7 @@ namespace Portal
 
 
 
-def punctured_components (S U : Set X) : Type := ConnectedComponents (Subtype (U \ S))
+def punctured_components (S U : Set X) : Type u := ConnectedComponents (Subtype (U \ S))
 
 def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
     punctured_components S V → punctured_components S U :=
@@ -68,7 +70,7 @@ def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
 
 
 /- this is the one i want to use -/
-def precosheaf (S : Set X) : Opens X ⥤ Type := {
+def precosheaf (S : Set X) : Opens X ⥤ Type u := {
   obj := fun U ↦ punctured_components S U
   map := fun {V U} f ↦ punctured_component_of_subset S f.le
   map_id := by intro; ext ⟨_⟩; rfl
@@ -76,12 +78,19 @@ def precosheaf (S : Set X) : Opens X ⥤ Type := {
 }
 
 
-def presheaf (S : Set X) : (Opens X)ᵒᵖ ⥤ Typeᵒᵖ := sorry
+variable {FC : (Type u)ᵒᵖ → (Type u)ᵒᵖ → Type*} {CC : (Type u)ᵒᵖ → Type*}
+variable [∀ X Y, FunLike (FC X Y) (CC X) (CC Y)]
+variable [ConcreteCategory (Type u)ᵒᵖ FC]
+
+def presheaf (S : Set X) : (TopCat.of X).Presheaf (Type u)ᵒᵖ := (precosheaf S).op
+
+--#check fun S : Set X ↦ EtaleSpace (presheaf S)
+
 
 
 -- for now im just writing in the behavior i need.
 -- later this will use the co-etale space construction.
-def Sides (S : Set X) : Type := sorry
+def Sides (S : Set X) : Type u := EtaleSpace (presheaf S)
 instance instTopologicalSpaceSides (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
@@ -111,7 +120,7 @@ end center
 
 section components
 
-def restricted_punctured_components (S U : Set X) : Type :=
+def restricted_punctured_components (S U : Set X) : Type u :=
   ConnectedComponents (Subtype (restrict_surface S U)ᶜ)
 
 def restrict_punctured_subtype {S U : Set X} :
@@ -177,14 +186,15 @@ def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈
     restricted_sides_at S hp → restricted_punctured_components S U :=
   (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
 
-theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
+--theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
 
 end at_point
 
 
 
 section map
-variable {Y : Type} [TopologicalSpace Y] {f : X → Y}
+universe v
+variable {Y : Type v} [TopologicalSpace Y] {f : X → Y}
 
 def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
 
