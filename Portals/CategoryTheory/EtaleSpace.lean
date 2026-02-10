@@ -63,7 +63,7 @@ instance basis_isBasis : IsTopologicalBasis (basis ℱ) :=
         ⟨hpW, (hU ▸ mU).2.trans
           (by rw [(ℱ.germ_res hWU p hpW).symm]; apply ConcreteCategory.comp_apply)⟩,
         fun ⟨q, _⟩ ⟨m, h⟩ ↦
-          ⟨ -- we can make a function to cover the two cases because they are similar
+          ⟨ -- we could make a function to cover the two cases because they are similar
           hU ▸ ⟨hWU.le m, h.trans
             (by rw [← ℱ.germ_res hWU q m, ConcreteCategory.comp_apply])⟩,
           hV ▸ ⟨hWV.le m, h.trans <| (congr_arg (ℱ.germ W q m) hW).trans
@@ -157,72 +157,38 @@ def projIsLocalHomeomorph :
           (Continuous.comp proj_continuous continuous_subtype_val)
 
         continuousOn_invFun := by
-          unfold proj invFun inv_on_U
           apply continuousOn_iff_continuous_restrict.mpr
-          apply continuous_generateFrom_iff.mpr
-          rintro _ ⟨V, t, rfl⟩
-          apply isOpen_induced_iff.mpr
-          unfold Set.restrict
-          simp only
-          have hxV : x ∈ V := sorry
-          #check isOpen_generateFrom_of_mem
-          #check generateFrom
-          have b : Opens.IsBasis ((fun U : basis ℱ ↦
-              ⟨U.1, isOpen_generateFrom_of_mem U.2⟩) '' Set.univ) := by
-            sorry
-          #check germ_eq_of_isBasis sorry ℱ x hxU hxV sorry
-          #check germ_res
-          use V
+          apply (IsTopologicalBasis.continuous_iff (basis_isBasis ℱ)).mpr
+          intro A ⟨V, t, hA⟩
+          rw [← hA]
+          apply isOpen_iff_forall_mem_open.mpr
+          intro a ⟨ha, hst⟩
+          match germ_eq ℱ (UorIgnore a).1 (UorIgnore a).2 ha s t hst with
+          | ⟨A, hA, au, av, hst⟩ =>
+          use { b | ↑(UorIgnore ↑b) ∈ A }
           split_ands
-          · exact V.2
-          · apply Set.Subset.antisymm
-            · rintro ⟨_, ⟨y, μ⟩, ⟨hyU : y ∈ U,
-                hp_germ⟩, rfl⟩ _hyV
-              have hyV : y ∈ V := Set.mem_preimage.mp _hyV
-              apply Set.mem_preimage.mpr
-              unfold basicSet
-              --rw [Set.restrict_apply]
-              rw [UorIgnore_of_mem ⟨y, hyU⟩]
-              rw [Set.mem_setOf_eq]
-              use hyV
-
-              simp only
-              rw [(rfl : (Subtype.mk y hyU).2 = hyU)]
-              rw [← germ_res ℱ (Opens.infLELeft U V) y ⟨hyU, hyV⟩]
-              rw [← germ_res ℱ (Opens.infLERight U V) y ⟨hyU, hyV⟩]
-
-              simp
-              --apply congrArg
-
-              #check germ_res_apply
-
-              sorry
-
-
-            · rintro ⟨_, ⟨y, μ⟩, ⟨hyU : y ∈ U,
-                hp_germ : μ = germ ℱ U y hyU s⟩, rfl⟩ ⟨h, _⟩
-              apply Set.mem_preimage.mpr
-              simp only [Set.restrict_apply] at ⊢ h
-              have h := SetLike.mem_coe.mpr (UorIgnore_of_mem ⟨y, hyU⟩ ▸ h)
-              exact h
+          · exact fun ⟨p, p', ⟨hpU, hp2⟩, hp⟩ hpA ↦ ⟨av.le hpA, germ_ext ℱ A hpA au av hst⟩
+          · have r : { b : ↑(proj '' W) | ↑(UorIgnore b) ∈ A } = Subtype.val ⁻¹' A := by
+              apply Set.Subset.antisymm
+              · intro p hp
+                match (Set.mem_image proj W ↑p).mp p.2 with
+                | ⟨_, ⟨hwU, _⟩, hwp⟩ =>
+                have hhh''' := Set.mem_preimage.mpr
+                  (UorIgnore_of_mem ⟨↑p, hwp ▸ hwU⟩ ▸ Set.mem_setOf_eq ▸ hp)
+                exact hhh'''
+              · exact fun p hp ↦ Set.mem_setOf_eq ▸
+                  UorIgnore_of_mem ⟨↑p, au.le hp⟩ ▸ Set.mem_preimage.mp hp
+            exact r ▸ IsOpen.preimage continuous_subtype_val A.2
+          · exact hA
       }
 
       exact ⟨f, Set.mem_setOf_eq ▸ ⟨hxU, h_germ_concrete ▸ rfl⟩, rfl⟩
 
 
 
-def proj_isOpenMap :
-    IsOpenMap (proj (ℱ := ℱ)) := by
-
-  sorry
-
-
-
-/-- The projection is an étale map. -/
-def proj_isEtale :
-    IsOpenMap (proj (ℱ := ℱ)) ∧ IsLocalHomeomorph (proj (ℱ := ℱ)) :=
-  ⟨proj_isOpenMap, projIsLocalHomeomorph⟩
-
-
 
 end EtaleSpace
+
+end Sheaf
+
+end TopCat

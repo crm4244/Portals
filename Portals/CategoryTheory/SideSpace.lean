@@ -90,7 +90,7 @@ def presheaf (S : Set X) : (TopCat.of X).Presheaf (Type u)ᵒᵖ := (precosheaf 
 
 -- for now im just writing in the behavior i need.
 -- later this will use the co-etale space construction.
-def Sides (S : Set X) : Type u := EtaleSpace (presheaf S)
+def Sides (S : Set X) : Type u := sorry
 instance instTopologicalSpaceSides (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
@@ -103,7 +103,6 @@ variable {S : Set X}
 
 
 def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
-def touching_component {S : Set X} : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
 
 
 
@@ -174,23 +173,6 @@ end components
 
 
 
-section at_point
-
-def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
-
-def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
-    Set (Sides (restrict_surface S U)) :=
-  sides_at (restrict_surface S U) ⟨p, hp⟩
-
-def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
-    restricted_sides_at S hp → restricted_punctured_components S U :=
-  (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
-
---theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
-
-end at_point
-
-
 
 section map
 universe v
@@ -247,6 +229,30 @@ end lift
 
 
 
+
+def touching_component {S : Set X} : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
+
+theorem touching_component_comm (S : Set X) {U V : Opens X} (h : V ≤ U) :
+  touching_component (S := restrict_surface S V) ∘ punctured_component_of_subset S h = lift ∘ touching_component := by sorry
+
+
+
+section at_point
+
+def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
+
+def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+    Set (Sides (restrict_surface S U)) :=
+  sides_at (restrict_surface S U) ⟨p, hp⟩
+
+def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+    restricted_sides_at S hp → restricted_punctured_components S U :=
+  (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
+
+--theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
+
+end at_point
+
 noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
     Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) :=
   have h : IsOpenEmbedding Subtype.val := IsOpen.isOpenEmbedding_subtypeVal U.2
@@ -267,7 +273,6 @@ noncomputable def restrict_of_mem {U : Opens X} {σ : Sides S} (hσ : σ.center 
 
 theorem lift_restrict {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
     (restrict_of_mem hσ).lift = σ := by
-
   sorry
 
 theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :

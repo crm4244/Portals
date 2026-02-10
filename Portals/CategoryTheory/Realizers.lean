@@ -44,6 +44,9 @@ def restricted_surface (R : ComponentRealizer U S p) : Set U :=
 def punctured_components (R : ComponentRealizer U S p) : Type :=
   restricted_punctured_components S U
 
+def restricted_hub (R : ComponentRealizer U S p) : U :=
+  ⟨p, R.hub_mem⟩
+
 
 
 
@@ -130,11 +133,11 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
     hub_mem := R.hub_mem_of_subrealizer hV
     touching_component_inv := fun C ↦
       let σ : restricted_sides_at S R.hub_mem :=
-        R.touching_component_inv (restrict_punctured_component (punctured_component_of_subset S
-          (R.subrealizer_subset hV) (lift_restricted_punctured_component C)))
+        R.touching_component_inv <| restrict_punctured_component <| punctured_component_of_subset S
+          (R.subrealizer_subset hV) (lift_restricted_punctured_component C)
       have h : σ.1.lift.center ∈ R.subrealizing_open hV :=
-        (lift_comm σ.1).trans (Subtype.eq_iff.mp σ.2) ▸ (R.hub_mem_of_subrealizer hV)
-      ⟨restrict_of_mem h, Subtype.eq (restrict_comm h ▸ lift_comm σ.1 ▸ Subtype.eq_iff.mp σ.2)⟩
+        (lift_comm σ.1).trans (Subtype.eq_iff.mp σ.2) ▸ R.hub_mem_of_subrealizer hV
+      ⟨restrict_of_mem h, Subtype.eq <| restrict_comm h ▸ lift_comm σ.1 ▸ Subtype.eq_iff.mp σ.2⟩
 
     touching_component_inv_isInvLeft := by
       intro ⟨a, (ha : a.center = _)⟩
@@ -145,6 +148,7 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
     touching_component_inv_isInvRight := by
       intro C
       simp?
+
       unfold restricted_punctured_components at C
       unfold restricted_touching_component_at Set.restrict
       simp?
