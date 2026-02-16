@@ -70,27 +70,26 @@ def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
 
 
 /- this is the one i want to use -/
-def precosheaf (S : Set X) : Opens X ⥤ Type u := {
+def presheaf (S : Set X) : (Opens X)ᵒᵖ ⥤ (Type u)ᵒᵖ := ({
   obj := fun U ↦ punctured_components S U
   map := fun {V U} f ↦ punctured_component_of_subset S f.le
   map_id := by intro; ext ⟨_⟩; rfl
   map_comp := by intros; ext ⟨_⟩; rfl
-}
+} : Opens X ⥤ Type u).op
 
 
 variable {FC : (Type u)ᵒᵖ → (Type u)ᵒᵖ → Type*} {CC : (Type u)ᵒᵖ → Type*}
 variable [∀ X Y, FunLike (FC X Y) (CC X) (CC Y)]
 variable [ConcreteCategory (Type u)ᵒᵖ FC]
 
-def presheaf (S : Set X) : (TopCat.of X).Presheaf (Type u)ᵒᵖ := (precosheaf S).op
 
---#check fun S : Set X ↦ EtaleSpace (presheaf S)
+#check fun S : Set X ↦ EtaleSpace (presheaf S)
 
 
 
 -- for now im just writing in the behavior i need.
 -- later this will use the co-etale space construction.
-def Sides (S : Set X) : Type u := sorry
+def Sides (S : Set X) : Type u := EtaleSpace (presheaf S)
 instance instTopologicalSpaceSides (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
@@ -108,10 +107,10 @@ def restrict_surface (S U : Set X) : Set U := (↑) ⁻¹' S
 
 section center
 
-def center : Sides S → X := sorry
+def center : Sides S → X := sorry--(Sides S).proj
 
 --theorem center_isLocalHomeomorph : IsLocalHomeomorph (center (S := S)) := sorry
-theorem center_continuous : Continuous (center (S := S)) := sorry
+theorem center_continuous : Continuous (center (S := S)) := sorry--(Sides S).proj_continuous
 
 end center
 
@@ -213,10 +212,13 @@ end map
 section lift
 variable {U : Opens X}
 
-def lift : Sides (restrict_surface S U) → Sides S := sorry
-
-theorem lift_eq_map_subtypeVal (S : Set X) (U : Opens X) :
-  lift (S := S) = map (IsOpen.isOpenEmbedding_subtypeVal U.2) := sorry
+def lift : Sides (restrict_surface S U) → Sides (S ∩ U) := map (IsOpen.isOpenEmbedding_subtypeVal U.2)
+  intro
+  have h := map (IsOpen.isOpenEmbedding_subtypeVal U.2) a
+  simp only [restrict_surface] at h
+  #check Set.image_preimage_eq_of_subset (f := Subtype.val) (s := S)
+  rw [Set.image_preimage_eq_inter_range (f := Subtype.val) (t := S)] at h
+  sorry
 
 theorem lift_comm {U : Opens X} (σ : Sides (restrict_surface S U)) :
     σ.lift.center = σ.center :=

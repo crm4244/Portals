@@ -77,6 +77,9 @@ instance basis_isBasis : IsTopologicalBasis (basis ℱ) :=
 
 variable {ℱ}
 
+
+set_option linter.unusedVariables false
+
 theorem proj_continuous :
     @Continuous (EtaleSpace ℱ) X (topology ℱ) X.str proj :=
   Continuous.mk fun V hV ↦
@@ -96,20 +99,17 @@ theorem proj_continuous :
 
           ⟨⟨⟨O, hO1⟩, hO2⟩, hxUVo, hξ ▸ germ_res ℱ morph x hxUVo ▸
             ConcreteCategory.comp_apply _ _ _⟩))
-
       fun T ⟨U'', ⟨U, (hU : ↑↑U = U'')⟩, hT⟩ ↦
         Set.mem_preimage.mpr (U.2 ((Set.mem_image proj U.1.1 (proj T)).mpr ⟨T, ⟨hU ▸ hT, rfl⟩⟩))
 
   h ▸ isOpen_iUnion fun U ↦ isOpen_generateFrom_of_mem U.1.2
 
+set_option linter.unusedVariables true
 
-
-def proj_continuousMap : ContinuousMap (EtaleSpace ℱ) X :=
-  ⟨proj, proj_continuous⟩
 
 
 def ofHom_proj (ℱ : X.Presheaf C) : obj ℱ ⟶ X :=
-  TopCat.ofHom proj_continuousMap
+  TopCat.ofHom ⟨proj, proj_continuous⟩
 
 
 
