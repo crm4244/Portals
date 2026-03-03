@@ -23,9 +23,9 @@ class ComponentRealizer (U : Opens X) (S : Set X) (hub : X) where
   hub_mem : hub ∈ U
   touching_component_inv : restricted_punctured_components S U →
     restricted_sides_at S hub_mem
-  touching_component_inv_isInvLeft : Function.LeftInverse touching_component_inv
+  touching_component_left_inv : Function.LeftInverse touching_component_inv
     (restricted_touching_component_at S hub_mem)
-  touching_component_inv_isInvRight : Function.RightInverse touching_component_inv
+  touching_component_right_inv : Function.RightInverse touching_component_inv
     (restricted_touching_component_at S hub_mem)
 
 
@@ -36,13 +36,24 @@ namespace ComponentRealizer
 variable {U : Opens X} {S : Set X} {p : X}
 
 
+section Defs
+
+set_option linter.unusedVariables false
+
 
 
 def restricted_surface (R : ComponentRealizer U S p) : Set U :=
   restrict_surface S U
 
+
 def punctured_components (R : ComponentRealizer U S p) : Type :=
   restricted_punctured_components S U
+
+
+
+end Defs
+
+
 
 def restricted_hub (R : ComponentRealizer U S p) : U :=
   ⟨p, R.hub_mem⟩
@@ -55,8 +66,8 @@ def equiv (R : ComponentRealizer U S p) :
   {
     toFun := restricted_touching_component_at S R.hub_mem
     invFun := R.touching_component_inv
-    left_inv := R.touching_component_inv_isInvLeft
-    right_inv := R.touching_component_inv_isInvRight
+    left_inv := R.touching_component_left_inv
+    right_inv := R.touching_component_right_inv
   }
 
 
@@ -99,7 +110,7 @@ def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V)
       ⋃ C ∈ Set.range (restricted_touching_component_at S (U := U ⊓ V) ⟨R.hub_mem, hV⟩),
         { x | Quot.mk _ x = C }))
     is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen
-      (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).2)).mp isOpen_interior
+      (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).isOpen)).mp isOpen_interior
   }
 
 
@@ -139,13 +150,19 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
         (lift_comm σ.1).trans (Subtype.eq_iff.mp σ.2) ▸ R.hub_mem_of_subrealizer hV
       ⟨restrict_of_mem h, Subtype.eq <| restrict_comm h ▸ lift_comm σ.1 ▸ Subtype.eq_iff.mp σ.2⟩
 
-    touching_component_inv_isInvLeft := by
+    touching_component_left_inv := by
       intro ⟨a, (ha : a.center = _)⟩
+      simp?
+      apply Sides.isOpenEmbedding_lift.injective
+      rw [lift_restrict]
+      apply congr_arg
+
+      unfold restricted_touching_component_at Set.restrict
       simp?
 
       sorry
 
-    touching_component_inv_isInvRight := by
+    touching_component_right_inv := by
       intro C
       simp?
 
@@ -169,6 +186,7 @@ end ComponentRealizer
 
 
 -- im tempted to get rid of this structure
+/-
 class RealizingSurface (S : Set X) (f : X → Opens X) where
   realizer (p : X) : ComponentRealizer (f p) S p
 
@@ -178,5 +196,6 @@ namespace RealizingSurface
 
 
 end RealizingSurface
+-/
 
 end Portal

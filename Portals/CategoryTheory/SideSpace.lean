@@ -57,6 +57,32 @@ variable {X : Type u} [TopologicalSpace X]
 
 namespace Portal
 
+theorem connectedComponent_homeomorph {Y : Type*} [TopologicalSpace Y] (e : X ≃ₜ Y) (x : X) :
+    e '' connectedComponent x = connectedComponent (e x) := by
+  sorry
+
+-- okay, i need a theorem about how components match on homeomorphic spaces, and also we can map functions across this equivalence
+def ConnectedComponents.congr {Y : Type u} [TopologicalSpace Y] (e : X ≃ₜ Y) :
+    ConnectedComponents X ≃ ConnectedComponents Y :=
+  let f {X' Y' : Type u} [TopologicalSpace X'] [TopologicalSpace Y'] (e' : X' ≃ₜ Y') :
+      ConnectedComponents X' → ConnectedComponents Y' :=
+    Quotient.map e' fun a b s ↦ (connectedComponent_homeomorph e' a).symm.trans <|
+      (congr_arg (e' '' ·) s).trans (connectedComponent_homeomorph e' b)
+  let f_prop {X' Y' : Type u} [TopologicalSpace X'] [TopologicalSpace Y'] (e' : X' ≃ₜ Y') :
+      ∀ (C : ConnectedComponents X'), f e'.symm (f e' C) = C := fun C ↦ by
+    unfold f
+    match Quotient.exists_rep C with
+    | ⟨x, hx⟩ =>
+    exact hx ▸ Quotient.map_mk e' _ x ▸ Quotient.map_mk e'.symm _ (e' x) ▸
+      congr_arg (⟦·⟧) (Homeomorph.symm_apply_apply e' x)
+
+  {
+    toFun := f e
+    invFun := f e.symm
+    left_inv := f_prop e
+    right_inv := Homeomorph.symm_symm e ▸ f_prop e.symm
+  }
+
 
 
 
@@ -82,14 +108,17 @@ variable {FC : (Type u)ᵒᵖ → (Type u)ᵒᵖ → Type*} {CC : (Type u)ᵒᵖ
 variable [∀ X Y, FunLike (FC X Y) (CC X) (CC Y)]
 variable [ConcreteCategory (Type u)ᵒᵖ FC]
 
+variable {FC' : (Type)ᵒᵖ → (Type)ᵒᵖ → Type*} {CC' : (Type)ᵒᵖ → Type*}
+variable [∀ X Y, FunLike (FC' X Y) (CC' X) (CC' Y)]
+variable [ConcreteCategory (Type)ᵒᵖ FC']
 
-#check fun S : Set X ↦ EtaleSpace (presheaf S)
+--#check fun S : Set X ↦ EtaleSpace (presheaf S)
 
 
 
 -- for now im just writing in the behavior i need.
 -- later this will use the co-etale space construction.
-def Sides (S : Set X) : Type u := EtaleSpace (presheaf S)
+def Sides (S : Set X) : Type u := sorry --EtaleSpace (presheaf S)
 instance instTopologicalSpaceSides (S : Set X) : TopologicalSpace (Sides S) := sorry
 
 
@@ -115,6 +144,11 @@ theorem center_continuous : Continuous (center (S := S)) := sorry--(Sides S).pro
 end center
 
 
+def touching_component {S : Set X} : Sides S → punctured_components S Set.univ := sorry
+
+--theorem touching_component_comm (S : Set X) {U V : Opens X} (h : V ≤ U) :
+  --touching_component (S := restrict_surface S V) ∘ punctured_component_of_subset S h = lift ∘ touching_component := by sorry
+
 
 section components
 
@@ -132,6 +166,11 @@ def lift_restricted_punctured_subtype {S U : Set X} :
 def restrict_punctured_component {S U : Set X} :
     punctured_components S U → restricted_punctured_components S U :=
   fun C ↦ by
+
+  unfold punctured_components at C
+  unfold restricted_punctured_components
+
+  -- we should be able to abstract this more. were just transporting along a homeomorphism
   apply Quotient.map (sa := connectedComponentSetoid _)
     (restrict_punctured_subtype (S := S) (U := U))
   · intro ⟨a, haU, haS⟩ ⟨b, hbU, hbS⟩ hab
@@ -212,30 +251,25 @@ end map
 section lift
 variable {U : Opens X}
 
-def lift : Sides (restrict_surface S U) → Sides (S ∩ U) := map (IsOpen.isOpenEmbedding_subtypeVal U.2)
-  intro
+def lift : Sides (restrict_surface S U) → Sides (S ∩ U) :=
+  map (IsOpen.isOpenEmbedding_subtypeVal U.2)
+ /- intro
   have h := map (IsOpen.isOpenEmbedding_subtypeVal U.2) a
   simp only [restrict_surface] at h
   #check Set.image_preimage_eq_of_subset (f := Subtype.val) (s := S)
   rw [Set.image_preimage_eq_inter_range (f := Subtype.val) (t := S)] at h
-  sorry
+  sorry-/
 
 theorem lift_comm {U : Opens X} (σ : Sides (restrict_surface S U)) :
-    σ.lift.center = σ.center :=
-  lift_eq_map_subtypeVal S U ▸ map_comm (IsOpen.isOpenEmbedding_subtypeVal U.2) σ
+    σ.lift.center = σ.center := map_comm (IsOpen.isOpenEmbedding_subtypeVal U.2) σ
 
 theorem isOpenEmbedding_lift : IsOpenEmbedding (lift (S := S) (U := U)) :=
-  lift_eq_map_subtypeVal S U ▸ isOpenEmbedding_map (IsOpen.isOpenEmbedding_subtypeVal U.2)
+  isOpenEmbedding_map (IsOpen.isOpenEmbedding_subtypeVal U.2)
 
 end lift
 
 
 
-
-def touching_component {S : Set X} : Sides S → ConnectedComponents (Subtype Sᶜ) := sorry
-
-theorem touching_component_comm (S : Set X) {U V : Opens X} (h : V ≤ U) :
-  touching_component (S := restrict_surface S V) ∘ punctured_component_of_subset S h = lift ∘ touching_component := by sorry
 
 
 
@@ -248,8 +282,9 @@ def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
   sides_at (restrict_surface S U) ⟨p, hp⟩
 
 def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
-    restricted_sides_at S hp → restricted_punctured_components S U :=
-  (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
+    restricted_sides_at S hp → restricted_punctured_components S U := by
+  #check (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
+  sorry
 
 --theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
 
@@ -283,7 +318,7 @@ theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
 
 
 theorem restrict_comm {U : Opens X} {σ : Sides S} (hσ : σ.center ∈ U) :
-    (restrict_of_mem hσ).center = σ.center :=
+    (restrict_of_mem hσ).center.1 = σ.center :=
   (lift_restrict hσ ▸ lift_comm (restrict_of_mem hσ)).symm
 
 

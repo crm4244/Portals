@@ -84,8 +84,8 @@ open TopologicalSpace
 variable [TopologicalSpace (Equiv.Perm F)]
 variable [CommMonoid (Equiv.Perm F)] -- this is a really strict condition
 
-variable (Rf : X → Opens X) (R : RealizingSurface S Rf)
-variable (RUf : X → Opens X) (RU : RealizingSurface (union_surface F) RUf)
+--variable (Rf : X → Opens X) (R : RealizingSurface S Rf)
+--variable (RUf : X → Opens X) (RU : RealizingSurface (union_surface F) RUf)
 
 
 
@@ -103,6 +103,7 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F)) :
     --rw [← Equiv.tprod_eq hatob _]
     unfold recommendation_map
     simp only
+    sorry
 
     --#check fun (f : F) ↦ f a
     #check Multipliable.tprod_mul _ _
@@ -149,13 +150,34 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F)) :
     sorry
 
 theorem composedGluingattern_isLocallyConsistent
-  {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent R) :
-    (composedGluingPattern γ).isLocallyConsistent RU := by
+  {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent) :
+    (composedGluingPattern γ).isLocallyConsistent := by
       -- change this to "exists a realizing surface so its locally consistent"
       -- use smaller realizers that fit inside the portal maps
 
-  --unfold GluingPattern.isLocallyConsistent
-  intro p q r hrp hrq a b ha hb
+  unfold GluingPattern.isLocallyConsistent
+  intro p
+
+  unfold GluingPattern.map
+  unfold composedGluingPattern
+  unfold recommendation_map
+  unfold GluingPattern.map
+  unfold recommendation_gluing_pattern
+  unfold GluingPattern.map
+  simp only
+
+  let f : F := sorry
+  have hpf : p ∈ f.1.range := sorry
+  #check f.1.inv_range ⟨p, hpf⟩
+  have hpU' : ↑(f.1.inv_range ⟨p, hpf⟩) ∈ f.1.domain := by
+    sorry
+
+  rcases hγ (p := ↑(f.1.inv_range ⟨p, hpf⟩)) with ⟨U, R, _⟩
+  #check R.subrealizer hpU'
+
+
+  sorry
+  q r hrp hrq a b ha hb
 
   unfold GluingPattern.map
   unfold composedGluingPattern

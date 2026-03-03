@@ -49,21 +49,20 @@ omit [TopologicalSpace X] in theorem symm_inv_left (γ : GluingPattern S G)
 open TopologicalSpace
 
 -- a convinent little version of the side_transfer function
-noncomputable def _t {f : X → Opens X} (R : RealizingSurface S f) {p r : X} (hrp : r ∈ f p)
+noncomputable def _t {p : X} {U : Opens X} (R : ComponentRealizer U S p) {r : X} (hrp : r ∈ U)
   {σ : Sides S} (hσ : σ.center = r) :
-    ((R.realizer p).side_transfer (hσ ▸ hrp)).center = p :=
-  (R.realizer p).center_eq_hub_of_side_transfer (hσ ▸ hrp)
+    (R.side_transfer (hσ ▸ hrp)).center = p :=
+  R.center_eq_hub_of_side_transfer (hσ ▸ hrp)
 
 
-def isLocallyConsistent (γ : GluingPattern S G)
-    {f : X → Opens X} (R : RealizingSurface S f) : Prop :=
-  ∀ {p q : X}, (h : q ∈ f p) →
-  ∀ {a b : Sides S}, (ha : a.center = q) → (hb : b.center = q) →
-    γ ((_t R h ha).trans (_t R h hb).symm) = γ (ha.trans hb.symm)
+def isLocallyConsistent (γ : GluingPattern S G) : Prop :=
+  ∀ {p : X}, ∃ (U : Opens X) (R : ComponentRealizer U S p),
+  ∀ (q : X) (hq : q ∈ U) {a b : Sides S} (ha : a.center = q) (hb : b.center = q),
+    γ ((_t R hq ha).trans (_t R hq hb).symm) = γ (ha.trans hb.symm)
 
 
-def isLocallyConsistent' (γ : GluingPattern S G)
-    {f : X → Opens X} (R : RealizingSurface S f) : Prop :=
+/- TODO: update this to not use RealizingSurface
+def isLocallyConsistent' (γ : GluingPattern S G) : Prop :=
   ∀ {p q r : X}, (hrp : r ∈ f p) → (hrq : r ∈ f q) →
   ∀ {a b : Sides S}, (ha : a.center = r) → (hb : b.center = r) →
     γ ((_t R hrp ha).trans (_t R hrp hb).symm) = γ ((_t R hrq ha).trans (_t R hrq hb).symm)
@@ -75,6 +74,7 @@ theorem isLocallyConsistent'_of_isLocallyConsistent (γ : GluingPattern S G)
   {f : X → Opens X} (R : RealizingSurface S f) :
     isLocallyConsistent γ R → isLocallyConsistent' γ R :=
   fun h _ _ _ hrp hrq _ _ ha hb ↦ (h hrp ha hb).trans (h hrq ha hb).symm
+-/
 
 end GluingPattern
 
