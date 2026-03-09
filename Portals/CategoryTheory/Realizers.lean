@@ -104,14 +104,13 @@ section subrealizer
 
 
 
-def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X :=
-  {
-    carrier := Subtype.val '' interior (closure (Subtype.val ''
-      ⋃ C ∈ Set.range (restricted_touching_component_at S (U := U ⊓ V) ⟨R.hub_mem, hV⟩),
-        { x | Quot.mk _ x = C }))
-    is_open' := (IsOpenEmbedding.isOpen_iff_image_isOpen
-      (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).isOpen)).mp isOpen_interior
-  }
+def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X := ⟨
+  Subtype.val '' (interior ((restrict_surface S (U ⊓ V)) ∪ Subtype.val ''
+    ⋃ C ∈ Set.range (restricted_touching_component_at S (U := U ⊓ V) ⟨R.hub_mem, hV⟩),
+      { x | Quot.mk _ x = C })),
+  (IsOpenEmbedding.isOpen_iff_image_isOpen
+    (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).isOpen)).mp isOpen_interior
+⟩
 
 
 theorem subrealizer_subset_inter (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
@@ -157,7 +156,7 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
       rw [lift_restrict]
       apply congr_arg
 
-      unfold restricted_touching_component_at Set.restrict
+      unfold restricted_touching_component_at
       simp?
 
       sorry
@@ -167,7 +166,7 @@ noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : 
       simp?
 
       unfold restricted_punctured_components at C
-      unfold restricted_touching_component_at Set.restrict
+      unfold restricted_touching_component_at
       simp?
 
 

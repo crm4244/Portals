@@ -105,6 +105,7 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F)) :
     simp only
     sorry
 
+/-
     --#check fun (f : F) ↦ f a
     #check Multipliable.tprod_mul _ _
     --unfold recommendation_map
@@ -148,6 +149,7 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F)) :
 
     --rw [← γ.trans]
     sorry
+-/
 
 theorem composedGluingattern_isLocallyConsistent
   {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent) :
@@ -177,6 +179,7 @@ theorem composedGluingattern_isLocallyConsistent
 
 
   sorry
+  /-
   q r hrp hrq a b ha hb
 
   unfold GluingPattern.map
@@ -226,7 +229,7 @@ theorem composedGluingattern_isLocallyConsistent
 
 
 #check Multipliable
-
+-/
 
 
 

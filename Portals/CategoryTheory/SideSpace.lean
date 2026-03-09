@@ -153,7 +153,7 @@ def touching_component {S : Set X} : Sides S → punctured_components S Set.univ
 section components
 
 def restricted_punctured_components (S U : Set X) : Type u :=
-  ConnectedComponents (Subtype (restrict_surface S U)ᶜ)
+  punctured_components (restrict_surface S U) Set.univ
 
 def restrict_punctured_subtype {S U : Set X} :
     Subtype (U \ S) → Subtype (restrict_surface S U)ᶜ :=
@@ -168,7 +168,8 @@ def restrict_punctured_component {S U : Set X} :
   fun C ↦ by
 
   unfold punctured_components at C
-  unfold restricted_punctured_components
+  unfold restricted_punctured_components punctured_components
+  rw [← Set.compl_eq_univ_diff]
 
   -- we should be able to abstract this more. were just transporting along a homeomorphism
   apply Quotient.map (sa := connectedComponentSetoid _)
@@ -192,7 +193,7 @@ def lift_restricted_punctured_component {S U : Set X} :
     simp? at ⊢ hab
 
     sorry
-  exact C
+  exact Set.compl_eq_univ_diff (restrict_surface S U) ▸ C
 
 
 /-
