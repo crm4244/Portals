@@ -100,101 +100,11 @@ theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
 
 
 
-section subrealizer
-
-
-
-def subrealizing_open (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) : Opens X := ⟨
-  Subtype.val '' (interior ((restrict_surface S (U ⊓ V)) ∪ Subtype.val ''
-    ⋃ C ∈ Set.range (restricted_touching_component_at S (U := U ⊓ V) ⟨R.hub_mem, hV⟩),
-      { x | Quot.mk _ x = C })),
-  (IsOpenEmbedding.isOpen_iff_image_isOpen
-    (IsOpen.isOpenEmbedding_subtypeVal (U ⊓ V).isOpen)).mp isOpen_interior
-⟩
-
-
-theorem subrealizer_subset_inter (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
-    (R.subrealizing_open hV).1 ⊆ U ∩ V := fun _ ⟨x, _, h⟩ ↦ h ▸ x.2
-
-
-theorem subrealizer_subset (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
-    (R.subrealizing_open hV).1 ⊆ U :=
-  fun _ h ↦ (R.subrealizer_subset_inter hV h).1
-
-
-theorem subrealizer_subset' (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
-    (R.subrealizing_open hV).1 ⊆ V :=
-  fun _ h ↦ (R.subrealizer_subset_inter hV h).2
-
-
-theorem hub_mem_of_subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
-    p ∈ R.subrealizing_open hV := by
-  unfold subrealizing_open
-  simp?
-  -- maybe by contradiction? if V gets too close to p then p is in the boundary and V isnt open
-  by_contra h
-
-  sorry
-
-
-noncomputable def subrealizer (R : ComponentRealizer U S p) {V : Opens X} (hV : p ∈ V) :
-    ComponentRealizer (R.subrealizing_open hV) S p :=
-  {
-    hub_mem := R.hub_mem_of_subrealizer hV
-    touching_component_inv := fun C ↦
-      let σ : restricted_sides_at S R.hub_mem :=
-        R.touching_component_inv <| restrict_punctured_component <| punctured_component_of_subset S
-          (R.subrealizer_subset hV) (lift_restricted_punctured_component C)
-      have h : σ.1.lift.center ∈ R.subrealizing_open hV :=
-        (lift_comm σ.1).trans (Subtype.eq_iff.mp σ.2) ▸ R.hub_mem_of_subrealizer hV
-      ⟨restrict_of_mem h, Subtype.eq <| restrict_comm h ▸ lift_comm σ.1 ▸ Subtype.eq_iff.mp σ.2⟩
-
-    touching_component_left_inv := by
-      intro ⟨a, (ha : a.center = _)⟩
-      simp?
-      apply Sides.isOpenEmbedding_lift.injective
-      rw [lift_restrict]
-      apply congr_arg
-
-      unfold restricted_touching_component_at
-      simp?
-
-      sorry
-
-    touching_component_right_inv := by
-      intro C
-      simp?
-
-      unfold restricted_punctured_components at C
-      unfold restricted_touching_component_at
-      simp?
-
-
-      sorry
-  }
-
-
-
-end subrealizer
-
 
 
 
 end ComponentRealizer
 
 
-
--- im tempted to get rid of this structure
-/-
-class RealizingSurface (S : Set X) (f : X → Opens X) where
-  realizer (p : X) : ComponentRealizer (f p) S p
-
-
-namespace RealizingSurface
--- realizers form a basis
-
-
-end RealizingSurface
--/
 
 end Portal
