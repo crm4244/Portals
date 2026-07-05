@@ -13,14 +13,14 @@ open ComponentRealizer
 
 
 class GluingPattern (S : Set X) (G : Type) [Group G] where
-  map : { (a, b) : Sides S × Sides S | a.center = b.center } → G
+  map {a b : Sides S} : a.center = b.center → G
   trans {a b c : Sides S} (hab : a.center = b.center) (hbc : b.center = c.center) :
-    map ⟨(a, b), hab⟩ * map ⟨(b, c), hbc⟩ = map ⟨(a, c), hab.trans hbc⟩
+    map hab * map hbc = map (hab.trans hbc)
 
 
 instance (S : Set X) (G : Type) [Group G] : CoeFun (GluingPattern S G)
     (fun _ ↦ {a b : Sides S} → a.center = b.center → G) :=
-  {coe γ := (fun {a b : Sides S} (h : a.center = b.center) ↦ γ.map ⟨(a, b), h⟩)}
+  {coe γ := (fun {a b : Sides S} (h : a.center = b.center) ↦ γ.map h)}
 
 
 
@@ -32,7 +32,7 @@ variable {S : Set X} {G : Type} [Group G]
 omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G) (a : Sides S) :
     γ (Eq.refl a.center) = 1 := by
   have h := γ.trans (Eq.refl a.center) (Eq.refl a.center)
-  nth_rw 3 [← mul_one (γ.map ⟨(a, a), rfl⟩)] at h
+  nth_rw 3 [← mul_one (γ.map rfl)] at h
   exact mul_left_cancel h
 
 

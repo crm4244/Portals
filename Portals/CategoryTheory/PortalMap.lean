@@ -6,7 +6,6 @@ import Portals.CategoryTheory.SideSpace
 open Topology TopologicalSpace
 
 
-variable {X : Type} [TopologicalSpace X]
 
 
 
@@ -16,68 +15,55 @@ namespace Portal
 
 
 
-class PortalMap (S : Set X) where
-  domain : Opens X
-  map : domain → X
-  surface_subset : S ⊆ domain
-  isOpenEmbedding : IsOpenEmbedding map
 
-instance (S : Set X) : CoeFun (PortalMap S) (fun P ↦ P.domain → X) := {coe P := P.map}
+variable (X Y : Type) [TopologicalSpace X] [TopologicalSpace Y]
+
+def PortalMap : Type := {f : X → Y // IsOpenEmbedding f}
+
+instance : CoeFun (PortalMap X Y) (fun _ ↦ X → Y) := {coe f := f.1}
 
 
 
 
 namespace PortalMap
 
-variable {S : Set X}
-
-
-def restricted_surface (f : PortalMap S) : Set f.domain := Sides.restrict_surface S f.domain
-def surface_copy (f : PortalMap S) : Set X := f '' f.restricted_surface
-def range (f : PortalMap S) := Set.range f
-def restricted_surface_copy (f : PortalMap S) : Set f.range :=
-  Sides.restrict_surface f.surface_copy f.range
-
-def opens_range (f : PortalMap S) : Opens X := ⟨f.range, f.isOpenEmbedding.isOpen_range⟩
+variable {X Y : Type} [TopologicalSpace X] [TopologicalSpace Y]
+variable (f : PortalMap X Y)
 
 
 
-def map_sides {f : PortalMap S} :
-    Sides f.restricted_surface → Sides f.surface_copy :=
-  Sides.map (S := f.restricted_surface) f.isOpenEmbedding
+
+def range : Set Y := Set.range f
+def opens_range : Opens Y := ⟨f.range, f.2.isOpen_range⟩
 
 
-theorem map_sides_comm {f : PortalMap S} (σ : Sides f.restricted_surface) :
-  (f.map_sides σ).center = f σ.center := Sides.map_comm f.isOpenEmbedding σ
+def restricted_image (S : Set X) : Set f.range :=
+  Sides.restrict_surface (f '' S) f.range
 
 
+noncomputable def homeomorph : Homeomorph (⊤ : Set X) f.range :=
+  by apply Set.image_univ ▸ f.2.homeomorphImage ⊤
 
-noncomputable def homeomorph (f : PortalMap S) :
-    Homeomorph (Set.univ : Set f.domain) (Set.range f) :=
-  Set.image_univ ▸ f.isOpenEmbedding.homeomorphImage Set.univ
 
-noncomputable def inv_range (f : PortalMap S) (p : Set.range f) : f.domain :=
-  ⇑f.homeomorph.symm p
+noncomputable def inv_range (p : f.range) : X := f.homeomorph.symm p
 
-theorem isOpenEmbedding_invRange (f : PortalMap S) : IsOpenEmbedding f.inv_range :=
+theorem isOpenEmbedding_invRange : IsOpenEmbedding (f.inv_range) :=
   IsOpenEmbedding.comp isOpen_univ.isOpenEmbedding_subtypeVal (Homeomorph.isOpenEmbedding _)
 
 
-def map_sides_inv {f : PortalMap S} : Sides f.restricted_surface_copy →
-    Sides (restricted_surface f) :=
-  Sides.map (S := f.restricted_surface_copy) f.isOpenEmbedding_invRange
+def map_sides_inv (S : Set X) : Sides (restricted_image f S) → Sides S :=
+  Sides.map (S := restricted_image f S) f.isOpenEmbedding_invRange
 
 
-theorem map_sides_inv_comm {f : PortalMap S} (σ : Sides (f.restricted_surface_copy)) :
-    (f.map_sides_inv σ).center = f.inv_range σ.center :=
+theorem map_sides_inv_comm (S : Set X) (σ : Sides (restricted_image f S)) :
+    (f.map_sides_inv S σ).center = f.inv_range σ.center :=
   Sides.map_comm f.isOpenEmbedding_invRange σ
 
 
 
+
+
+
 end PortalMap
-
-
-
-
 
 end Portal
