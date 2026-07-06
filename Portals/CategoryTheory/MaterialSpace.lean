@@ -51,27 +51,33 @@ theorem center_rusto_comm {f : F} (σ : Sides (restrict_union_surface S f)) :
     f.1.map_sides_inv_comm S _
 
 
-theorem center_eq_of_rusto {f : F} {a b : Sides (restrict_union_surface S f)}
-  (hab : a.center = b.center) :
+theorem center_eq_of_rusto {f : F} (a b : Sides (restrict_union_surface S f))
+  (hab : a.center = b.center := by aesop) :
     (restricted_union_side_to_original a).center = (restricted_union_side_to_original b).center :=
   (hab ▸ center_rusto_comm a).trans (center_rusto_comm b).symm
 
+
+theorem center_eq_of_usto {f : F} (a b : Sides (union_surface S F))
+  (hab : a.center = b.center := by aesop) (h_mem : a.center ∈ f.1.opens_range := by aesop) :
+    a.restrict_of_mem.center = b.restrict_of_mem.center :=
+  Set.injOn_subtype_val (Set.mem_univ _) (Set.mem_univ _)
+    (a.restrict_comm.trans <| hab.trans b.restrict_comm.symm)
 
 
 
 def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Perm F)) (f : F) :
     GluingPattern (restrict_union_surface S f) (Equiv.Perm F) where
-  map h := γ (center_eq_of_rusto h)
-  trans hab hbc := γ.trans (center_eq_of_rusto hab) (center_eq_of_rusto hbc)
+  map a b _ := @γ _ _ (center_eq_of_rusto a b)
+  trans a b c _ _ := @γ.trans _ _ _ (center_eq_of_rusto a b) (center_eq_of_rusto b c)
 
 -- might want to check if the recommendation_gluing_pattern is locally consistent. not important yet
 
 
 noncomputable def recommendation_map (γ : GluingPattern S (Equiv.Perm F))
-    {a b : Sides (union_surface S F)} (hab : a.center = b.center)
-    {f : F} (h_mem : a.center ∈ f.1.opens_range) : Equiv.Perm F :=
-  recommendation_gluing_pattern γ f (Set.injOn_subtype_val (Set.mem_univ _) (Set.mem_univ _)
-    ((Sides.restrict_comm h_mem).trans (hab.trans (Sides.restrict_comm (hab ▸ h_mem)).symm)))
+  (a b : Sides (union_surface S F)) (f : F)
+  (hab : a.center = b.center := by aesop) (h_mem : a.center ∈ f.1.opens_range := by aesop) :
+    Equiv.Perm F :=
+  recommendation_gluing_pattern γ f _ _ (center_eq_of_usto a b)
 
 
 
@@ -84,9 +90,8 @@ namespace composition_construction
 open TopologicalSpace
 
 
--- here it would suffice to use f.1.range, but using opens_range makes the proofs nicer
 def relevant_portal_maps (F : Set (PortalMap Y X)) (p : X) : Sort 1 :=
-  { f : F // p ∈ f.1.opens_range }
+  { f : F // p ∈ f.1.range }
 
 
 
@@ -94,203 +99,94 @@ variable (γ : GluingPattern S (Equiv.Perm F))
 
 def relevantPerms (p : X) : Subgroup (Equiv.Perm F) := Subgroup.closure
   {P : Equiv.Perm F | ∃ (a b : Sides.sides_at (union_surface S F) p) (f : relevant_portal_maps F p),
-    recommendation_map γ (a.2.trans b.2.symm) (by rw[a.2]; exact f.2) = P}
+    recommendation_map γ a.1 b.1 f.1 (a.2.trans b.2.symm) (by rw[a.2]; exact f.2) = P}
 
-def castF {a b : Sides (union_surface S F)} (hab : a.center = b.center) :
+def castF (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
   relevant_portal_maps F a.center ≃ relevant_portal_maps F b.center := {
     toFun x := ⟨x.1, by rw [← hab]; exact x.2⟩
     invFun x := ⟨x.1, by rw [hab]; exact x.2⟩
   }
 
-def castP {a b : Sides (union_surface S F)} (hab : a.center = b.center) :
+def castP (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
   relevantPerms γ a.center →* relevantPerms γ b.center := {
-      toFun x := ⟨x.1, by rw[hab.symm]; exact x.2⟩
-      map_one' := rfl
-      map_mul' _ _ := rfl
-    }
+    toFun x := ⟨x.1, by rw[hab.symm]; exact x.2⟩
+    map_one' := rfl
+    map_mul' _ _ := rfl
+  }
 
-theorem continuous_castP {a b : Sides (union_surface S F)} (hab : a.center = b.center)
-  [∀ p, TopologicalSpace (relevantPerms γ p)] : Continuous (castP γ hab) := by
+theorem continuous_castP (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop)
+  [∀ p, TopologicalSpace (relevantPerms γ p)] : Continuous (castP γ a b) := by
   unfold castP
   simp
 
 
   sorry
 
+noncomputable def relevant_recommendation_map
+  (from_side to_side map_side perm_side : Sides (union_surface S F))
+  (f : relevant_portal_maps F map_side.center)
+  (h1 : from_side.center = to_side.center := by aesop)
+  (h2 : from_side.center = map_side.center := by aesop)
+  (h3 : from_side.center = perm_side.center := by aesop) :
+    relevantPerms γ perm_side.center :=
+  ⟨recommendation_map γ from_side to_side f.1 h1 (h2.symm ▸ f.2),
+    Subgroup.mem_closure_of_mem ⟨⟨from_side, h3⟩, ⟨to_side, h1.symm.trans h3⟩,
+    castF map_side perm_side (h2.symm.trans h3) f, rfl⟩⟩
 
-noncomputable def relevant_recommendation_map {a b c : Sides (union_surface S F)}
-  (hab : a.center = b.center) (hbc : b.center = c.center) (f : relevant_portal_maps F a.center) :
-    relevantPerms γ c.center :=
-  ⟨recommendation_map γ hab f.2, Subgroup.mem_closure_of_mem
-    ⟨⟨a, hab.trans hbc⟩, ⟨b, hbc⟩, castF (hab.trans hbc) f, rfl⟩⟩
 
 
 
-
-
+-- we could change the SummationFilter if we want, using unconditional for now
 
 noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
   [∀ p, IsMulCommutative (relevantPerms γ p)] [∀ p, TopologicalSpace (relevantPerms γ p)]
   [∀ p, T2Space (relevantPerms γ p)] [∀ p, ContinuousMul (relevantPerms γ p)]
-  {h_multipliable : ∀ {a b : Sides (union_surface S F)} (hab : a.center = b.center),
-    Multipliable (relevant_recommendation_map γ hab hab.symm)} :
+  (h_multipliable : ∀ (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop),
+    Multipliable (relevant_recommendation_map γ a b a a) := by assumption) :
       GluingPattern (union_surface S F) (Equiv.Perm F) where
 
-  map {a b} hab := ↑(∏' f : relevant_portal_maps F a.center, relevant_recommendation_map γ hab hab.symm f)
+  map {a b} hab := ↑(∏' f : relevant_portal_maps F a.center,
+    relevant_recommendation_map γ a b a a f)
   trans {a b c} hab hbc := by
 
 
 
-    rw [← Equiv.tprod_eq (castF hab) (relevant_recommendation_map γ hbc hbc.symm)]
+    rw [← Equiv.tprod_eq (castF a b) (relevant_recommendation_map γ b c b b)]
 
 
-    let x := Multipliable.map_tprod (sorry : Multipliable (relevant_recommendation_map γ hbc (hbc.symm.trans hab.symm))) (castP γ hab) (continuous_castP γ hab)
+    have h_mult : Multipliable (relevant_recommendation_map γ b c a b) :=
+      let ⟨x, hx⟩ := h_multipliable b c
+      ⟨x, ((castF a b).injective.hasProd_iff (by aesop)
+        (f := relevant_recommendation_map γ b c b b)).mpr hx⟩
+
+
+
+    let x := Multipliable.map_tprod h_mult (castP γ b a) (continuous_castP γ b a)
     let x1 := congr_arg Subtype.val x
-    have x_ l : (castP γ hab l).1 = l.1 := rfl
+    have x_ l : ((castP γ b a) l).1 = l.1 := rfl
     rw [x_ _] at x1
     unfold castP at x1
+    unfold castF
     unfold relevant_recommendation_map at x1 ⊢
-    simp at x1
+    simp at ⊢ x1
+    rw [x1]
 
-
-    --have y : castP (relevant_recommendation_map γ hbc sorry) = sorry := sorry
-    unfold permAToB relevant_recommendation_map at y
-    simp at y
-
-
-    --have permBToA_map_one : permBToA 1 = 1 := rfl
-    --have permBToA_coe_eq (x) : (permBToA x).1 = x.1 := rfl
-    --have permBToA_map_mul (x y) : permBToA (x * y) = permBToA x * permBToA y := rfl
-
-    /-
-    let castγ : relevantPerms γ a.center ≃ relevantPerms γ b.center := Equiv.cast (hab ▸ rfl)
-
-
-    have castγ_map_one : castγ 1 = 1 := (Equiv.cast_eq_iff_heq _).mpr
-      (Subtype.mk.hcongr_4 _ _ rfl _ _ (hab ▸ HEq.rfl) _ _ HEq.rfl _ _ (hab ▸ HEq.rfl))
-
-    have castγ_coe_eq (x) : (castγ x).1 = x.1 :=
-      (Subtype.heq_iff_coe_eq (fun _ ↦ hab ▸ Iff.rfl)).mp (cast_heq _ _)
-
-    have castγ_map_mul (x y) : castγ (x * y) = castγ x * castγ y := Subtype.val_injective
-      (Subgroup.coe_mul _ (castγ x) (castγ y) ▸ castγ_coe_eq x ▸ castγ_coe_eq y ▸
-        castγ_coe_eq (x * y) ▸ Subgroup.coe_mul _ x y)
-
-    let castγHom : relevantPerms γ a.center →* relevantPerms γ b.center := {
-      toFun := castγ
-      map_one' := castγ_map_one
-      map_mul' := castγ_map_mul
-    }
-
-    --#check MulHomClass.mk castγHom
-    -/
-
-
-    /-
-    have h_castγ_inj : Function.Injective castγ := fun _ _ ↦ (cast_inj _).mp
-    let castγ_inj : relevantPerms γ a.center  relevantPerms γ b.center
-
-    have h_castγ_onehom : castγ 1 = 1 := by
-      #check map_eq_one_iff ⟨castγ, h_castγ_inj⟩
-      #check (map_eq_one_iff _ _).mpr
-      --apply?
-      sorry
-    -/
-
-    sorry
-/-
-    have h_bToA : ↑(∏' (f : relevant F a.center), (⟨recommendation_map γ hbc (castf f).2,
-      Subgroup.mem_closure_of_mem ⟨⟨b, rfl⟩, ⟨c, hbc.symm⟩, (castf f), rfl⟩⟩ : relevantPerms γ b.center)) =
-        @Subtype.val (Equiv.Perm F) _ (∏' (f : relevant F a.center), (⟨recommendation_map γ hbc (castf f).2,
-          Subgroup.mem_closure_of_mem ⟨⟨b, hab.symm⟩, ⟨c, hbc.symm.trans hab.symm⟩, f, rfl⟩⟩
-        : relevantPerms γ a.center)) := by
-
-
-      #check Multipliable.map_tprod
-      sorry
-  -/
-      /-
-      --simp
-
-      --apply?
-      refine (Subtype.heq_iff_coe_eq (by exact?)).mp ?_
-      refine (Equiv.cast_eq_iff_heq (by rw[hab])).mp ?_
-
-      apply Multipliable.map_tprod
-
-      refine Eq.symm (Function.Surjective.tprod_eq_tprod_of_hasProd_iff_hasProd ?_ ?_ ?_)
-      · exact?
-      · sorry
-      · intro
-        apply?
-        sorry
-
-      #check tprod_range
-      have h2 := Equiv.tprod_eq
-        (Equiv.cast (hab ▸ rfl) : relevant F a.center ≃ relevant F b.center)
-        (fun f ↦ recommendation_map γ hbc f.2)
-
-      rw [← h2]
-      apply tprod_congr
-      intro f
-      congr
-      exact hab ▸ rfl
-      exact cast_heq (hab ▸ rfl) f
-    #check CommMonoid.ofIsMulCommutative
-    #check IsMulCommutative
-    rw [h]
-    #check Multipliable.tprod_mul (β := relevant F a.center) (f := fun f ↦ recommendation_map γ hab f.2) _
-    --rw [← Multipliable.tprod_mul _ _]
-    sorry
-
--/
-
-
-/-
-    --#check fun (f : F) ↦ f a
-    #check Multipliable.tprod_mul _ _
-    --unfold recommendation_map
-    have habf := fun (f : relevant F a.center) ↦ recommendation_map._proof_2 f.property hab
-    have hbcf := fun (f : relevant F a.center) ↦ recommendation_map._proof_2 (hcast f).property hbc
-    #check (habf : ∀ f, (Sides.restrict_of_mem (_ : a.center ∈ _)).center =
-      (Sides.restrict_of_mem (_ : b.center ∈ _)).center)
-    #check hbcf
-    #check fun (f : relevant F a.center) ↦ recommendation_map._proof_2 f.property (Eq.trans hab hbc)
-    --rw [← (recommendation_gluing_pattern γ _).trans]
-    #check (recommendation_gluing_pattern γ _).trans _ _
-
-    have h_cast_eq (f : relevant F a.center) : f.1 = (hcast f).1 := by
-      unfold hcast
-      #check (Equiv.cast_eq_iff_heq (hab ▸ rfl : ↑(relevant F a.center) = ↑(relevant F b.center))).mpr
-      --unfold relevant
-      apply Subtype.coe_eq_iff.mpr
-      have h : a.center ∈ (hcast f).1.1.opens_range := by
-        rw [hab]
-        exact (hcast f).2
-      #check hcast f
-      use h
-
-      sorry
-
-    have h_trans (f : relevant F a.center) := (recommendation_gluing_pattern γ f.1).trans
-      (habf f) (hbcf f)
-    --#check h_trans
-
-    --classical
+    rw [← Subgroup.coe_mul _ _]
+    apply congr_arg
+    rw [← Multipliable.tprod_mul (by exact h_multipliable a b)
+      (by exact h_mult.map (castP γ b a) (continuous_castP γ b a))]
+    apply tprod_congr
+    intro f
     unfold recommendation_map
-    simp only
+    simp
 
-    --sorry
-    #check Subtype.coe_eq_iff
-
-    --unfold recommendation_map
-    --#check
-    #check ((recommendation_gluing_pattern γ _).trans _ _).symm
+    exact (recommendation_gluing_pattern γ f.1).trans _ _ _
+      (center_eq_of_usto a b hab f.2) (center_eq_of_usto b c hbc (hab ▸ f.2))
 
 
-    --rw [← γ.trans]
-    sorry
--/
+
+
+
 
 theorem composedGluingattern_isLocallyConsistent
   {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent) :

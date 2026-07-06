@@ -55,15 +55,13 @@ end Defs
 
 
 
-def restricted_hub (R : ComponentRealizer U S p) : U :=
-  ⟨p, R.hub_mem⟩
+def restricted_hub (R : ComponentRealizer U S p) : U := ⟨p, R.hub_mem⟩
 
 
 
 
 def equiv (R : ComponentRealizer U S p) :
-  Equiv (restricted_sides_at S R.hub_mem) R.punctured_components :=
-  {
+  Equiv (restricted_sides_at S R.hub_mem) R.punctured_components := {
     toFun := restricted_touching_component_at S R.hub_mem
     invFun := R.touching_component_inv
     left_inv := R.touching_component_left_inv
@@ -72,29 +70,30 @@ def equiv (R : ComponentRealizer U S p) :
 
 
 theorem restricted_touching_component_at_bijective (R : ComponentRealizer U S p) :
-    Function.Bijective (restricted_touching_component_at S R.hub_mem) :=
-  R.equiv.bijective
+  Function.Bijective (restricted_touching_component_at S R.hub_mem) :=
+   R.equiv.bijective
 
 
 
 def touching_component (R : ComponentRealizer U S p) :
-    Sides R.restricted_surface → R.punctured_components :=
-  Sides.touching_component (S := R.restricted_surface)
+  Sides R.restricted_surface → R.punctured_components :=
+   Sides.touching_component (S := R.restricted_surface)
 
 
 def restricted_side_transfer (R : ComponentRealizer U S p) (σ : Sides R.restricted_surface) :
-    restricted_sides_at S R.hub_mem :=
-  R.touching_component_inv (R.touching_component σ)
+  restricted_sides_at S R.hub_mem :=
+   R.touching_component_inv (R.touching_component σ)
 
 
 noncomputable def side_transfer (R : ComponentRealizer U S p)
-    {σ : Sides S} (hσ : σ.center ∈ U) : Sides S :=
-  (R.restricted_side_transfer (Sides.restrict_of_mem hσ)).1.lift
+  (σ : Sides S) (hσ : σ.center ∈ U := by aesop) : Sides S :=
+    (R.restricted_side_transfer (σ.restrict_of_mem)).1.lift
 
 
 theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
-    {σ : Sides S} (hσ : σ.center ∈ U) : (R.side_transfer hσ).center = p :=
-  let σ_at_p := R.restricted_side_transfer (Sides.restrict_of_mem hσ)
+  (σ : Sides S) (hσ : σ.center ∈ U := by aesop) :
+    (R.side_transfer σ).center = p :=
+  let σ_at_p := R.restricted_side_transfer σ.restrict_of_mem
   (σ_at_p.2 ▸ σ_at_p.1.lift_comm : σ_at_p.1.lift.center = (⟨_, R.hub_mem⟩ : U))
 
 
