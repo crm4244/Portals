@@ -94,33 +94,59 @@ def relevant_portal_maps (F : Set (PortalMap Y X)) (p : X) : Sort 1 :=
   { f : F // p ∈ f.1.range }
 
 
-
-variable (γ : GluingPattern S (Equiv.Perm F))
-
-def relevantPerms (p : X) : Subgroup (Equiv.Perm F) := Subgroup.closure
-  {P : Equiv.Perm F | ∃ (a b : Sides.sides_at (union_surface S F) p) (f : relevant_portal_maps F p),
-    recommendation_map γ a.1 b.1 f.1 (a.2.trans b.2.symm) (by rw[a.2]; exact f.2) = P}
-
 def castF (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
   relevant_portal_maps F a.center ≃ relevant_portal_maps F b.center := {
     toFun x := ⟨x.1, by rw [← hab]; exact x.2⟩
     invFun x := ⟨x.1, by rw [hab]; exact x.2⟩
   }
 
+variable (γ : GluingPattern S (Equiv.Perm F))
+
+def relevant_perms (p : X) : Subgroup (Equiv.Perm F) := Subgroup.closure
+  {P : Equiv.Perm F | ∃ (a b : Sides.sides_at (union_surface S F) p) (f : relevant_portal_maps F p),
+    recommendation_map γ a.1 b.1 f.1 (a.2.trans b.2.symm) (by rw[a.2]; exact f.2) = P}
+
+
 def castP (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
-  relevantPerms γ a.center →* relevantPerms γ b.center := {
-    toFun x := ⟨x.1, by rw[hab.symm]; exact x.2⟩
+  relevant_perms γ a.center →* relevant_perms γ b.center := {
+    toFun x := ⟨x.1, by rw [hab.symm]; exact x.2⟩
     map_one' := rfl
     map_mul' _ _ := rfl
   }
 
-theorem continuous_castP (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop)
-  [∀ p, TopologicalSpace (relevantPerms γ p)] : Continuous (castP γ a b) := by
+theorem coe_castP (a b : Sides (union_surface S F))
+  (hab : a.center = b.center := by aesop) :
+    ∀ x, (castP γ a b hab x).1 = x.1 :=
+  fun x ↦ by unfold castP; simp
+
+theorem continuous_castP (a b : Sides (union_surface S F))
+  (hab : a.center = b.center := by aesop)
+  [τ : ∀ p, TopologicalSpace (relevant_perms γ p)] :
+    @Continuous _ _ (τ a.center) (τ b.center) (castP γ a b hab) := by
+  have h : Eq.subst hab (τ a.center) = τ b.center := by grind
+
+  #check Eq.mp hab
+  rw [← (by grind : hab ▸ τ a.center = τ b.center)]
   unfold castP
   simp
+  apply continuous_def.mpr
+  #check dcongr_heq
+  #check Homeomorph.coinduced_eq
+  unfold castP
+  simp
+  have h : τ b.center = coinduced (castP γ a b) (τ a.center) := by
+    rw [Homeomorph.coinduced_eq _]
+    unfold coinduced castP
+    simp
+    rw [hab]
+
+    sorry
+  #check continuous_coinduced_rng (f := castP γ a b)
+
+  sorry --continuous_coinduced_rng
 
 
-  sorry
+
 
 noncomputable def relevant_recommendation_map
   (from_side to_side map_side perm_side : Sides (union_surface S F))
@@ -128,7 +154,7 @@ noncomputable def relevant_recommendation_map
   (h1 : from_side.center = to_side.center := by aesop)
   (h2 : from_side.center = map_side.center := by aesop)
   (h3 : from_side.center = perm_side.center := by aesop) :
-    relevantPerms γ perm_side.center :=
+    relevant_perms γ perm_side.center :=
   ⟨recommendation_map γ from_side to_side f.1 h1 (h2.symm ▸ f.2),
     Subgroup.mem_closure_of_mem ⟨⟨from_side, h3⟩, ⟨to_side, h1.symm.trans h3⟩,
     castF map_side perm_side (h2.symm.trans h3) f, rfl⟩⟩
@@ -139,8 +165,8 @@ noncomputable def relevant_recommendation_map
 -- we could change the SummationFilter if we want, using unconditional for now
 
 noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
-  [∀ p, IsMulCommutative (relevantPerms γ p)] [∀ p, TopologicalSpace (relevantPerms γ p)]
-  [∀ p, T2Space (relevantPerms γ p)] [∀ p, ContinuousMul (relevantPerms γ p)]
+  [∀ p, IsMulCommutative (relevant_perms γ p)] [∀ p, TopologicalSpace (relevant_perms γ p)]
+  [∀ p, T2Space (relevant_perms γ p)] [∀ p, ContinuousMul (relevant_perms γ p)]
   (h_multipliable : ∀ (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop),
     Multipliable (relevant_recommendation_map γ a b a a) := by assumption) :
       GluingPattern (union_surface S F) (Equiv.Perm F) where
@@ -148,28 +174,21 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
   map {a b} hab := ↑(∏' f : relevant_portal_maps F a.center,
     relevant_recommendation_map γ a b a a f)
   trans {a b c} hab hbc := by
-
-
-
     rw [← Equiv.tprod_eq (castF a b) (relevant_recommendation_map γ b c b b)]
-
 
     have h_mult : Multipliable (relevant_recommendation_map γ b c a b) :=
       let ⟨x, hx⟩ := h_multipliable b c
       ⟨x, ((castF a b).injective.hasProd_iff (by aesop)
         (f := relevant_recommendation_map γ b c b b)).mpr hx⟩
 
-
-
-    let x := Multipliable.map_tprod h_mult (castP γ b a) (continuous_castP γ b a)
-    let x1 := congr_arg Subtype.val x
-    have x_ l : ((castP γ b a) l).1 = l.1 := rfl
-    rw [x_ _] at x1
-    unfold castP at x1
+    let h := congr_arg Subtype.val
+      (Multipliable.map_tprod h_mult (castP γ b a) (continuous_castP γ b a))
+    rw [coe_castP γ b a _] at h
+    unfold castP at h
     unfold castF
-    unfold relevant_recommendation_map at x1 ⊢
-    simp at ⊢ x1
-    rw [x1]
+    unfold relevant_recommendation_map at h ⊢
+    simp at ⊢ h
+    rw [h]
 
     rw [← Subgroup.coe_mul _ _]
     apply congr_arg
@@ -178,7 +197,7 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
     apply tprod_congr
     intro f
     unfold recommendation_map
-    simp
+    rw [MulMemClass.mk_mul_mk, Subtype.mk.injEq]
 
     exact (recommendation_gluing_pattern γ f.1).trans _ _ _
       (center_eq_of_usto a b hab f.2) (center_eq_of_usto b c hbc (hab ▸ f.2))
@@ -191,7 +210,6 @@ noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
 theorem composedGluingattern_isLocallyConsistent
   {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent) :
     (composedGluingPattern γ).isLocallyConsistent := by
-      -- change this to "exists a realizing surface so its locally consistent"
       -- use smaller realizers that fit inside the portal maps
 
   unfold GluingPattern.isLocallyConsistent
