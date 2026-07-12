@@ -13,15 +13,13 @@ open ComponentRealizer
 
 
 class GluingPattern (S : Set X) (G : Type) [Group G] where
-  map (a b : Sides S) (hab : a.center = b.center := by aesop) : G
-  trans (a b c : Sides S)
-    (hab : a.center = b.center := by aesop)
-    (hbc : b.center = c.center := by aesop) :
+  map {p : X} (a b : Sides.at_point S p) : G
+  trans {p : X} (a b c : Sides.at_point S p) :
       map a b * map b c = map a c
 
 
 instance (S : Set X) (G : Type) [Group G] : CoeFun (GluingPattern S G)
-  (fun _ ↦ (a b : Sides S) → (a.center = b.center) → G) :=
+  (fun _ ↦ {p : X} → (a b : Sides.at_point S p) → G) :=
     {coe γ := @γ.map}
 
 
@@ -32,7 +30,8 @@ variable {S : Set X} {G : Type} [Group G]
 
 
 
-omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G) (a : Sides S) :
+omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G)
+  {p : X} (a : Sides.at_point S p) :
     γ a a = 1 := by
   have h := γ.trans a a a
   nth_rw 3 [← mul_one (γ a a)] at h
@@ -40,12 +39,12 @@ omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G) (a : Sides
 
 
 omit [TopologicalSpace X] in theorem symm_inv_right (γ : GluingPattern S G)
-    {a b : Sides S} (hab : a.center = b.center) : γ a b * γ b a = 1 :=
+    {p : X} (a b : Sides.at_point S p) : γ a b * γ b a = 1 :=
   (γ.trans a b a).trans (refl_id γ a)
 
 
 omit [TopologicalSpace X] in theorem symm_inv_left (γ : GluingPattern S G)
-    {a b : Sides S} (hab : a.center = b.center) : γ b a * γ a b = 1 :=
+        {p : X} (a b : Sides.at_point S p) : γ b a * γ a b = 1 :=
   (γ.trans b a b).trans (refl_id γ b)
 
 
@@ -55,11 +54,8 @@ open TopologicalSpace
 
 def isLocallyConsistent (γ : GluingPattern S G) : Prop :=
   ∀ {p : X}, ∃ (U : Opens X) (R : ComponentRealizer U S p),
-  ∀ (q : X) (hq : q ∈ U) {a b : Sides S}
-    (ha : a.center = q := by aesop) (hb : b.center = q := by aesop),
-  @γ (R.side_transfer a) (R.side_transfer b)
-    ((R.center_eq_hub_of_side_transfer a).trans (R.center_eq_hub_of_side_transfer b).symm)
-  = γ a b
+  ∀ {q : X} (hq : q ∈ U) (a b : Sides.at_point S q),
+    γ (R.side_transfer_at hq a) (R.side_transfer_at hq b) = γ a b
 
 /- TODO: update this to not use RealizingSurface
 def isLocallyConsistent' (γ : GluingPattern S G) : Prop :=

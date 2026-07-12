@@ -22,7 +22,7 @@ open Sides
 class ComponentRealizer (U : Opens X) (S : Set X) (hub : X) where
   hub_mem : hub ∈ U
   touching_component_inv : restricted_punctured_components S U →
-    restricted_sides_at S hub_mem
+    restricted_at S hub_mem
   touching_component_left_inv : Function.LeftInverse touching_component_inv
     (restricted_touching_component_at S hub_mem)
   touching_component_right_inv : Function.RightInverse touching_component_inv
@@ -61,7 +61,7 @@ def restricted_hub (R : ComponentRealizer U S p) : U := ⟨p, R.hub_mem⟩
 
 
 def equiv (R : ComponentRealizer U S p) :
-  Equiv (restricted_sides_at S R.hub_mem) R.punctured_components := {
+  Equiv (restricted_at S R.hub_mem) R.punctured_components := {
     toFun := restricted_touching_component_at S R.hub_mem
     invFun := R.touching_component_inv
     left_inv := R.touching_component_left_inv
@@ -81,7 +81,7 @@ def touching_component (R : ComponentRealizer U S p) :
 
 
 def restricted_side_transfer (R : ComponentRealizer U S p) (σ : Sides R.restricted_surface) :
-  restricted_sides_at S R.hub_mem :=
+  restricted_at S R.hub_mem :=
    R.touching_component_inv (R.touching_component σ)
 
 
@@ -96,6 +96,11 @@ theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
   let σ_at_p := R.restricted_side_transfer σ.restrict_of_mem
   (σ_at_p.2 ▸ σ_at_p.1.lift_comm : σ_at_p.1.lift.center = (⟨_, R.hub_mem⟩ : U))
 
+
+noncomputable def side_transfer_at (R : ComponentRealizer U S p)
+  {q : X} (hq : q ∈ U) (σ : Sides.at_point S q) : Sides.at_point S p :=
+    let hσ : σ.1.center ∈ U := σ.2.symm ▸ hq
+    ⟨R.side_transfer σ.1 hσ, R.center_eq_hub_of_side_transfer σ.1 hσ⟩
 
 
 

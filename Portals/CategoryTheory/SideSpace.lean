@@ -273,18 +273,17 @@ end lift
 
 
 
-
 section at_point
 
-def sides_at (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
+def at_point (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
 
-def restricted_sides_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+def restricted_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
     Set (Sides (restrict_surface S U)) :=
-  sides_at (restrict_surface S U) ⟨p, hp⟩
+  at_point (restrict_surface S U) ⟨p, hp⟩
 
 def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
-    restricted_sides_at S hp → restricted_punctured_components S U := by
-  #check (restricted_sides_at S hp).restrict (touching_component (S := restrict_surface S U))
+    restricted_at S hp → restricted_punctured_components S U := by
+  #check (restricted_at S hp).restrict (touching_component (S := restrict_surface S U))
   sorry
 
 --theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
