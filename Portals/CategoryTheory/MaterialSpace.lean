@@ -51,6 +51,7 @@ theorem center_rusto_comm {f : F} (σ : Sides (restrict_union_surface S f)) :
     f.1.map_sides_inv_comm S _
 
 
+/-
 theorem center_eq_of_rusto {f : F} (a b : Sides (restrict_union_surface S f))
   (hab : a.center = b.center := by aesop) :
     (restricted_union_side_to_original a).center = (restricted_union_side_to_original b).center :=
@@ -62,22 +63,35 @@ theorem center_eq_of_usto {f : F} (a b : Sides (union_surface S F))
     a.restrict_of_mem.center = b.restrict_of_mem.center :=
   Set.injOn_subtype_val (Set.mem_univ _) (Set.mem_univ _)
     (a.restrict_comm.trans <| hab.trans b.restrict_comm.symm)
+-/
 
 
+def rusto_at_of_at {f : F} {p : f.1.range} (σ : Sides.at_point (restrict_union_surface S f) p) :
+  Sides.at_point S (f.1.inv_range p) :=
+    ⟨restricted_union_side_to_original σ.1,
+      Set.mem_setOf_eq.mpr (center_rusto_comm σ.1 ▸ congr_arg f.1.inv_range σ.2)⟩
 
-def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Perm F)) (f : F) :
+
+noncomputable def usto_at_of_at {f : F} {p : f.1.opens_range}
+  (σ : Sides.at_point (union_surface S F) p) :
+    Sides.at_point S (f.1.inv_range p) :=
+  rusto_at_of_at ⟨_, Set.mem_setOf_eq.mpr (Subtype.val_injective
+    ((congr_arg Subtype.val (σ.1.center_restrict_comm (σ.2.symm ▸ p.2))).trans σ.2))⟩
+
+
+noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Perm F)) (f : F) :
     GluingPattern (restrict_union_surface S f) (Equiv.Perm F) where
-  map a b _ := @γ _ _ (center_eq_of_rusto a b)
-  trans a b c _ _ := @γ.trans _ _ _ (center_eq_of_rusto a b) (center_eq_of_rusto b c)
+  map a b := γ (rusto_at_of_at a) (rusto_at_of_at b)
+  trans _ _ _ := γ.trans _ _ _
 
 -- might want to check if the recommendation_gluing_pattern is locally consistent. not important yet
 
 
 noncomputable def recommendation_map (γ : GluingPattern S (Equiv.Perm F))
-  (a b : Sides (union_surface S F)) (f : F)
-  (hab : a.center = b.center := by aesop) (h_mem : a.center ∈ f.1.opens_range := by aesop) :
+  {f : F} {p : f.1.opens_range} (a b : Sides.at_point (union_surface S F) p) :
     Equiv.Perm F :=
-  recommendation_gluing_pattern γ f _ _ (center_eq_of_usto a b)
+  recommendation_gluing_pattern γ f ⟨a.1.restrict_of_mem (a.2.symm ▸ p.2),
+    Set.mem_setOf_eq.mpr (a.1.center_restrict_comm (a.2.symm ▸ p.2))⟩ sorry
 
 
 

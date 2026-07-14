@@ -303,12 +303,12 @@ theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U
   σ.lift_comm ▸ σ.center.2
 
 
-noncomputable def restrict_of_mem {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by aesop) :
+noncomputable def restrict_of_mem {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
     Sides (restrict_surface S U) :=
   (homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
 
 
-theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by aesop) :
+theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
     σ.restrict_of_mem.lift = σ := by
   sorry
 
@@ -317,10 +317,9 @@ theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
   isOpenEmbedding_lift.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
 
 
-theorem restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by aesop) :
-    σ.restrict_of_mem.center.1 = σ.center :=
-  (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm).symm
-
+theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
+    σ.restrict_of_mem.center = ⟨σ.center, hσ⟩ :=
+  Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm).symm
 
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry
 
