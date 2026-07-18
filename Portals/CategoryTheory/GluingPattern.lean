@@ -26,11 +26,15 @@ instance (S : Set X) (G : Type) [Group G] : CoeFun (GluingPattern S G)
 
 namespace GluingPattern
 
-variable {S : Set X} {G : Type} [Group G]
+variable {S : Set X} {G : Type} [Group G] (γ : GluingPattern S G)
 
 
+def is_trivial_at (p : X) : Prop := ∀ (a b : Sides.at_point S p), γ a b = 1
+def is_trivial_on (A : Set X) := ∀ {p : A}, γ.is_trivial_at p
+def is_trivial : Prop := γ.is_trivial_on ⊤
 
-omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G)
+
+omit [TopologicalSpace X] in theorem refl_id
   {p : X} (a : Sides.at_point S p) :
     γ a a = 1 := by
   have h := γ.trans a a a
@@ -38,24 +42,28 @@ omit [TopologicalSpace X] in theorem refl_id (γ : GluingPattern S G)
   exact mul_left_cancel h
 
 
-omit [TopologicalSpace X] in theorem symm_inv_right (γ : GluingPattern S G)
+omit [TopologicalSpace X] in theorem symm_inv_right
     {p : X} (a b : Sides.at_point S p) : γ a b * γ b a = 1 :=
   (γ.trans a b a).trans (refl_id γ a)
 
 
-omit [TopologicalSpace X] in theorem symm_inv_left (γ : GluingPattern S G)
+omit [TopologicalSpace X] in theorem symm_inv_left
         {p : X} (a b : Sides.at_point S p) : γ b a * γ a b = 1 :=
   (γ.trans b a b).trans (refl_id γ b)
+
 
 
 open TopologicalSpace
 
 
 
-def isLocallyConsistent (γ : GluingPattern S G) : Prop :=
-  ∀ {p : X}, ∃ (U : Opens X) (R : ComponentRealizer U S p),
-  ∀ {q : X} (hq : q ∈ U) (a b : Sides.at_point S q),
-    γ (R.side_transfer_at hq a) (R.side_transfer_at hq b) = γ a b
+def respects_realizer {U p} (R : ComponentRealizer U S p) : Prop :=
+  ∀ {q : U} (a b : Sides.at_point S q),
+    γ (R.side_transfer_at a) (R.side_transfer_at b) = γ a b
+
+
+def isLocallyConsistent : Prop :=
+  ∀ {p : X}, ∃ (U : Opens X) (R : ComponentRealizer U S p), γ.respects_realizer R
 
 /- TODO: update this to not use RealizingSurface
 def isLocallyConsistent' (γ : GluingPattern S G) : Prop :=

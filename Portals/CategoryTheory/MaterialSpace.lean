@@ -75,8 +75,8 @@ def rusto_at_of_at {f : F} {p : f.1.range} (σ : Sides.at_point (restrict_union_
 noncomputable def usto_at_of_at {f : F} {p : f.1.opens_range}
   (σ : Sides.at_point (union_surface S F) p) :
     Sides.at_point S (f.1.inv_range p) :=
-  rusto_at_of_at ⟨_, Set.mem_setOf_eq.mpr (Subtype.val_injective
-    ((congr_arg Subtype.val (σ.1.center_restrict_comm (σ.2.symm ▸ p.2))).trans σ.2))⟩
+  rusto_at_of_at ⟨_, Set.mem_setOf_eq.mpr <| Subtype.val_injective <|
+    (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ p.2).trans σ.2⟩
 
 
 noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Perm F)) (f : F) :
@@ -90,8 +90,8 @@ noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Per
 noncomputable def recommendation_map (γ : GluingPattern S (Equiv.Perm F))
   {f : F} {p : f.1.opens_range} (a b : Sides.at_point (union_surface S F) p) :
     Equiv.Perm F :=
-  recommendation_gluing_pattern γ f ⟨a.1.restrict_of_mem (a.2.symm ▸ p.2),
-    Set.mem_setOf_eq.mpr (a.1.center_restrict_comm (a.2.symm ▸ p.2))⟩ sorry
+  recommendation_gluing_pattern γ f (Sides.restricted_at_of_at a) (Sides.restricted_at_of_at b)
+
 
 
 
@@ -108,71 +108,24 @@ def relevant_portal_maps (F : Set (PortalMap Y X)) (p : X) : Sort 1 :=
   { f : F // p ∈ f.1.range }
 
 
-def castF (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
-  relevant_portal_maps F a.center ≃ relevant_portal_maps F b.center := {
-    toFun x := ⟨x.1, by rw [← hab]; exact x.2⟩
-    invFun x := ⟨x.1, by rw [hab]; exact x.2⟩
-  }
-
 variable (γ : GluingPattern S (Equiv.Perm F))
 
+
 def relevant_perms (p : X) : Subgroup (Equiv.Perm F) := Subgroup.closure
-  {P : Equiv.Perm F | ∃ (a b : Sides.sides_at (union_surface S F) p) (f : relevant_portal_maps F p),
-    recommendation_map γ a.1 b.1 f.1 (a.2.trans b.2.symm) (by rw[a.2]; exact f.2) = P}
+  {P : Equiv.Perm F | ∃ (f : relevant_portal_maps F p)
+    (a b : Sides.at_point (union_surface S F) (Subtype.mk p f.2)),
+      recommendation_map γ a b = P}
 
 
-def castP (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop) :
-  relevant_perms γ a.center →* relevant_perms γ b.center := {
-    toFun x := ⟨x.1, by rw [hab.symm]; exact x.2⟩
-    map_one' := rfl
-    map_mul' _ _ := rfl
-  }
-
-theorem coe_castP (a b : Sides (union_surface S F))
-  (hab : a.center = b.center := by aesop) :
-    ∀ x, (castP γ a b hab x).1 = x.1 :=
-  fun x ↦ by unfold castP; simp
-
-theorem continuous_castP (a b : Sides (union_surface S F))
-  (hab : a.center = b.center := by aesop)
-  [τ : ∀ p, TopologicalSpace (relevant_perms γ p)] :
-    @Continuous _ _ (τ a.center) (τ b.center) (castP γ a b hab) := by
-  have h : Eq.subst hab (τ a.center) = τ b.center := by grind
-
-  #check Eq.mp hab
-  rw [← (by grind : hab ▸ τ a.center = τ b.center)]
-  unfold castP
-  simp
-  apply continuous_def.mpr
-  #check dcongr_heq
-  #check Homeomorph.coinduced_eq
-  unfold castP
-  simp
-  have h : τ b.center = coinduced (castP γ a b) (τ a.center) := by
-    rw [Homeomorph.coinduced_eq _]
-    unfold coinduced castP
-    simp
-    rw [hab]
-
-    sorry
-  #check continuous_coinduced_rng (f := castP γ a b)
-
-  sorry --continuous_coinduced_rng
+noncomputable def relevant_recommendation_map {p : X} (f : relevant_portal_maps F p)
+  (a b : Sides.at_point (union_surface S F) (Subtype.mk p f.2)) :
+    relevant_perms γ p :=
+  ⟨recommendation_map γ a b, Subgroup.mem_closure_of_mem <| Set.mem_setOf_eq.mpr ⟨f, a, b, rfl⟩⟩
 
 
-
-
-noncomputable def relevant_recommendation_map
-  (from_side to_side map_side perm_side : Sides (union_surface S F))
-  (f : relevant_portal_maps F map_side.center)
-  (h1 : from_side.center = to_side.center := by aesop)
-  (h2 : from_side.center = map_side.center := by aesop)
-  (h3 : from_side.center = perm_side.center := by aesop) :
-    relevant_perms γ perm_side.center :=
-  ⟨recommendation_map γ from_side to_side f.1 h1 (h2.symm ▸ f.2),
-    Subgroup.mem_closure_of_mem ⟨⟨from_side, h3⟩, ⟨to_side, h1.symm.trans h3⟩,
-    castF map_side perm_side (h2.symm.trans h3) f, rfl⟩⟩
-
+def irrelevants_locally_trivial : Prop :=
+  ∀ (p : X), ∃ (U : Opens X) (_ : p ∈ U), ∀ {f : F}, p ∉ f.1.range →
+    (recommendation_gluing_pattern γ f).is_trivial_on (Subtype.val ⁻¹' U)
 
 
 
@@ -181,139 +134,158 @@ noncomputable def relevant_recommendation_map
 noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
   [∀ p, IsMulCommutative (relevant_perms γ p)] [∀ p, TopologicalSpace (relevant_perms γ p)]
   [∀ p, T2Space (relevant_perms γ p)] [∀ p, ContinuousMul (relevant_perms γ p)]
-  (h_multipliable : ∀ (a b : Sides (union_surface S F)) (hab : a.center = b.center := by aesop),
-    Multipliable (relevant_recommendation_map γ a b a a) := by assumption) :
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+    Multipliable (relevant_recommendation_map γ · a b) := by assumption) :
       GluingPattern (union_surface S F) (Equiv.Perm F) where
 
-  map {a b} hab := ↑(∏' f : relevant_portal_maps F a.center,
-    relevant_recommendation_map γ a b a a f)
-  trans {a b c} hab hbc := by
-    rw [← Equiv.tprod_eq (castF a b) (relevant_recommendation_map γ b c b b)]
-
-    have h_mult : Multipliable (relevant_recommendation_map γ b c a b) :=
-      let ⟨x, hx⟩ := h_multipliable b c
-      ⟨x, ((castF a b).injective.hasProd_iff (by aesop)
-        (f := relevant_recommendation_map γ b c b b)).mpr hx⟩
-
-    let h := congr_arg Subtype.val
-      (Multipliable.map_tprod h_mult (castP γ b a) (continuous_castP γ b a))
-    rw [coe_castP γ b a _] at h
-    unfold castP at h
-    unfold castF
-    unfold relevant_recommendation_map at h ⊢
-    simp at ⊢ h
-    rw [h]
-
-    rw [← Subgroup.coe_mul _ _]
+  map {p} a b := ↑(∏' f : relevant_portal_maps F p,
+    relevant_recommendation_map γ f a b)
+  trans {p} a b c := by
+    rw [← Subgroup.coe_mul]
     apply congr_arg
-    rw [← Multipliable.tprod_mul (by exact h_multipliable a b)
-      (by exact h_mult.map (castP γ b a) (continuous_castP γ b a))]
+    rw [← Multipliable.tprod_mul (h_multipliable a b) (h_multipliable b c)]
     apply tprod_congr
     intro f
-    unfold recommendation_map
     rw [MulMemClass.mk_mul_mk, Subtype.mk.injEq]
-
-    exact (recommendation_gluing_pattern γ f.1).trans _ _ _
-      (center_eq_of_usto a b hab f.2) (center_eq_of_usto b c hbc (hab ▸ f.2))
+    apply (recommendation_gluing_pattern γ f.1).trans
 
 
 
 
+theorem composedGluingattern_isLocallyConsistent_iff
+  {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent)
+  [∀ p, IsMulCommutative (relevant_perms γ p)]
+  [∀ p, TopologicalSpace (relevant_perms γ p)]
+  [∀ p, T2Space (relevant_perms γ p)]
+  [∀ p, ContinuousMul (relevant_perms γ p)]
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+    Multipliable (relevant_recommendation_map γ · a b) := by assumption)
+  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (R : ComponentRealizer V (union_surface S F) p), V ≤ U) :
+
+  (composedGluingPattern γ).isLocallyConsistent ↔
+    irrelevants_locally_trivial γ ∧
+    ∃ m : Y → Opens Y,
+      (∀ p : Y, ∃ R : ComponentRealizer (m p) S p, γ.respects_realizer R) ∧
+      (∀ p : X, p ∈ interior (⋂ f : relevant_portal_maps F p,
+        f.1.1 '' (m <| f.1.1.inv_range ⟨p, f.2⟩).1)) := by
 
 
-theorem composedGluingattern_isLocallyConsistent
-  {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent) :
-    (composedGluingPattern γ).isLocallyConsistent := by
-      -- use smaller realizers that fit inside the portal maps
+  apply Iff.intro
+  · intro h
+    split_ands
+    · intro p
+      rcases @h p with ⟨U, R, hUR⟩
+      use U, R.hub_mem
+      unfold GluingPattern.respects_realizer at hUR
+      intro f hf
+      -- huh this part might be false
+      sorry
+    · sorry
 
-  unfold GluingPattern.isLocallyConsistent
-  intro p
+  · intro ⟨h_trivial, m, hmR, hmf⟩ p
+    rcases h_trivial p with ⟨U, hpU, hU⟩
+    let I : Opens X := ⟨interior <| ⋂ f : relevant_portal_maps F p,
+      f.1 '' (m <| f.1.1.inv_range ⟨p, f.2⟩).1, isOpen_interior⟩
+    rcases @hR p (U ⊓ I) ⟨hpU, hmf p⟩ with ⟨V, R, hV_le⟩
 
-  unfold GluingPattern.map
-  unfold composedGluingPattern
-  unfold recommendation_map
-  unfold GluingPattern.map
-  unfold recommendation_gluing_pattern
-  unfold GluingPattern.map
-  simp only
+    use V, R
 
-  let f : F := sorry
-  have hpf : p ∈ f.1.range := sorry
-  #check f.1.inv_range ⟨p, hpf⟩
-  have hpU' : ↑(f.1.inv_range ⟨p, hpf⟩) ∈ f.1.domain := by
+
+    unfold composedGluingPattern GluingPattern.respects_realizer
+    simp only
+
+
+    --show that f : (relevant_portal_maps F q) is either the same as in p, or trivial
+
+
     sorry
 
-  rcases hγ (p := ↑(f.1.inv_range ⟨p, hpf⟩)) with ⟨U, R, _⟩
-  #check R.subrealizer hpU'
+/-
 
+    #check R.hub_mem
 
-  sorry
-  /-
-  q r hrp hrq a b ha hb
+    #check tprod_extend_one
+    #check tprod_eq_tprod_of_ne_one_bij
+    #check Equiv.tprod_eq_tprod_of_mulSupport
 
-  unfold GluingPattern.map
-  unfold composedGluingPattern
-  unfold recommendation_map
-  unfold GluingPattern.map
-  unfold recommendation_gluing_pattern
-  unfold GluingPattern.map
-  simp only
-
-
-
-  unfold GluingPattern.isLocallyConsistent at hγ
-
-
-
-  #check ComponentRealizer.center_eq_point_of_side_transfer (RU.realizer p) (ha ▸ hrp : a.center ∈ RUf p)
-  simp [ComponentRealizer.center_eq_point_of_side_transfer (RU.realizer p) (ha ▸ hrp : a.center ∈ RUf p)]
-
-  --have h := ComponentRealizer.center_eq_point_of_side_transfer (RU.realizer p)
-  --  (GluingPattern.isLocallyConsistent._proof_1 RU hrp ha)
-
-
-
-  #check tprod
-
-  #check γ.1 (center_eq_of_rusto
-    (recommendation_map._proof_2 (composedGluingPattern._proof_1 _)
-    (GluingPattern.isLocallyConsistent._proof_2 hrp ha hb)))
-
-  rw [ComponentRealizer.center_eq_point_of_side_transfer ]
-
-
-  --apply hγ
-  #check (hγ sorry sorry sorry sorry : γ.1 _ = γ.1 _)
-  #check (hγ (by
-
-    sorry) (by
-
-    sorry) (by
-
-    sorry) (by
-
-    sorry))
-
-  sorry
-
-
-#check Multipliable
+    cases Decidable.em (Nonempty (relevant_portal_maps F p)) with
+    | inl h_nonempty =>
+      have f := (inhabited_of_nonempty h_nonempty).default
+      rcases hγ (p := f.1.1.inv_range ⟨p, f.2⟩) with ⟨Uy, Ry, hy⟩
+      have U : Opens X := ⟨f.1.1 '' Uy, f.1.1.2.isOpen_iff_image_isOpen.mp Uy.2⟩
+      -- shrink a realizer to fit inside U. the conclusion follows by hy.
+      sorry
+    | inr h_empty =>
+      -- choose a U far from the surface. it is always a realizer since theres 1 side
+      -- theres one side because any punctured components near p will contain p
+      apply not_nonempty_iff.mp at h_empty
+      cases Decidable.em (Nonempty {f : F // p ∈ closure f.1.range}) with
+      | inl h_closure =>
+        have f := (inhabited_of_nonempty h_closure).default
+        rcases h_frontier f.1 ⟨p, f.1.1.2.isOpen_range.frontier_eq ▸
+          ⟨f.2, fun h ↦ isEmpty_iff.mp h_empty ⟨f.1, h⟩⟩⟩
+            with ⟨U, hpU, hU⟩
+        -- actually, we need the component of U containing p
+        use U, sorry
+        intro q hq a b
+        rw [hU (q := ⟨q, hq⟩) a b]
+        rw [hU (q := ⟨p, hpU⟩) _ _]
+      | inr h_closure =>
+        apply not_nonempty_iff.mp at h_closure
+        -- p is in the complement of the closure of U = ⋃ f:F, f.1.range.
+        -- Take the connected component containing p. This is a realizer
+        sorry
 -/
-
-
-
-
 
 -- if we have a locally consistent component realizer, then cannonically Homeomorph U MatSpace.
 -- for any choice of representative ConnectedComponent of U\S.
 -- this is intuitively true because we can reshuffle the components to match material space.
+
+
+open Classical in theorem composedGluingattern_isLocallyConsistent_iff_of_finite
+  [∀ p, Finite (relevant_portal_maps F p)]
+  {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent)
+  [∀ p, IsMulCommutative (relevant_perms γ p)]
+  [∀ p, TopologicalSpace (relevant_perms γ p)]
+  [∀ p, T2Space (relevant_perms γ p)]
+  [∀ p, ContinuousMul (relevant_perms γ p)]
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+    Multipliable (fun f ↦ relevant_recommendation_map γ f a b) := by assumption)
+  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (R : ComponentRealizer V (union_surface S F) p), V ≤ U)
+
+   -- maybe put this one inside the iff?
+  (h_trivial : irrelevants_locally_trivial γ) :
+
+    (composedGluingPattern γ).isLocallyConsistent ↔ irrelevants_locally_trivial γ := by
+
+  have h := composedGluingattern_isLocallyConsistent_iff hγ h_multipliable hR
+  apply Iff.intro (And.left <| h.mp ·)
+  intro h_trivial
+  apply h.mpr
+  apply And.intro h_trivial _
+
+  use (choose <| @hγ ·)
+  apply And.intro fun _ ↦ choose_spec hγ
+  intro p
+  apply subset_interior_iff_isOpen.mpr <| isOpen_iInter_of_finite
+    (·.1.1.2.isOpen_iff_image_isOpen.mp <| Opens.is_open' _)
+  apply Set.mem_iInter.mpr
+  intro f
+  let p' := f.1.1.inv_range ⟨p, f.2⟩
+
+  use p'
+  apply And.intro <| match choose_spec <| @hγ p' with | ⟨R, _⟩ => R.hub_mem
+
+
+  sorry -- prove this in the portal maps file
+
+
 
 end composition_construction
 
 
 
 
-#check isEmpty_iff
 
 section EqualityConstruction
 

@@ -321,6 +321,13 @@ theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U
     σ.restrict_of_mem.center = ⟨σ.center, hσ⟩ :=
   Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm).symm
 
+
+noncomputable def restricted_at_of_at {U : Opens X} {p : U} (σ : Sides.at_point S p) :
+  restricted_at S p.2 :=
+    ⟨_, Set.mem_setOf_eq.mpr (Subtype.val_injective
+      ((congr_arg Subtype.val (σ.1.center_restrict_comm (σ.2.symm ▸ p.2))).trans σ.2))⟩
+
+
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry
 
 -- if we can relax the isOpenEmbedding condition on Sides.map then we can use map_comm to prove this
