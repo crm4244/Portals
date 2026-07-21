@@ -194,7 +194,20 @@ theorem composedGluingattern_isLocallyConsistent_iff
     unfold composedGluingPattern GluingPattern.respects_realizer
     simp only
 
+    intro q a b
 
+    let castF : relevant_portal_maps F p → relevant_portal_maps F q := by
+
+      sorry
+    have castF_injective : Function.Injective castF := by sorry
+
+    rw [← tprod_extend_one castF_injective
+      (relevant_recommendation_map γ · (R.side_transfer_at a) (R.side_transfer_at b))]
+
+    #check tprod_congr
+    #check Multipliable.map_tprod
+    #check tprod_eq_tprod_of_ne_one_bij
+    #check Equiv.tprod_eq_tprod_of_mulSupport
     --show that f : (relevant_portal_maps F q) is either the same as in p, or trivial
 
 
@@ -204,9 +217,6 @@ theorem composedGluingattern_isLocallyConsistent_iff
 
     #check R.hub_mem
 
-    #check tprod_extend_one
-    #check tprod_eq_tprod_of_ne_one_bij
-    #check Equiv.tprod_eq_tprod_of_mulSupport
 
     cases Decidable.em (Nonempty (relevant_portal_maps F p)) with
     | inl h_nonempty =>
