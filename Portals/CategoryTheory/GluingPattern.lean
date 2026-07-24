@@ -2,8 +2,11 @@
 import Portals.CategoryTheory.Realizers
 
 
+universe u v
 
-variable {X : Type} [TopologicalSpace X]
+
+
+variable {X : Type u} [TopologicalSpace X]
 
 
 namespace Portal
@@ -12,13 +15,13 @@ open ComponentRealizer
 
 
 
-class GluingPattern (S : Set X) (G : Type) [Group G] where
+class GluingPattern (S : Set X) (G : Type v) [Group G] where
   map {p : X} (a b : Sides.at_point S p) : G
   trans {p : X} (a b c : Sides.at_point S p) :
       map a b * map b c = map a c
 
 
-instance (S : Set X) (G : Type) [Group G] : CoeFun (GluingPattern S G)
+instance (S : Set X) (G : Type v) [Group G] : CoeFun (GluingPattern S G)
   (fun _ ↦ {p : X} → (a b : Sides.at_point S p) → G) :=
     {coe γ := @γ.map}
 
@@ -26,7 +29,7 @@ instance (S : Set X) (G : Type) [Group G] : CoeFun (GluingPattern S G)
 
 namespace GluingPattern
 
-variable {S : Set X} {G : Type} [Group G] (γ : GluingPattern S G)
+variable {S : Set X} {G : Type v} [Group G] (γ : GluingPattern S G)
 
 
 def is_trivial_at (p : X) : Prop := ∀ (a b : Sides.at_point S p), γ a b = 1

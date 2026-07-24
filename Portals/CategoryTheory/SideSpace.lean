@@ -61,7 +61,8 @@ theorem connectedComponent_homeomorph {Y : Type*} [TopologicalSpace Y] (e : X �
     e '' connectedComponent x = connectedComponent (e x) := by
   sorry
 
--- okay, i need a theorem about how components match on homeomorphic spaces, and also we can map functions across this equivalence
+-- okay, i need a theorem about how components match on homeomorphic spaces,
+-- and also we can map functions across this equivalence
 def ConnectedComponents.congr {Y : Type u} [TopologicalSpace Y] (e : X ≃ₜ Y) :
     ConnectedComponents X ≃ ConnectedComponents Y :=
   let f {X' Y' : Type u} [TopologicalSpace X'] [TopologicalSpace Y'] (e' : X' ≃ₜ Y') :

@@ -4,7 +4,11 @@ import Portals.CategoryTheory.SideSpace
 
 open Topology TopologicalSpace
 
-variable {X : Type} [TopologicalSpace X]
+
+universe u
+
+
+variable {X : Type u} [TopologicalSpace X]
 
 
 
@@ -46,7 +50,7 @@ def restricted_surface (R : ComponentRealizer U S p) : Set U :=
   restrict_surface S U
 
 
-def punctured_components (R : ComponentRealizer U S p) : Type :=
+def punctured_components (R : ComponentRealizer U S p) : Type u :=
   restricted_punctured_components S U
 
 

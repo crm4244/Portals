@@ -7,27 +7,28 @@ open Topology TopologicalSpace
 
 
 
-
+universe u v
 
 
 
 namespace Portal
 
 
+section defs
 
+variable (X : Type u) (Y : Type v) [TopologicalSpace X] [TopologicalSpace Y]
 
-variable (X Y : Type) [TopologicalSpace X] [TopologicalSpace Y]
-
-def PortalMap : Type := {f : X → Y // IsOpenEmbedding f}
+def PortalMap : Type max u v := {f : X → Y // IsOpenEmbedding f}
 
 instance : CoeFun (PortalMap X Y) (fun _ ↦ X → Y) := {coe f := f.1}
 
+end defs
 
 
 
 namespace PortalMap
 
-variable {X Y : Type} [TopologicalSpace X] [TopologicalSpace Y]
+variable {X : Type u} {Y : Type v} [TopologicalSpace X] [TopologicalSpace Y]
 variable (f : PortalMap X Y)
 
 
@@ -51,12 +52,12 @@ theorem isOpenEmbedding_invRange : IsOpenEmbedding (f.inv_range) :=
   IsOpenEmbedding.comp isOpen_univ.isOpenEmbedding_subtypeVal (Homeomorph.isOpenEmbedding _)
 
 
-def map_sides_inv (S : Set X) : Sides (restricted_image f S) → Sides S :=
+def map_sides_inv {S : Set X} : Sides (restricted_image f S) → Sides S :=
   Sides.map (S := restricted_image f S) f.isOpenEmbedding_invRange
 
 
-theorem map_sides_inv_comm (S : Set X) (σ : Sides (restricted_image f S)) :
-    (f.map_sides_inv S σ).center = f.inv_range σ.center :=
+theorem map_sides_inv_comm {S : Set X} (σ : Sides (restricted_image f S)) :
+    (f.map_sides_inv σ).center = f.inv_range σ.center :=
   Sides.map_comm f.isOpenEmbedding_invRange σ
 
 
