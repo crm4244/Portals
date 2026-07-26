@@ -43,10 +43,19 @@ def restricted_image (S : Set X) : Set f.range :=
 
 
 noncomputable def homeomorph : Homeomorph (⊤ : Set X) f.range :=
-  by apply Set.image_univ ▸ f.2.homeomorphImage ⊤
-
+  (f.2.homeomorphImage ⊤).trans (Homeomorph.setCongr Set.image_univ)
 
 noncomputable def inv_range (p : f.range) : X := f.homeomorph.symm p
+
+theorem isLeftInverse_invRange (p : X) :
+  f.inv_range ⟨f p, Set.mem_range_self _⟩ = p :=
+    congr_arg Subtype.val <| f.homeomorph.symm_apply_apply ⟨p, Set.mem_univ p⟩
+
+
+theorem isRightInverse_invRange (y : f.range) :
+  f (f.inv_range y) = y :=
+    congr_arg Subtype.val <| f.homeomorph.apply_symm_apply y
+
 
 theorem isOpenEmbedding_invRange : IsOpenEmbedding (f.inv_range) :=
   IsOpenEmbedding.comp isOpen_univ.isOpenEmbedding_subtypeVal (Homeomorph.isOpenEmbedding _)

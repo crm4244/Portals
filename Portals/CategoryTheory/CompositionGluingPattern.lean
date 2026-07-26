@@ -16,20 +16,19 @@ variable {F : Set (PortalMap Y X)}
 noncomputable def composedGluingPattern (γ : GluingPattern S (Equiv.Perm F))
   [∀ p, IsMulCommutative (relevant_perms γ p)] [∀ p, TopologicalSpace (relevant_perms γ p)]
   [∀ p, T2Space (relevant_perms γ p)] [∀ p, ContinuousMul (relevant_perms γ p)]
-  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (𝒮 F S) p),
     Multipliable (relevant_recommendation_map γ · a b) := by assumption) :
-      GluingPattern (union_surface S F) (Equiv.Perm F) where
+      GluingPattern (𝒮 F S) (Equiv.Perm F) where
 
   map {p} a b := ↑(∏' f : relevant_portal_maps F p,
     relevant_recommendation_map γ f a b)
-  trans {p} a b c := by
+  trans a b c := by
     rw [← Subgroup.coe_mul]
-    apply congr_arg
+    apply congr_arg Subtype.val
     rw [← Multipliable.tprod_mul (h_multipliable a b) (h_multipliable b c)]
-    apply tprod_congr
-    intro f
-    rw [MulMemClass.mk_mul_mk, Subtype.mk.injEq]
-    apply (recommendation_gluing_pattern γ f.1).trans
+    exact tprod_congr fun f ↦ by
+      rw [MulMemClass.mk_mul_mk]
+      exact Subtype.eq <| (recommendation_gluing_pattern γ f.1).trans _ _ _
 
 
 
@@ -42,9 +41,9 @@ theorem composedGluingattern_isLocallyConsistent_iff
   [∀ p, TopologicalSpace (relevant_perms γ p)]
   [∀ p, T2Space (relevant_perms γ p)]
   [∀ p, ContinuousMul (relevant_perms γ p)]
-  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (𝒮 F S) p),
     Multipliable (relevant_recommendation_map γ · a b) := by assumption)
-  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (R : ComponentRealizer V (union_surface S F) p), V ≤ U) :
+  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (R : ComponentRealizer V (𝒮 F S) p), V ≤ U) :
 
   (composedGluingPattern γ).isLocallyConsistent ↔
     irrelevants_locally_trivial γ ∧
@@ -137,41 +136,27 @@ theorem composedGluingattern_isLocallyConsistent_iff
 
 
 open Classical in theorem composedGluingattern_isLocallyConsistent_iff_of_finite
-  [∀ p, Finite (relevant_portal_maps F p)]
+  [∀ p, Finite (relevant_portal_maps F p)] -- maybe use a LocallyFinite instance
   {γ : GluingPattern S (Equiv.Perm F)} (hγ : γ.isLocallyConsistent)
   [∀ p, IsMulCommutative (relevant_perms γ p)]
   [∀ p, TopologicalSpace (relevant_perms γ p)]
   [∀ p, T2Space (relevant_perms γ p)]
   [∀ p, ContinuousMul (relevant_perms γ p)]
-  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (union_surface S F) p),
+  (h_multipliable : ∀ {p : X} (a b : Sides.at_point (𝒮 F S) p),
     Multipliable (fun f ↦ relevant_recommendation_map γ f a b) := by assumption)
-  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (R : ComponentRealizer V (union_surface S F) p), V ≤ U)
+  (hR : ∀ {p U}, p ∈ U → ∃ (V : Opens X) (_ : ComponentRealizer V (𝒮 F S) p), V ≤ U) :
 
-   -- maybe put this one inside the iff?
-  (h_trivial : irrelevants_locally_trivial γ) :
-
-    (composedGluingPattern γ).isLocallyConsistent ↔ irrelevants_locally_trivial γ := by
+    (composedGluingPattern γ).isLocallyConsistent ↔ irrelevants_locally_trivial γ :=
 
   have h := composedGluingattern_isLocallyConsistent_iff hγ h_multipliable hR
-  apply Iff.intro (And.left <| h.mp ·)
-  intro h_trivial
-  apply h.mpr
-  apply And.intro h_trivial _
-
-  use (choose <| @hγ ·)
-  apply And.intro fun _ ↦ choose_spec hγ
-  intro p
-  apply subset_interior_iff_isOpen.mpr <| isOpen_iInter_of_finite
-    (·.1.1.2.isOpen_iff_image_isOpen.mp <| Opens.is_open' _)
-  apply Set.mem_iInter.mpr
-  intro f
-  let p' := f.1.1.inv_range ⟨p, f.2⟩
-
-  use p'
-  apply And.intro <| match choose_spec <| @hγ p' with | ⟨R, _⟩ => R.hub_mem
-
-
-  sorry -- prove this in the portal maps file
+  ⟨(And.left <| h.mp ·), fun h_trivial ↦ h.mpr
+    ⟨h_trivial, (choose <| @hγ ·), fun _ ↦ choose_spec hγ, fun p ↦
+      (subset_interior_iff_isOpen.mpr <| isOpen_iInter_of_finite fun f ↦
+        f.1.1.2.isOpen_iff_image_isOpen.mp <| Opens.is_open' _) <|
+      Set.mem_iInter.mpr fun f ↦
+        let p' := f.1.1.inv_range ⟨p, f.2⟩
+        ⟨p', match choose_spec <| @hγ p' with | ⟨R, _⟩ => R.hub_mem,
+          f.1.1.isRightInverse_invRange _⟩⟩⟩
 
 
 

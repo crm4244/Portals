@@ -278,14 +278,37 @@ section at_point
 
 def at_point (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
 
-def restricted_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+variable {U : Set X} {p : X}
+
+
+def restricted_at (S : Set X) (hp : p ∈ U) :
     Set (Sides (restrict_surface S U)) :=
   at_point (restrict_surface S U) ⟨p, hp⟩
 
-def restricted_touching_component_at (S : Set X) {U : Set X} {p : X} (hp : p ∈ U) :
+
+def restricted_touching_component_at (S : Set X) (hp : p ∈ U) :
     restricted_at S hp → restricted_punctured_components S U := by
   #check (restricted_at S hp).restrict (touching_component (S := restrict_surface S U))
   sorry
+
+
+
+def lift_at {hp : p ∈ U} (σ : restricted_at S hp) : Sides.at_point S p :=
+  ⟨σ.1, by
+    have h := σ.2
+    unfold restricted_at at_point at h
+    unfold at_point
+    simp
+    simp only [Set.mem_setOf_eq] at h
+    --apply Subtype.mk_eq_mk.mp
+    --rw [← h]
+    --apply Subtype.mk_eq_mk.mpr h
+
+    #check lift_comm
+
+    sorry⟩
+
+
 
 --theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
 
