@@ -22,12 +22,32 @@ open Set
 
 
 
-noncomputable def transport_of (P : Equiv.Perm F) {f : F} (p : f.1.range) : X :=
-  (P f).1 <| f.1.inv_range p
+theorem range_subset_𝒰 (f : F) : f.1.range ⊆ 𝒰 F := fun _ h ↦ mem_iUnion.mpr ⟨f, h⟩
+
+def inclusion_range_𝒰 (f : F) : f.1.range → 𝒰 F := inclusion <| range_subset_𝒰 f
+
+theorem mem_range_of_range_inclusion {f : F} (x : range <| inclusion_range_𝒰 f) :
+  x.1.1 ∈ f.1.range :=
+    let ⟨_, ⟨_, y, rfl⟩, rfl⟩ := x; mem_range.mpr ⟨y, rfl⟩
+
+
+
+noncomputable def transportOf (P : Equiv.Perm F) {f : F} (p : f.1.range) : X :=
+  P f |>.1 <| f.1.inv_range p
+
+
+theorem transportOf_mem_𝒰 (P : Equiv.Perm F) {f : F} (p : f.1.range) :
+  transportOf P p ∈ 𝒰 F :=
+    range_subset_𝒰 (P f) <| mem_range_self _
+
+
+theorem continuous_transportOf (P : Equiv.Perm F) (f : F) :
+  Continuous (transportOf P (f := f)) :=
+    P f |>.1.2.continuous.comp <| continuous_subtype_val.comp f.1.homeomorph.continuous_symm
 
 
 variable (transport_symmetry : ∀ P (f g : F) (q : X) (hf : q ∈ f.1.range) (hg : q ∈ g.1.range),
-  transport_of P ⟨q, hf⟩ = transport_of P ⟨q, hg⟩)
+  transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩)
 
 
 noncomputable def pretransport (P : Equiv.Perm F) (x : 𝒰 F) : X :=
@@ -43,10 +63,9 @@ noncomputable def transport (P : Equiv.Perm F) (x : 𝒰 F) : 𝒰 F :=
   ⟨pretransport transport_symmetry P x, pretransport_mem transport_symmetry P x⟩
 
 
-theorem transport_eq_of (P : Equiv.Perm F) {p : 𝒰 F} {f : F} (hp : p.1 ∈ f.1.range) :
-  transport transport_symmetry P p = ⟨transport_of P ⟨p, hp⟩,
-    mem_iUnion.mpr ⟨P f, mem_range.mpr ⟨f.1.inv_range ⟨p, hp⟩, rfl⟩⟩⟩ :=
-  Subtype.mk_eq_mk.mpr <| iUnionLift_of_mem _ _
+theorem transport_eq_transportOf (P : Equiv.Perm F) {p : 𝒰 F} {f : F} (hp : p.1 ∈ f.1.range) :
+  transport transport_symmetry P p = ⟨_, transportOf_mem_𝒰 P ⟨p, hp⟩⟩ :=
+    Subtype.mk_eq_mk.mpr <| iUnionLift_of_mem _ _
 
 
 
@@ -61,14 +80,14 @@ theorem transport_mul_apply (P Q : Equiv.Perm F) (x : 𝒰 F) :
   let y := transport transport_symmetry Q x
   have hy : y.1 ∈ g.1.range := mem_range.mpr <| exists_apply_eq_apply g.1 _
 
-  rw [transport_eq_of transport_symmetry P hy]
-  rw [transport_eq_of transport_symmetry (P * Q) hx]
+  rw [transport_eq_transportOf transport_symmetry P hy]
+  rw [transport_eq_transportOf transport_symmetry (P * Q) hx]
 
   apply Subtype.mk_eq_mk.mpr <| congr_arg (P g).1 <| g.1.2.injective _
   rw [g.1.isRightInverse_invRange]
   unfold y
   simp only
-  rw [transport_eq_of transport_symmetry Q hx]
+  rw [transport_eq_transportOf transport_symmetry Q hx]
   rfl
 
 
@@ -79,7 +98,7 @@ theorem transport_mul (P Q : Equiv.Perm F) :
 
 
 theorem transport_one_apply (x : 𝒰 F) : transport transport_symmetry 1 x = x := by
-  rw [transport_eq_of transport_symmetry 1 <| Classical.choose_spec <| mem_iUnion.mp x.2]
+  rw [transport_eq_transportOf transport_symmetry 1 <| Classical.choose_spec <| mem_iUnion.mp x.2]
   exact Subtype.mk_eq_mk.mpr <| PortalMap.isRightInverse_invRange _ _
 
 
@@ -87,60 +106,28 @@ theorem transport_one : transport transport_symmetry 1 = id :=
   funext fun x ↦ transport_one_apply transport_symmetry x
 
 
-theorem transport_continuous (P : Equiv.Perm F) : Continuous (transport transport_symmetry P) := by
-  let π (f : F) : f.1.range → 𝒰 F := fun ⟨x, h⟩ ↦ ⟨x, mem_iUnion.mpr ⟨f, h⟩⟩
-  have hπ (f : F) : IsOpenMap <| π f := by
-    intro U hU
-    use Subtype.val '' U
-    apply And.intro
-    ·
-      sorry
-    · exact preimage_setOf_eq.trans <| congr_arg (@setOf <| 𝒰 F) <|
-        funext fun _ ↦ congr_arg (@Exists f.1.range) <|
-        funext fun _ ↦ Iff.eq <| and_congr_right fun _ ↦ Subtype.mk_eq_mk.symm
-
-  apply continuous_of_continuousOn_iUnion_of_isOpen (s := fun f : F ↦ π f '' univ)
-  · intro f
-    apply continuousOn_iff_continuous_restrict.mpr
-    unfold restrict
-    have h := fun x : π f '' univ ↦ transport_eq_of transport_symmetry P (p := x.1)
-      (let ⟨_, ⟨_, y, rfl⟩, _, rfl⟩ := x; mem_range.mpr ⟨y, rfl⟩)
-
-    sorry
-  · exact fun f ↦ top_eq_univ ▸ image_univ ▸ by
-      use f.1.range, f.1.2.isOpen_range
-      unfold PortalMap.range π
-      simp only
+theorem continuous_transport (P : Equiv.Perm F) : Continuous (transport transport_symmetry P) :=
+  continuous_of_continuousOn_iUnion_of_isOpen
+    (fun f ↦ continuousOn_iff_continuous_restrict.mpr <| (continuous_transportOf P f |>.comp
+      <| continuous_subtype_val.comp continuous_subtype_val |>.subtype_mk _).subtype_mk _ |>.congr
+      fun x : range <| inclusion_range_𝒰 f ↦ transport_eq_transportOf transport_symmetry P
+        (mem_range_of_range_inclusion x) |>.symm)
+    (fun f ↦ (f.1.2.isOpen_range.isOpenMap_inclusion <| range_subset_𝒰 f).isOpen_range)
+    (image_val_injective <| (image_val_iUnion.trans <| congr_arg iUnion <| funext fun f ↦
+      image_univ.symm ▸ image_image Subtype.val (inclusion_range_𝒰 f) univ |>.trans <|
+        image_univ.trans <| Subtype.range_coe_subtype.trans setOf_mem_eq).trans <|
+      Subtype.coe_image_univ (𝒰 F) |>.symm)
 
 
-      apply range_restrictPreimage (𝒰 F) f.1 |>.symm.trans
-      unfold restrictPreimage MapsTo.restrict Subtype.map
-      --simp only
-
-
-      --#check rangerange
-      sorry --(hπ f).isOpen_range
-  · exact image_val_injective <|
-      (image_val_iUnion.trans <| congr_arg iUnion <| funext fun f ↦
-        image_image Subtype.val (π f) univ |>.trans <|
-          image_univ.trans <| Subtype.range_coe_subtype.trans setOf_mem_eq).trans <|
-      Subtype.coe_image_univ (𝒰 F) |>.symm
-
-
-
-noncomputable instance instHomeomorphTransport (P : Equiv.Perm F) :
-  Homeomorph (𝒰 F) (𝒰 F) where
-
-    toFun := transport transport_symmetry P
-    invFun := transport transport_symmetry P.symm
-
-    left_inv := fun x ↦ (transport_mul_apply _ _ _ x).symm ▸ P.symm_mul ▸
-      transport_one_apply transport_symmetry x
-    right_inv := fun x ↦ (transport_mul_apply _ _ _ x).symm ▸ P.mul_symm ▸
-      transport_one_apply transport_symmetry x
-
-    continuous_toFun := transport_continuous transport_symmetry P
-    continuous_invFun := transport_continuous transport_symmetry P.symm
+noncomputable instance instHomeomorphTransport (P : Equiv.Perm F) : Homeomorph (𝒰 F) (𝒰 F) where
+  toFun := transport transport_symmetry P
+  invFun := transport transport_symmetry P.symm
+  left_inv := fun x ↦ (transport_mul_apply _ _ _ x).symm ▸ P.symm_mul ▸
+    transport_one_apply transport_symmetry x
+  right_inv := fun x ↦ (transport_mul_apply _ _ _ x).symm ▸ P.mul_symm ▸
+    transport_one_apply transport_symmetry x
+  continuous_toFun := continuous_transport transport_symmetry P
+  continuous_invFun := continuous_transport transport_symmetry P.symm
 
 
 theorem 𝒮_subset_𝒰 (F : Set (PortalMap Y X)) (S : Set Y) : 𝒮 F S ⊆ 𝒰 F :=
