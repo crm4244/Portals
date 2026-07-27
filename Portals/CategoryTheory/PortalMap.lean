@@ -47,12 +47,12 @@ noncomputable def homeomorph : Homeomorph (⊤ : Set X) f.range :=
 
 noncomputable def inv_range (p : f.range) : X := f.homeomorph.symm p
 
-theorem isLeftInverse_invRange (p : X) :
+theorem inv_left (p : X) :
   f.inv_range ⟨f p, Set.mem_range_self _⟩ = p :=
     congr_arg Subtype.val <| f.homeomorph.symm_apply_apply ⟨p, Set.mem_univ p⟩
 
 
-theorem isRightInverse_invRange (y : f.range) :
+theorem inv_right (y : f.range) :
   f (f.inv_range y) = y :=
     congr_arg Subtype.val <| f.homeomorph.apply_symm_apply y
 

@@ -4,11 +4,22 @@ import Portals.CategoryTheory.GeneralizedMultiset
 
 universe u v
 
+
+-- obviously this does not belong here
+theorem Continuous.subtype_mk_self_mk_val_val {X : Type u} [TopologicalSpace X]
+  {Y : Type v} [TopologicalSpace Y] {p : X → Prop} {q : Y → Prop}
+  {r : Subtype q → Prop} {s : Y → Prop} {f : Subtype s → X} (hf : Continuous f)
+  (hs : ∀ x : Subtype r, s x) (hq : ∀ x : Subtype r, p <| f ⟨x, hs x⟩) :
+    Continuous fun x : Subtype r ↦ (⟨f ⟨x, hs x⟩, hq x⟩ : Subtype p) :=
+  (hf.comp <| Continuous.subtype_map continuous_subtype_val fun x hx ↦ hs ⟨x, hx⟩).subtype_mk hq
+
+
+
 namespace Portal
 
 
 
-variable {X : Type u} {Y : Type v} [TopologicalSpace X] [TopologicalSpace Y]
+variable {X : Type u} [TopologicalSpace X] {Y : Type v} [TopologicalSpace Y]
 abbrev 𝒰 (F : Set (PortalMap Y X)) : Set X := ⋃ f : F, f.1.range
 
 variable {F : Set (PortalMap Y X)}
@@ -26,9 +37,14 @@ theorem range_subset_𝒰 (f : F) : f.1.range ⊆ 𝒰 F := fun _ h ↦ mem_iUni
 
 def inclusion_range_𝒰 (f : F) : f.1.range → 𝒰 F := inclusion <| range_subset_𝒰 f
 
+theorem union_range_inclusion_eq_univ : ⋃ f : F, range (inclusion_range_𝒰 f) = univ :=
+  eq_univ_of_univ_subset fun x _ ↦ let ⟨f, hf⟩ := (mem_iUnion.mp x.2)
+    mem_iUnion.mpr ⟨f, range_inclusion (range_subset_𝒰 f) ▸ mem_setOf_eq ▸ hf⟩
+
 theorem mem_range_of_range_inclusion {f : F} (x : range <| inclusion_range_𝒰 f) :
   x.1.1 ∈ f.1.range :=
     let ⟨_, ⟨_, y, rfl⟩, rfl⟩ := x; mem_range.mpr ⟨y, rfl⟩
+
 
 
 
@@ -84,7 +100,7 @@ theorem transport_mul_apply (P Q : Equiv.Perm F) (x : 𝒰 F) :
   rw [transport_eq_transportOf transport_symmetry (P * Q) hx]
 
   apply Subtype.mk_eq_mk.mpr <| congr_arg (P g).1 <| g.1.2.injective _
-  rw [g.1.isRightInverse_invRange]
+  rw [g.1.inv_right]
   unfold y
   simp only
   rw [transport_eq_transportOf transport_symmetry Q hx]
@@ -99,7 +115,7 @@ theorem transport_mul (P Q : Equiv.Perm F) :
 
 theorem transport_one_apply (x : 𝒰 F) : transport transport_symmetry 1 x = x := by
   rw [transport_eq_transportOf transport_symmetry 1 <| Classical.choose_spec <| mem_iUnion.mp x.2]
-  exact Subtype.mk_eq_mk.mpr <| PortalMap.isRightInverse_invRange _ _
+  exact Subtype.mk_eq_mk.mpr <| PortalMap.inv_right _ _
 
 
 theorem transport_one : transport transport_symmetry 1 = id :=
@@ -108,15 +124,12 @@ theorem transport_one : transport transport_symmetry 1 = id :=
 
 theorem continuous_transport (P : Equiv.Perm F) : Continuous (transport transport_symmetry P) :=
   continuous_of_continuousOn_iUnion_of_isOpen
-    (fun f ↦ continuousOn_iff_continuous_restrict.mpr <| (continuous_transportOf P f |>.comp
-      <| continuous_subtype_val.comp continuous_subtype_val |>.subtype_mk _).subtype_mk _ |>.congr
-      fun x : range <| inclusion_range_𝒰 f ↦ transport_eq_transportOf transport_symmetry P
-        (mem_range_of_range_inclusion x) |>.symm)
-    (fun f ↦ (f.1.2.isOpen_range.isOpenMap_inclusion <| range_subset_𝒰 f).isOpen_range)
-    (image_val_injective <| (image_val_iUnion.trans <| congr_arg iUnion <| funext fun f ↦
-      image_univ.symm ▸ image_image Subtype.val (inclusion_range_𝒰 f) univ |>.trans <|
-        image_univ.trans <| Subtype.range_coe_subtype.trans setOf_mem_eq).trans <|
-      Subtype.coe_image_univ (𝒰 F) |>.symm)
+    (fun f ↦ continuousOn_iff_continuous_restrict.mpr <| continuous_transportOf P f
+      |>.subtype_mk_self_mk_val_val _ _ |>.congr
+        fun x ↦ transport_eq_transportOf transport_symmetry P
+          (mem_range_of_range_inclusion x) |>.symm)
+    (fun f ↦ f.1.2.isOpen_range.isOpenMap_inclusion (range_subset_𝒰 f) |>.isOpen_range)
+    union_range_inclusion_eq_univ
 
 
 noncomputable instance instHomeomorphTransport (P : Equiv.Perm F) : Homeomorph (𝒰 F) (𝒰 F) where
@@ -137,26 +150,21 @@ theorem 𝒮_subset_𝒰 (F : Set (PortalMap Y X)) (S : Set Y) : 𝒮 F S ⊆ �
 abbrev 𝒮' (F : Set (PortalMap Y X)) (S : Set Y) := Sides.restrict_surface (𝒮 F S) (𝒰 F)
 
 
-theorem transport_image_𝒮'_eq_self (S : Set Y) (P : Equiv.Perm F) :
-  transport transport_symmetry P '' 𝒮' F S = 𝒮' F S := by
-    apply Subset.antisymm
-    · intro _ ⟨⟨_, _, ⟨f, rfl⟩, y, rfl⟩, ⟨s, hs1, hs2⟩, h⟩
-
-      --rw [h.symm]
-      apply mem_image _ _ _ |>.mpr
-      use ⟨transport transport_symmetry P ⟨s, 𝒮_subset_𝒰 F S s.2⟩, by
-        use sorry
-
-        sorry⟩
+theorem transport_mem_of_mem {S : Set Y} (P : Equiv.Perm F) {x : 𝒰 F} :
+  x ∈ 𝒮' F S →
+    transport transport_symmetry P x ∈ 𝒮' F S :=
+  fun ⟨_, ⟨f, rfl⟩, y, hy, hf⟩ ↦
+    mem_preimage.mpr <| mem_iUnion.mpr ⟨P f, mem_image _ _ _ |>.mpr ⟨y, hy, by
+      rw [transport_eq_transportOf transport_symmetry P ⟨y, hf⟩]
+      exact congr_arg (P f).1 <| f.1.2.injective <| hf.trans <| f.1.inv_right ⟨x, y, hf⟩ |>.symm⟩⟩
 
 
-
-
-
-      sorry
-    · intro _ _
-
-      sorry
+theorem image_transport_eq_self_of_𝒮' (S : Set Y) (P : Equiv.Perm F) :
+  transport transport_symmetry P '' 𝒮' F S = 𝒮' F S :=
+  Subset.antisymm
+    (fun _ ⟨_, hmem, heq⟩ ↦ heq.symm ▸ transport_mem_of_mem transport_symmetry P hmem)
+    (fun x h ↦ mem_image _ _ _ |>.mpr ⟨_, transport_mem_of_mem transport_symmetry P.symm h,
+      instHomeomorphTransport transport_symmetry P |>.right_inv x⟩)
 
 
 variable {S : Set Y}
@@ -164,8 +172,8 @@ variable {S : Set Y}
 
 
 noncomputable def Sides.transport (P : Equiv.Perm F) : Sides (𝒮' F S) → Sides (𝒮' F S) :=
-  transport_image_𝒮'_eq_self transport_symmetry S P ▸ Sides.map
-    (instHomeomorphTransport transport_symmetry P).isOpenEmbedding
+  image_transport_eq_self_of_𝒮' transport_symmetry S P ▸ Sides.map <|
+    instHomeomorphTransport transport_symmetry P |>.isOpenEmbedding
 
 
 
