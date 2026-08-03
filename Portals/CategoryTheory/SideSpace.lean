@@ -72,16 +72,16 @@ def ConnectedComponents.congr {Y : Type u} [TopologicalSpace Y] (e : X ≃ₜ Y)
   let f_prop {X' Y' : Type u} [TopologicalSpace X'] [TopologicalSpace Y'] (e' : X' ≃ₜ Y') :
       ∀ (C : ConnectedComponents X'), f e'.symm (f e' C) = C := fun C ↦ by
     unfold f
-    match Quotient.exists_rep C with
+    match C.exists_rep with
     | ⟨x, hx⟩ =>
     exact hx ▸ Quotient.map_mk e' _ x ▸ Quotient.map_mk e'.symm _ (e' x) ▸
-      congr_arg (⟦·⟧) (Homeomorph.symm_apply_apply e' x)
+      congr_arg (⟦·⟧) (e'.symm_apply_apply x)
 
   {
     toFun := f e
     invFun := f e.symm
     left_inv := f_prop e
-    right_inv := Homeomorph.symm_symm e ▸ f_prop e.symm
+    right_inv := e.symm_symm ▸ f_prop e.symm
   }
 
 
@@ -92,8 +92,7 @@ def punctured_components (S U : Set X) : Type u := ConnectedComponents (Subtype 
 
 def punctured_component_of_subset (S : Set X) {U V : Set X} (h : V ⊆ U) :
     punctured_components S V → punctured_components S U :=
-  Continuous.connectedComponentsMap
-    (Continuous.subtype_mk continuous_subtype_val fun ⟨_, hV, hS⟩ ↦ ⟨h hV, hS⟩)
+      (continuous_subtype_val.subtype_mk fun ⟨_, hV, hS⟩ ↦ ⟨h hV, hS⟩).connectedComponentsMap
 
 
 /- this is the one i want to use -/
@@ -215,17 +214,29 @@ end components
 
 
 section map
-universe v
-variable {Y : Type v} [TopologicalSpace Y] {f : X → Y}
+universe v w
+variable {Y : Type v} [TopologicalSpace Y]
+variable {Z : Type w} [TopologicalSpace Z]
+variable {f : X → Y} {g : Y → Z}
+
 
 def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
 
-theorem map_comm (hf : IsOpenEmbedding f) (σ : Sides S) : (σ.map hf).center = f σ.center := sorry
+theorem map_comp_apply {hf : IsOpenEmbedding f} {hg : IsOpenEmbedding g} (σ : Sides S) :
+  map (hg.comp hf) σ = map hg (map hf σ) := sorry
 
-theorem isOpenEmbedding_map (hf : IsOpenEmbedding f) : IsOpenEmbedding (map (S := S) hf) := sorry
+
+variable (hf : IsOpenEmbedding f) (hg : IsOpenEmbedding g)
+
+
+theorem map_comp : map (S := S) (hg.comp hf) = (map hg) ∘ (map hf) := funext map_comp_apply
+
+theorem map_comm (σ : Sides S) : (σ.map hf).center = f σ.center := sorry
+
+theorem isOpenEmbedding_map : IsOpenEmbedding (map (S := S) hf) := sorry
 
 -- we might be able to export this to the etale space file
-open Classical in noncomputable def homeomorph_pullback_center (hf : IsOpenEmbedding f) :
+open Classical in noncomputable def homeomorph_pullback_center :
     Homeomorph (Sides S) { x : Sides (f '' S) × X // x.1.center = f x.2 } := by
   have h : Set.univ ≃ₜ _ := (isOpenEmbedding_map (S := S) hf).homeomorphImage Set.univ
   rw [Set.image_univ] at h
@@ -253,8 +264,8 @@ end map
 section lift
 variable {U : Opens X}
 
-def lift : Sides (restrict_surface S U) → Sides (S ∩ U) :=
-  map (IsOpen.isOpenEmbedding_subtypeVal U.2)
+def lift : Sides (restrict_surface S U) → Sides (S) :=
+  map U.2.isOpenEmbedding_subtypeVal
  /- intro
   have h := map (IsOpen.isOpenEmbedding_subtypeVal U.2) a
   simp only [restrict_surface] at h
@@ -262,11 +273,13 @@ def lift : Sides (restrict_surface S U) → Sides (S ∩ U) :=
   rw [Set.image_preimage_eq_inter_range (f := Subtype.val) (t := S)] at h
   sorry-/
 
-theorem lift_comm {U : Opens X} (σ : Sides (restrict_surface S U)) :
-    σ.lift.center = σ.center := σ.map_comm (IsOpen.isOpenEmbedding_subtypeVal U.2)
+theorem lift_comm (σ : Sides (restrict_surface S U)) :
+    σ.lift.center = σ.center.1 :=
+      σ.map_comm U.2.isOpenEmbedding_subtypeVal
 
-theorem isOpenEmbedding_lift : IsOpenEmbedding (lift (S := S) (U := U)) :=
-  isOpenEmbedding_map (IsOpen.isOpenEmbedding_subtypeVal U.2)
+theorem isOpenEmbedding_lift :
+  IsOpenEmbedding (lift (S := S) (U := U)) :=
+    isOpenEmbedding_map U.2.isOpenEmbedding_subtypeVal
 
 end lift
 
@@ -300,6 +313,7 @@ def lift_at {hp : p ∈ U} (σ : restricted_at S hp) : Sides.at_point S p :=
     unfold at_point
     simp
     simp only [Set.mem_setOf_eq] at h
+
     --apply Subtype.mk_eq_mk.mp
     --rw [← h]
     --apply Subtype.mk_eq_mk.mpr h
@@ -323,13 +337,18 @@ noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) 
 
 
 theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U)) :
-    σ.lift.center ∈ U :=
-  σ.lift_comm ▸ σ.center.2
+  σ.lift.center ∈ U :=
+    σ.lift_comm ▸ σ.center.2
 
 
 noncomputable def restrict_of_mem {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
-    Sides (restrict_surface S U) :=
-  (homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
+  Sides (restrict_surface S U) :=
+    (homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
+
+
+theorem restrict_injective {U : Opens X} : Function.Injective
+  fun (σ : {x : Sides S // x.center ∈ U}) ↦ σ.1.restrict_of_mem σ.2 :=
+    fun _ _ h ↦ Homeomorph.injective _ h
 
 
 theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
@@ -337,19 +356,19 @@ theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by 
   sorry
 
 theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
-    σ.lift.restrict_of_mem σ.center_mem_of_restricted = σ :=
-  isOpenEmbedding_lift.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
+  σ.lift.restrict_of_mem σ.center_mem_of_restricted = σ :=
+    isOpenEmbedding_lift.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
 
 
 theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
-    σ.restrict_of_mem.center = ⟨σ.center, hσ⟩ :=
-  Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm).symm
+  σ.restrict_of_mem.center = ⟨σ.center, hσ⟩ :=
+    Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm |>.symm)
 
 
 noncomputable def restricted_at_of_at {U : Opens X} {p : U} (σ : Sides.at_point S p) :
   restricted_at S p.2 :=
-    ⟨_, Set.mem_setOf_eq.mpr (Subtype.val_injective
-      ((congr_arg Subtype.val (σ.1.center_restrict_comm (σ.2.symm ▸ p.2))).trans σ.2))⟩
+    ⟨_, Subtype.val_injective <|
+      (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ p.2).trans σ.2⟩
 
 
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry

@@ -1,4 +1,3 @@
-
 import Mathlib.Algebra.Group.End
 import Mathlib.Algebra.Group.Subgroup.Lattice
 import Mathlib.Topology.Algebra.Group.Defs
@@ -65,13 +64,12 @@ def rusto_at_of_at {f : F} {p : f.1.range} (σ : Sides.at_point (𝒮_restrict S
     ⟨restricted_union_side_to_original σ.1,
       Set.mem_setOf_eq.mpr (center_rusto_comm σ.1 ▸ congr_arg f.1.inv_range σ.2)⟩
 
-
-noncomputable def usto_at_of_at {f : F} {p : f.1.opens_range}
-  (σ : Sides.at_point (𝒮 F S) p.1) :
-    Sides.at_point S (f.1.inv_range p) :=
-  rusto_at_of_at ⟨_, Set.mem_setOf_eq.mpr <| Subtype.val_injective <|
-    (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ p.2).trans σ.2⟩
-
+/-
+noncomputable def usto_at_of_at {f : F} {p : f.1.opens_range} (σ : Sides.at_point (𝒮 F S) p.1) :
+  Sides.at_point S (f.1.inv_range p) :=
+    rusto_at_of_at ⟨_, Set.mem_setOf_eq.mpr <| Subtype.val_injective <|
+      (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ p.2).trans σ.2⟩
+-/
 
 noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Perm F)) (f : F) :
     GluingPattern (𝒮_restrict S f) (Equiv.Perm F) where

@@ -6,7 +6,7 @@ universe u v
 
 
 
-variable {X : Type u} [TopologicalSpace X]
+variable {X : Type u}
 
 
 namespace Portal
@@ -37,7 +37,7 @@ def is_trivial_on (A : Set X) := ∀ {p : A}, γ.is_trivial_at p
 def is_trivial : Prop := γ.is_trivial_on ⊤
 
 
-omit [TopologicalSpace X] in theorem refl_id
+theorem refl_id
   {p : X} (a : Sides.at_point S p) :
     γ a a = 1 := by
   have h := γ.trans a a a
@@ -45,12 +45,12 @@ omit [TopologicalSpace X] in theorem refl_id
   exact mul_left_cancel h
 
 
-omit [TopologicalSpace X] in theorem symm_inv_right
+in theorem symm_inv_right
     {p : X} (a b : Sides.at_point S p) : γ a b * γ b a = 1 :=
   (γ.trans a b a).trans (refl_id γ a)
 
 
-omit [TopologicalSpace X] in theorem symm_inv_left
+in theorem symm_inv_left
         {p : X} (a b : Sides.at_point S p) : γ b a * γ a b = 1 :=
   (γ.trans b a b).trans (refl_id γ b)
 
@@ -59,6 +59,7 @@ omit [TopologicalSpace X] in theorem symm_inv_left
 open TopologicalSpace
 
 
+variable [TopologicalSpace X]
 
 def respects_realizer {U p} (R : ComponentRealizer U S p) : Prop :=
   ∀ {q : U} (a b : Sides.at_point S q),
