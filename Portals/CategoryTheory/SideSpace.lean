@@ -214,37 +214,31 @@ end components
 
 
 section map
-universe v w
-variable {Y : Type v} [TopologicalSpace Y]
-variable {Z : Type w} [TopologicalSpace Z]
-variable {f : X → Y} {g : Y → Z}
+variable {Y : Type*} [TopologicalSpace Y] {f : Y → X}
+
+def map (hf : IsEmbedding f) : Sides (f ⁻¹' S) → Sides (S) := sorry
+
+theorem map_comm (hf : IsEmbedding f) (σ : Sides (f ⁻¹' S)) :
+  (σ.map hf).center = f σ.center := sorry
+
+theorem isOpenEmbedding_map (hf : IsOpenEmbedding f) :
+  IsOpenEmbedding (map (S := S) hf.isEmbedding) := sorry
+
+end map
 
 
-def map (hf : IsOpenEmbedding f) : Sides S → Sides (f '' S) := sorry
-
-theorem map_comp_apply {hf : IsOpenEmbedding f} {hg : IsOpenEmbedding g} (σ : Sides S) :
-  map (hg.comp hf) σ = map hg (map hf σ) := sorry
-
-
-variable (hf : IsOpenEmbedding f) (hg : IsOpenEmbedding g)
-
-
-theorem map_comp : map (S := S) (hg.comp hf) = (map hg) ∘ (map hf) := funext map_comp_apply
-
-theorem map_comm (σ : Sides S) : (σ.map hf).center = f σ.center := sorry
-
-theorem isOpenEmbedding_map : IsOpenEmbedding (map (S := S) hf) := sorry
 
 -- we might be able to export this to the etale space file
-open Classical in noncomputable def homeomorph_pullback_center :
-    Homeomorph (Sides S) { x : Sides (f '' S) × X // x.1.center = f x.2 } := by
+open Classical in noncomputable def homeomorph_pullback_center
+  {Y : Type*} [TopologicalSpace Y] {f : X → Y} (hf : IsOpenEmbedding f) (S : Set Y) :
+    Homeomorph (Sides (f ⁻¹' S)) { x : Sides S × X // x.1.center = f x.2 } := by
   have h : Set.univ ≃ₜ _ := (isOpenEmbedding_map (S := S) hf).homeomorphImage Set.univ
   rw [Set.image_univ] at h
-  apply (Homeomorph.Set.univ (Sides S)).symm.trans
+  apply (Homeomorph.Set.univ (Sides (f ⁻¹' S))).symm.trans
   apply h.trans
   exact {
     toFun := fun ⟨a, ha⟩ ↦ ⟨⟨a, (choose ha).center⟩,
-      (map_comm hf _) ▸ congr_arg center (choose_spec ha).symm⟩
+      (map_comm hf.isEmbedding _) ▸ congr_arg center (choose_spec ha).symm⟩
     invFun := fun ⟨⟨σ, p⟩, h⟩ ↦ by
       simp? at h
       use σ
@@ -257,29 +251,19 @@ open Classical in noncomputable def homeomorph_pullback_center :
     continuous_invFun := sorry
   }
 
-end map
-
 
 
 section lift
-variable {U : Opens X}
+variable {U : Set X}
 
 def lift : Sides (restrict_surface S U) → Sides (S) :=
-  map U.2.isOpenEmbedding_subtypeVal
- /- intro
-  have h := map (IsOpen.isOpenEmbedding_subtypeVal U.2) a
-  simp only [restrict_surface] at h
-  #check Set.image_preimage_eq_of_subset (f := Subtype.val) (s := S)
-  rw [Set.image_preimage_eq_inter_range (f := Subtype.val) (t := S)] at h
-  sorry-/
+  map IsEmbedding.subtypeVal
 
-theorem lift_comm (σ : Sides (restrict_surface S U)) :
-    σ.lift.center = σ.center.1 :=
-      σ.map_comm U.2.isOpenEmbedding_subtypeVal
+theorem lift_comm (σ : Sides (restrict_surface S U)) : σ.lift.center = σ.center.1 :=
+  σ.map_comm IsEmbedding.subtypeVal
 
-theorem isOpenEmbedding_lift :
-  IsOpenEmbedding (lift (S := S) (U := U)) :=
-    isOpenEmbedding_map U.2.isOpenEmbedding_subtypeVal
+theorem isOpenEmbedding_lift : IsOpen U → IsOpenEmbedding (lift (S := S) (U := U))
+  | hU => isOpenEmbedding_map hU.isOpenEmbedding_subtypeVal
 
 end lift
 
@@ -357,7 +341,7 @@ theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by 
 
 theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
   σ.lift.restrict_of_mem σ.center_mem_of_restricted = σ :=
-    isOpenEmbedding_lift.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
+    isOpenEmbedding_lift U.2 |>.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
 
 
 theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :

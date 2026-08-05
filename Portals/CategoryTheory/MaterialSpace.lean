@@ -19,10 +19,10 @@ namespace Portal
 
 
 variable {X : Type*} [TopologicalSpace X] {Y : Type*} [TopologicalSpace Y]
-abbrev 𝒰 (F : Set (PortalMap Y X)) : TopologicalSpace.Opens X :=
+abbrev 𝒰 (F : Set (PortalMap X Y)) : TopologicalSpace.Opens X :=
   ⟨⋃ f : F, f.1.range, isOpen_iUnion (·.1.2.isOpen_range)⟩
 
-variable {F : Set (PortalMap Y X)}
+variable {F : Set (PortalMap X Y)}
 
 
 
@@ -49,7 +49,7 @@ theorem mem_range_of_range_inclusion {f : F} (x : range <| inclusion_range_𝒰 
 
 
 noncomputable def transportOf (P : Equiv.Perm F) {f : F} (p : f.1.range) : X :=
-  P f |>.1 <| f.1.inv_range p
+  P f |>.1 <| f.1.inv p
 
 
 theorem transportOf_mem_𝒰 (P : Equiv.Perm F) {f : F} (p : f.1.range) :
@@ -167,7 +167,7 @@ theorem 𝒮_subset_𝒰 (F : Set (PortalMap Y X)) (S : Set Y) : 𝒮 F S ⊆ �
   | ⟨y, _, hy⟩ => mem_iUnion.mpr ⟨f, mem_range.mpr ⟨y, hy⟩⟩
 -/
 
-abbrev 𝒮' (F : Set (PortalMap Y X)) (S : Set Y) := Sides.restrict_surface (𝒮 F S) (𝒰 F)
+abbrev 𝒮' (F : Set (PortalMap X Y)) (S : Set Y) := Sides.restrict_surface (𝒮 F S) (𝒰 F)
 
 
 theorem transport_mem_𝒮'_of_mem {S : Set Y} (P : Equiv.Perm F) {x : 𝒰 F} :
@@ -192,7 +192,7 @@ variable {S : Set Y}
 
 
 noncomputable def Sides.transport (P : Equiv.Perm F) : Sides (𝒮' F S) → Sides (𝒮' F S) :=
-  map <| instHomeomorphTransport transport_symmetry P |>.isOpenEmbedding
+  map (f := Portal.transport _ _) (instHomeomorphTransport transport_symmetry P).isEmbedding
 
 
 
@@ -222,7 +222,8 @@ theorem rusto_transport_eq (P : Equiv.Perm F)
       |>.transport transport_symmetry P |>.lift.restrict_of_mem (U := (P f).1.opens_range)
       ((Sides.lift_comm _ |>.trans <| congr_arg Subtype.val <|
         Sides.transport_center_comm transport_symmetry P _) ▸
-        (val_transport_mem_range _ P <| a.center_restrict_comm (range_subset_𝒰 f hf) ▸ hf))) := by sorry
+        (val_transport_mem_range _ P <| a.center_restrict_comm (range_subset_𝒰 f hf) ▸ hf))) :=
+  by sorry
 
 
 end transport
@@ -231,38 +232,35 @@ end transport
 
 
 
-variable {S : Set Y} (γ : GluingPattern S (Equiv.Perm F))
-variable (Γ : GeneralizedMultiset (Equiv.Perm F) → Equiv.Perm F)
+variable {S : Set Y}
 
 
-
-noncomputable def quattle {p : X} (a b : Sides.at_point (𝒮 F S) p) :
-  GeneralizedMultiset (Equiv.Perm F) :=
+noncomputable def quattle (γ : GluingPattern S (Equiv.Perm F))
+  {p : X} (a b : Sides.at_point (𝒮 F S) p) : GeneralizedMultiset (Equiv.Perm F) :=
     GeneralizedMultiset.of_function fun f : relevant_portal_maps F p ↦
       recommendation_map γ (p := ⟨p, f.2⟩) a b
 
 
+
+variable {γ : GluingPattern S (Equiv.Perm F)}
+variable {Γ : GeneralizedMultiset (Equiv.Perm F) → Equiv.Perm F}
 variable (𝒢_trans : ∀ {p : X} (a b c : Sides.at_point (𝒮 F S) p),
-  Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c))
-
-
-
-noncomputable def combinedGluingPattern : GluingPattern (𝒮 F S) (Equiv.Perm F) :=
-  { map a b := Γ (quattle γ a b), trans := 𝒢_trans }
-
-noncomputable abbrev 𝒢 := combinedGluingPattern γ Γ 𝒢_trans
-
---variable (𝒢_isLocallyConsistent : GluingPattern.isLocallyConsistent (𝒢 γ Γ 𝒢_trans))
+    Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c))
 variable (transport_symmetry : ∀ P (f g : F) (q : X) (hf : q ∈ f.1.range) (hg : q ∈ g.1.range),
     transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩)
+
+noncomputable def combinedGluingPattern : GluingPattern (𝒮 F S) (Equiv.Perm F) :=
+  { map a b := Γ (quattle γ a b), trans := 𝒢_trans}
+
+noncomputable abbrev 𝒢 := combinedGluingPattern 𝒢_trans
 
 
 open GenMulti in theorem simultaneous_transport
   (P : Equiv.Perm F) {p : 𝒰 F} (a b : Sides.at_point (𝒮' F S) p) :
-    𝒢 γ Γ 𝒢_trans
+    𝒢 𝒢_trans
       (Sides.lift_at <| Sides.tranport_at transport_symmetry P a)
       (Sides.lift_at <| Sides.tranport_at transport_symmetry P b) =
-    𝒢 γ Γ 𝒢_trans (Sides.lift_at a) (Sides.lift_at b) := by
+    𝒢 𝒢_trans (Sides.lift_at a) (Sides.lift_at b) := by
 
   apply congr_arg Γ <| Quotient.eq.mpr _
   symm
@@ -293,17 +291,17 @@ open GenMulti in theorem simultaneous_transport
 def matSpace_rel (a b : Sides (𝒮 F S)) : Prop :=
   a = b ∨ ∃ (ha : a.center ∈ 𝒰 F) (a' : Sides (𝒮 F S)) (ha' : a'.center = a.center),
     (a'.restrict_of_mem (ha' ▸ ha) |>.transport
-      transport_symmetry (𝒢 γ Γ 𝒢_trans ⟨a, rfl⟩ ⟨a', ha'⟩)).lift = b
+      transport_symmetry (𝒢 𝒢_trans ⟨a, rfl⟩ ⟨a', ha'⟩)).lift = b
 
 
-instance instEquivalenceMatSpaceRel : Equivalence <| matSpace_rel γ Γ 𝒢_trans transport_symmetry where
+instance instEquivalenceMatSpaceRel : Equivalence <| matSpace_rel 𝒢_trans transport_symmetry where
   refl a := Or.inl rfl
   symm {a b} hab := by
     apply Or.elim hab (Or.inl ·.symm)
     intro ⟨ha, a', ha', hb⟩
     apply Or.inr
     use hb.symm ▸ Sides.center_mem_of_restricted _
-    use a.restrict_of_mem.transport transport_symmetry (𝒢 γ Γ 𝒢_trans ⟨a, rfl⟩ ⟨a', ha'⟩) |>.lift
+    use a.restrict_of_mem.transport transport_symmetry (𝒢 𝒢_trans ⟨a, rfl⟩ ⟨a', ha'⟩) |>.lift
 
     use by
       rw [hb.symm]
@@ -339,14 +337,17 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matSpace_rel γ Γ 𝒢_tra
 
 
 instance instSetoidSides𝒮 : Setoid (Sides (𝒮 F S)) where
-  r := matSpace_rel γ Γ 𝒢_trans transport_symmetry
-  iseqv := instEquivalenceMatSpaceRel γ Γ 𝒢_trans transport_symmetry
+  r := matSpace_rel 𝒢_trans transport_symmetry
+  iseqv := instEquivalenceMatSpaceRel 𝒢_trans transport_symmetry
 
 
-def MatSpace := Quotient (instSetoidSides𝒮 γ Γ 𝒢_trans transport_symmetry)
+def MatSpace := Quotient (instSetoidSides𝒮 𝒢_trans transport_symmetry)
+
 
 namespace MatSpace
 
+
+instance : TopologicalSpace (MatSpace 𝒢_trans transport_symmetry) := instTopologicalSpaceQuotient
 
 -- woohoo!!!
 

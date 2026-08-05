@@ -14,10 +14,10 @@ namespace Portal
 
 
 variable {X : Type u} {Y : Type v} [TopologicalSpace X] [TopologicalSpace Y]
-variable {F : Set (PortalMap Y X)} {S : Set Y}
+variable {F : Set (PortalMap X Y)} {S : Set Y}
 
-def union_surface (F : Set (PortalMap Y X)) (S : Set Y) : Set X := ⋃ f : F, f '' S
-abbrev 𝒮 (F : Set (PortalMap Y X)) := union_surface F
+def union_surface (F : Set (PortalMap X Y)) (S : Set Y) : Set X := ⋃ f : F, f '' S
+abbrev 𝒮 (F : Set (PortalMap X Y)) := union_surface F
 
 
 abbrev 𝒮_restrict (S : Set Y) (f : F) : Set f.1.range :=
@@ -29,7 +29,7 @@ theorem surface_copy_subset_union_surface (f : F) : f.1 '' S ⊆ 𝒮 F S :=
 
 
 theorem surface_copy_subset_union_surface_restrict (f : F) :
-  f.1.restricted_image S ⊆ (𝒮_restrict S f) := fun _ ↦
+  Sides.restrict_surface (f.1 '' S) f.1.range ⊆ (𝒮_restrict S f) := fun _ ↦
     (Set.mem_preimage.mpr <| surface_copy_subset_union_surface f <| Set.mem_preimage.mp ·)
 
 
@@ -39,7 +39,7 @@ def restricted_union_side_to_original {f : F} (σ : Sides (𝒮_restrict S f)) :
 
 
 theorem center_rusto_comm {f : F} (σ : Sides (𝒮_restrict S f)) :
-    (restricted_union_side_to_original σ).center = f.1.inv_range (σ.center) :=
+    (restricted_union_side_to_original σ).center = f.1.inv (σ.center) :=
   Sides.subsurface_colift_comm (surface_copy_subset_union_surface_restrict f) σ ▸
     f.1.map_sides_inv_comm _
 
@@ -60,9 +60,9 @@ theorem center_eq_of_usto {f : F} (a b : Sides (union_surface S F))
 
 
 def rusto_at_of_at {f : F} {p : f.1.range} (σ : Sides.at_point (𝒮_restrict S f) p) :
-  Sides.at_point S (f.1.inv_range p) :=
+  Sides.at_point S (f.1.inv p) :=
     ⟨restricted_union_side_to_original σ.1,
-      Set.mem_setOf_eq.mpr (center_rusto_comm σ.1 ▸ congr_arg f.1.inv_range σ.2)⟩
+      Set.mem_setOf_eq.mpr (center_rusto_comm σ.1 ▸ congr_arg f.1.inv σ.2)⟩
 
 /-
 noncomputable def usto_at_of_at {f : F} {p : f.1.opens_range} (σ : Sides.at_point (𝒮 F S) p.1) :
@@ -92,7 +92,7 @@ open TopologicalSpace
 
 
 
-def relevant_portal_maps (F : Set (PortalMap Y X)) (p : X) : Type max u v :=
+def relevant_portal_maps (F : Set (PortalMap X Y)) (p : X) : Type max u v :=
   { f : F // p ∈ f.1.range }
 
 

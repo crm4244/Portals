@@ -48,6 +48,27 @@ def homeomorph {t : Y} : Slice X t ≃ₜ X where
   continuous_invFun := continuous_incl t
 
 
+
+open Topology
+
+theorem isEmbedding_incl (t : Y) : IsEmbedding (incl (X := X) t) :=
+  homeomorph.symm.isEmbedding
+
+
+def incl' (t : Y) : X → X × Y := Subtype.val ∘ (incl (X := X) t)
+
+
+theorem isEmbedding_incl' (t : Y) : IsEmbedding (incl' (X := X) t) :=
+  IsEmbedding.subtypeVal.comp (isEmbedding_incl t)
+
+
+def sides_at_map_incl' {S : Set (X × Y)} {t : Y} {p : X}
+  (a : Sides.at_point (incl (X := X) t ⁻¹' ((↑) ⁻¹' S)) p) :
+    Sides.at_point S (incl' t p) :=
+  ⟨_, a.2 ▸ a.1.map_comm (S := S) (isEmbedding_incl' t)⟩
+  --(Slice.isEmbedding_incl' t) a.1
+
+
 end Slice
 
 
@@ -59,7 +80,7 @@ variable {X : Type*} [TopologicalSpace X] {Y : Type*} [TopologicalSpace Y]
 section extrude
 variable (Z : Type*) [TopologicalSpace Z]
 
-open Topology in private def extrude : PortalMap Y X → PortalMap (Y × Z) (X × Z)
+open Topology in private def extrude : PortalMap X Y → PortalMap (X × Z) (Y × Z)
   | f => ⟨(·.map f id), f.2.prodMap IsOpenEmbedding.id⟩
 
 private theorem extrude_injective [Nonempty Z] : Function.Injective (extrude (X := X) (Y := Y) Z) :=
@@ -68,7 +89,7 @@ private theorem extrude_injective [Nonempty Z] : Function.Injective (extrude (X 
 
 
 -- use OfLeftInverse?
-private noncomputable def extrude_equiv [Nonempty Z] (F : Set (PortalMap Y X)) :
+private noncomputable def extrude_equiv [Nonempty Z] (F : Set (PortalMap X Y)) :
   F ≃ Set.range (fun f : F ↦ extrude Z f.1) :=
     Equiv.ofInjective _ <| Subtype.restrict_injective (· ∈ F) <| extrude_injective Z
 
@@ -77,59 +98,79 @@ end extrude
 
 
 
-abbrev ℱ (F : Set (PortalMap Y X)) := Set.range (fun f : F ↦ extrude I f.1)
-variable {F : Set (PortalMap Y X)}
+abbrev ℱ (F : Set (PortalMap X Y)) := Set.range (fun f : F ↦ extrude I f.1)
+variable {F : Set (PortalMap X Y)}
 
 variable {S : Set (Y × I)}
 variable {γ : GluingPattern S (Equiv.Perm (ℱ F))}
 variable {Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F))}
-variable {𝒢_trans : ∀ {p : X × I} (a b c : Sides.at_point (𝒮 (ℱ F) S) p),
-  Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c)}
-variable {transport_symmetry : ∀ P (f g : ℱ F) (q : X × I)
+variable (𝒢_trans : ∀ {p : X × I} (a b c : Sides.at_point (𝒮 (ℱ F) S) p),
+  Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c))
+variable (transport_symmetry : ∀ P (f g : ℱ F) (q : X × I)
   (hf : q ∈ f.1.range) (hg : q ∈ g.1.range),
-    transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩}
+    transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩)
 
-#check MatSpace γ Γ 𝒢_trans transport_symmetry
+#check MatSpace 𝒢_trans transport_symmetry
 
 
---X₀ := Slice X (0 : I)
---Y₀ := Slice Y (0 : I)
--- F := F
-abbrev S₀ (S : Set (Y × I)) : Set Y := @Slice.proj Y I 0 '' ((↑) ⁻¹' S)
 
-abbrev γ₀ (γ : GluingPattern S (Equiv.Perm (ℱ F))) :
-  GluingPattern (S₀ S) (Equiv.Perm F) := sorry
+section slice_portal
 
-noncomputable abbrev Γ₀ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F))) :
+variable (t : I)
+
+
+
+abbrev Sₜ (S : Set (Y × I)) : Set Y := @Slice.incl' Y I t ⁻¹' S
+
+noncomputable abbrev γₜ (γ : GluingPattern S (Equiv.Perm (ℱ F))) :
+  GluingPattern (Sₜ t S) (Equiv.Perm F) where
+
+  map a b := (extrude_equiv I F).permCongr.symm <|
+    γ (Slice.sides_at_map_incl' a) (Slice.sides_at_map_incl' b)
+  trans _ _ _ := Equiv.permCongr_symm _ ▸ Equiv.permCongr_mul _ _ _
+    |>.symm.trans <| congr_arg _ <| γ.trans _ _ _
+
+noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F))) :
   GeneralizedMultiset (Equiv.Perm F) → (Equiv.Perm F) :=
     fun 𝒰 ↦ (extrude_equiv I F).symm.permCongr <| Γ <| 𝒰.map
       (fun G ↦ ⟨G.index, fun i ↦ (extrude_equiv I F).permCongr (G.val i)⟩)
       (fun _ ⟨_, _⟩ ⟨h1, h2⟩ ↦ ⟨h1, funext fun i ↦
         congr_arg (extrude_equiv I F).permCongr (congr_fun h2 i)⟩)
 
-include 𝒢_trans in theorem 𝒢₀_trans : ∀ {p : X} (a b c : Sides.at_point (𝒮 F (S₀ S)) p),
-  Γ₀ Γ (quattle (γ₀ γ) a b) * Γ₀ Γ (quattle (γ₀ γ) b c) = Γ₀ Γ (quattle (γ₀ γ) a c) := by
+include 𝒢_trans in theorem 𝒢ₜ_trans : ∀ {p : X} (a b c : Sides.at_point (𝒮 F (Sₜ t S)) p),
+  Γₜ Γ (quattle (γₜ t γ) a b) * Γₜ Γ (quattle (γₜ t γ) b c) = Γₜ Γ (quattle (γₜ t γ) a c) := by
 
   intro p a b c
 
+  have h := 𝒢_trans
+    (Slice.sides_at_map_incl' (t := 0) a)
+    (Slice.sides_at_map_incl' (t := 0) b)
+    (Slice.sides_at_map_incl' (t := 0) c)
+
+  unfold γₜ quattle recommendation_map GluingPattern.map at h ⊢
+  unfold recommendation_gluing_pattern GluingPattern.map at h ⊢
+  simp only at h ⊢
+
   --unfold HMul.hMul instHMul Mul.mul Equiv.Perm.instMul Equiv.trans
   --simp only
-  apply Equiv.ext
-  intro f
-  simp only [Equiv.Perm.coe_mul]
-  unfold Γ₀
-  simp only [Function.comp_apply, Equiv.permCongr_apply, Equiv.symm_symm, Equiv.apply_symm_apply,
-    EmbeddingLike.apply_eq_iff_eq]
+  --apply Equiv.ext
+  --intro f
+  --simp only [Equiv.Perm.coe_mul] at h ⊢
+  unfold Γₜ
 
-  unfold quattle GeneralizedMultiset.of_function GenMulti.of_function
-  simp only [Quotient.map_mk]
+  unfold GeneralizedMultiset.of_function GenMulti.of_function at h ⊢
+  simp only [Quotient.map_mk] at h ⊢
+  rw [← Equiv.permCongr_mul]
+  apply congr_arg
 
-  let a' : Sides.at_point (𝒮 (ℱ F) S) (p, 0) := sorry
-  let b' : Sides.at_point (𝒮 (ℱ F) S) (p, 0) := sorry
-  let c' : Sides.at_point (𝒮 (ℱ F) S) (p, 0) := sorry
-  have h := (𝒢_trans (p := (p, 0)) a' b' c')
 
-  unfold quattle GeneralizedMultiset.of_function GenMulti.of_function at h
+  simp only [Equiv.apply_symm_apply] at h ⊢
+
+
+
+
+  --rw [← Equiv.permCongr_symm]
+
 
 
   #check Quotient.eq.mpr (by
@@ -159,7 +200,7 @@ include 𝒢_trans in theorem 𝒢₀_trans : ∀ {p : X} (a b c : Sides.at_poin
 
     sorry : GenMulti.instSetoid (Equiv.Perm (ℱ F))
       { index := relevant_portal_maps F p,
-          val := fun i ↦ (extrude_equiv I F).permCongr (recommendation_map (γ₀ γ) (f := i.1) _ _) }
+          val := fun i ↦ (extrude_equiv I F).permCongr (recommendation_map (γₜ t γ) (f := i.1) _ _) }
       { index := relevant_portal_maps (ℱ F) (p, 0),
           val := fun i ↦ recommendation_map (f := i.1) γ _ _ })
 
@@ -177,7 +218,7 @@ include transport_symmetry in theorem transport_symmetry₀ : ∀ P (f g : F) (q
   let P' := (extrude_equiv I F).permCongr P
 
   have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (extrude_equiv I F l).1.range :=
-    ⟨(l.1.inv_range ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
+    ⟨(l.1.inv ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
       Prod.eq_iff_fst_eq_snd_eq.mpr ⟨l.1.inv_right ⟨q, hl⟩, rfl⟩⟩
 
   have h := transport_symmetry P' f' g' (q, 0) (h_prod_mem hf) (h_prod_mem hg)
@@ -191,12 +232,74 @@ include transport_symmetry in theorem transport_symmetry₀ : ∀ P (f g : F) (q
   apply And.left at h
 
   have h_final {l : F} (hl : q ∈ l.1.range) :
-    ((extrude I l.1).inv_range ⟨(q, 0), h_prod_mem hl⟩).1 = l.1.inv_range ⟨q, hl⟩ :=
+    ((extrude I l.1).inv ⟨(q, 0), h_prod_mem hl⟩).1 = l.1.inv ⟨q, hl⟩ :=
       l.1.2.injective <| Eq.trans
         (by simpa only using congr_arg Prod.fst <| extrude_equiv I F l |>.1.inv_right _)
         (l.1.inv_right ⟨q, hl⟩).symm
 
   exact (h_final hf) ▸ (h_final hg) ▸ h
 
+
+
+def MatSpaceₜ := MatSpace (𝒢ₜ_trans t (𝒢_trans := 𝒢_trans))
+  (transport_symmetry₀ (transport_symmetry := transport_symmetry))
+
+noncomputable instance : TopologicalSpace (MatSpaceₜ 𝒢_trans transport_symmetry t) :=
+  instTopologicalSpaceQuotient
+
+end slice_portal
+
+
+
+
+open Topology TopologicalSpace
+
+
+def 𝒪 (p : X) : Set (Opens (X × I)) :=
+  {U | ∃ (t : I) (R : ComponentRealizer U (𝒮 (ℱ F) S) (p, t)),
+    (combinedGluingPattern 𝒢_trans).respects_realizer R}
+
+abbrev fiber (p : X) := {(x, _) : X × I | x = p}
+
+theorem 𝒪_covers_fiber (p : X) : fiber p ⊆ ⋃ (U : 𝒪 𝒢_trans p), U := by
+  -- follows from local consistency
+  sorry
+
+theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
+  ∃ t : Finset (𝒪 𝒢_trans p), Set.univ ⊆ ⋃ i ∈ t, Prod.mk p ⁻¹' i.1.1 :=
+  (compactSpace_Icc 0 1 : CompactSpace I).isCompact_univ.elim_finite_subcover
+    (fun U : 𝒪 𝒢_trans p ↦ Prod.mk p ⁻¹' U)
+    (fun ⟨⟨_, U⟩, _⟩ ↦ Continuous.prodMk_right (Y := I) p |>.isOpen_preimage _ U)
+    (fun _ _ ↦ let ⟨_, ⟨U, rfl⟩, h⟩ := 𝒪_covers_fiber 𝒢_trans p rfl; ⟨_, ⟨U, rfl⟩, h⟩)
+
+#check Quotient
+
+def 𝒯 (hγ : (combinedGluingPattern 𝒢_trans).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
+  (t : I) (α : Sides.at_point (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
+
+
+    -- for each finite subcover, show inductively that the product is well defined
+    -- build a setoid out of the finite subcovers related by matching outputs
+
+    sorry
+
+structure rollercoaster (p : X) where
+  list_of_ts : List I
+  list_of_Us : List (𝒪 𝒢_trans p)
+  h_length : list_of_ts.length = list_of_Us.length + 1
+  t_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n]) ∈ list_of_Us[n].1
+  t_next_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n.succ]) ∈ list_of_Us[n].1
+
+
+
+def surface_independence (hγ : (combinedGluingPattern 𝒢_trans).isLocallyConsistent)
+  (h0 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 0) IsEmbedding.subtypeVal))
+  (h1 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 1) IsEmbedding.subtypeVal)) :
+    MatSpaceₜ 𝒢_trans transport_symmetry 0 ≃ₜ MatSpaceₜ 𝒢_trans transport_symmetry 1 := by
+
+  sorry
+
+
+#check surface_independence
 
 end Portal

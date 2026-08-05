@@ -18,9 +18,9 @@ section defs
 
 variable (X : Type u) (Y : Type v) [TopologicalSpace X] [TopologicalSpace Y]
 
-def PortalMap : Type max u v := {f : X → Y // IsOpenEmbedding f}
+def PortalMap : Type max u v := {f : Y → X // IsOpenEmbedding f}
 
-instance : CoeFun (PortalMap X Y) (fun _ ↦ X → Y) := {coe f := f.1}
+instance : CoeFun (PortalMap X Y) (fun _ ↦ Y → X) := {coe f := f.1}
 
 end defs
 
@@ -34,40 +34,39 @@ variable (f : PortalMap X Y)
 
 
 
-def range : Set Y := Set.range f
-def opens_range : Opens Y := ⟨f.range, f.2.isOpen_range⟩
+def range : Set X := Set.range f
+def opens_range : Opens X := ⟨f.range, f.2.isOpen_range⟩
 
 
-def restricted_image (S : Set X) : Set f.range :=
-  Sides.restrict_surface (f '' S) f.range
-
-
-noncomputable def homeomorph : Homeomorph (⊤ : Set X) f.range :=
+noncomputable def homeomorph : Homeomorph (⊤ : Set Y) f.range :=
   (f.2.homeomorphImage ⊤).trans (Homeomorph.setCongr Set.image_univ)
 
-noncomputable def inv_range (p : f.range) : X := f.homeomorph.symm p
-
-theorem inv_left (p : X) :
-  f.inv_range ⟨f p, Set.mem_range_self _⟩ = p :=
-    congr_arg Subtype.val <| f.homeomorph.symm_apply_apply ⟨p, Set.mem_univ p⟩
+noncomputable def inv {f : PortalMap X Y} : f.range → Y := Subtype.val ∘ f.homeomorph.symm
 
 
-theorem inv_right (y : f.range) :
-  f (f.inv_range y) = y :=
-    congr_arg Subtype.val <| f.homeomorph.apply_symm_apply y
+theorem inv_left (p : Y) : f.inv ⟨f p, Set.mem_range_self _⟩ = p :=
+  congr_arg Subtype.val <| f.homeomorph.symm_apply_apply ⟨p, Set.mem_univ p⟩
 
 
-theorem isOpenEmbedding_invRange : IsOpenEmbedding (f.inv_range) :=
-  IsOpenEmbedding.comp isOpen_univ.isOpenEmbedding_subtypeVal (Homeomorph.isOpenEmbedding _)
+theorem inv_right (y : f.range) : f (f.inv y) = y :=
+  congr_arg Subtype.val <| f.homeomorph.apply_symm_apply y
 
 
-def map_sides_inv {S : Set X} : Sides (restricted_image f S) → Sides S :=
-  Sides.map (S := restricted_image f S) f.isOpenEmbedding_invRange
+theorem isOpenEmbedding_invRange : IsOpenEmbedding (f.inv) :=
+  isOpen_univ.isOpenEmbedding_subtypeVal.comp f.homeomorph.symm.isOpenEmbedding
 
 
-theorem map_sides_inv_comm {S : Set X} (σ : Sides (restricted_image f S)) :
-    (f.map_sides_inv σ).center = f.inv_range σ.center :=
-  Sides.map_comm f.isOpenEmbedding_invRange σ
+theorem isEmbedding_invRange : IsEmbedding (f.inv) :=
+  f.isOpenEmbedding_invRange.isEmbedding
+
+
+def map_sides_inv {S : Set X} : Sides (Sides.restrict_surface S f.range) → Sides (f ⁻¹' S)
+  | σ => σ.map f.isEmbedding_invRange
+
+
+theorem map_sides_inv_comm {S : Set X} (σ : Sides (Sides.restrict_surface S f.range)) :
+  (f.map_sides_inv σ).center = f.inv σ.center :=
+    σ.map_comm f.isEmbedding_invRange
 
 
 
