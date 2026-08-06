@@ -165,7 +165,7 @@ theorem transport_inv_right (P : symmetricPerms) (x : ↑(𝒰 F)) :
     transport_inv_left P⁻¹ x
 
 
-noncomputable instance instHomeomorphTransport (P : symmetricPerms) : 𝒰 F ≃ₜ 𝒰 F where
+noncomputable def homeomorphTransport (P : symmetricPerms) : 𝒰 F ≃ₜ 𝒰 F where
   toFun := transport P
   invFun := transport P⁻¹
   left_inv := transport_inv_left P
@@ -204,7 +204,7 @@ variable {S : Set Y}
 
 
 noncomputable def Sides.transport (P : symmetricPerms) : Sides (𝒮' F S) → Sides (𝒮' F S) :=
-  map (f := Portal.transport _ _) (instHomeomorphTransport P).isEmbedding
+  map (f := Portal.transport P) (homeomorphTransport P).isEmbedding
 
 
 
@@ -325,12 +325,13 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
       apply Sides.lift_comm _ |>.trans
       apply Sides.lift_comm _ |>.trans _ |>.symm
       apply congr_arg Subtype.val
-      apply Sides.transport_center_comm _ _ _ |>.trans
-      apply Sides.transport_center_comm _ _ _ |>.trans _ |>.symm
-      apply congr_arg _
-      apply Sides.center_restrict_comm _ _ |>.trans
-      apply Sides.center_restrict_comm _ _ |>.trans _ |>.symm
-      exact Subtype.mk_eq_mk.mpr ha'
+      sorry
+      --apply Sides.transport_center_comm _ _ _ |>.trans
+      --apply Sides.transport_center_comm _ _ _ |>.trans _ |>.symm
+      --apply congr_arg _
+      --apply Sides.center_restrict_comm _ _ |>.trans
+      --apply Sides.center_restrict_comm _ _ |>.trans _ |>.symm
+      --exact Subtype.mk_eq_mk.mpr ha'
 
     --rw [transport_eq_transportOf transport_symmetry _ _]
     --rw [Sides.restrict_lift _]
@@ -353,12 +354,11 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
     sorry
 
 
-instance instSetoidSides𝒮 : Setoid (Sides (𝒮 F S)) where
+
+def MatSpace := Quotient {
   r := matspace_rel γ Γ symmetricPerms
   iseqv := instEquivalenceMatSpaceRel γ Γ symmetricPerms
-
-
-def MatSpace := Quotient (instSetoidSides𝒮 γ Γ symmetricPerms)
+}
 
 
 namespace MatSpace
