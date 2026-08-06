@@ -16,48 +16,43 @@ variable (transport_symmetry : ∀ P (f g : F) (q : X) (hf : q ∈ f.1.range) (h
 
 
 def Chariot (p : X) := {x : (Sides.at_point (𝒮 F S) p → Equiv.Perm F) //
-  ∀ a b : Sides.at_point (𝒮 F S) p, x a * combinedGluingPattern 𝒢_trans a b = x b}
+  ∀ a b : Sides.at_point (𝒮 F S) p, x a * 𝒢 𝒢_trans a b = x b}
 
 
 namespace Chariot
 
-variable {p : X}
+variable {p : X} {C : Chariot 𝒢_trans p}
 
 
 
 
-noncomputable def transfer_apply {_ : Chariot 𝒢_trans p} {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : combinedGluingPattern 𝒢_trans |>.respects_realizer R)
+noncomputable def transfer_apply {x : X} {U : Opens X}
+  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a : Sides.at_point (𝒮 F S) p) : Chariot 𝒢_trans q :=
-    ⟨fun b ↦ combinedGluingPattern 𝒢_trans
+    ⟨fun b ↦ C.1 a * 𝒢 𝒢_trans
       (R.side_transfer_at hp a) (R.side_transfer_at hq b),
-    fun a' b' ↦ combinedGluingPattern 𝒢_trans |>.trans _ _ _
-        |>.symm.trans (congr_arg _ <| h hq a' b') |>.symm⟩
+    fun a' b' ↦ mul_assoc _ _ _ |>.trans <| congr_arg _ <|
+      (𝒢 𝒢_trans |>.trans _ _ _).symm.trans (congr_arg _ <| h hq a' b') |>.symm⟩
 
 
-theorem transfer_apply_eq {C : Chariot 𝒢_trans p} {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : combinedGluingPattern 𝒢_trans |>.respects_realizer R)
+theorem transfer_apply_eq {x : X} {U : Opens X}
+  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a b : Sides.at_point (𝒮 F S) p) :
-    C.transfer_apply 𝒢_trans h hp hq a = C.transfer_apply 𝒢_trans h hp hq b := by
-
-  unfold transfer_apply
-  apply Subtype.eq
-  simp only
-  apply funext
-  intro x
-
-  sorry
+    C.transfer_apply 𝒢_trans h hp hq a = C.transfer_apply 𝒢_trans h hp hq b :=
+  Subtype.eq <| funext fun _ ↦ by
+    simp only [transfer_apply, ← C.2 b a, ← h hp b a, mul_assoc]
+    exact congr_arg _ <| 𝒢 𝒢_trans |>.trans _ _ _
 
 
 noncomputable def transfer [h_nonempty : Nonempty (Sides.at_point (𝒮 F S) p)]
-  {C : Chariot 𝒢_trans p} {x : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) x}
-  (h : combinedGluingPattern 𝒢_trans |>.respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
+  {x : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) x}
+  (h : 𝒢 𝒢_trans |>.respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
     Chariot 𝒢_trans q :=
   C.transfer_apply 𝒢_trans h hp hq (Classical.choice h_nonempty)
 
 
-theorem transfer_eq_apply {C : Chariot 𝒢_trans p} {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : combinedGluingPattern 𝒢_trans |>.respects_realizer R)
+theorem transfer_eq_apply {x : X} {U : Opens X}
+  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a : Sides.at_point (𝒮 F S) p) :
     C.transfer 𝒢_trans (h_nonempty := ⟨a⟩) h hp hq = C.transfer_apply 𝒢_trans h hp hq a :=
   transfer_apply_eq _ _ _ _ _ _
