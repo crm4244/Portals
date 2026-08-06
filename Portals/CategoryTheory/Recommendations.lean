@@ -82,7 +82,7 @@ noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Per
 noncomputable def recommendation_map (γ : GluingPattern S (Equiv.Perm F))
   {f : F} {p : f.1.opens_range} (a b : Sides.at_point (𝒮 F S) p.1) :
     Equiv.Perm F :=
-  recommendation_gluing_pattern γ f (Sides.restricted_at_of_at a) (Sides.restricted_at_of_at b)
+  recommendation_gluing_pattern γ f (Sides.restricted_at_of_at p.2 a) (Sides.restricted_at_of_at p.2 b)
 
 
 

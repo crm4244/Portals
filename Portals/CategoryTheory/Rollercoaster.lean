@@ -48,7 +48,7 @@ theorem head_eq_last (h : R.list_of_opens.length = 0) : R.head = R.last :=
 
 
 
-variable {β γ : Type*} {T : α → Type*}
+variable {T : α → Type*}
 
 section jump_defs
 variable (f : {U : 𝒪} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
@@ -80,7 +80,7 @@ variable (𝒪_ordered_overlap : ∀ U : 𝒪, ¬Minimal 𝒪 U →
   ∃ a : α, a ∈ U.1 ∧ ∃ V : 𝒪, a ∈ V.1 ∧ V < U)
 
 variable {f : {U : 𝒪} → (p : U.1) → (q : U.1) → T p.1 → T q.1}
-variable (f_comp : ∀ {U : 𝒪} (p q r : U.1), f q r ∘ f p q = f p r)
+variable (f_trans : ∀ {U : 𝒪} (p q r : U.1), f q r ∘ f p q = f p r)
 variable (f_overlap : ∀ {U V : 𝒪} {p q : α} (hpU : p ∈ U.1) (hpV : p ∈ V.1)
   (hqU : q ∈ U.1) (hqV : q ∈ V.1), f ⟨p, hpU⟩ ⟨q, hqU⟩ = f ⟨p, hpV⟩ ⟨q, hqV⟩)
 

@@ -201,7 +201,7 @@ theorem Sides.transport_center_comm (P : Equiv.Perm F) (σ : Sides (𝒮' F S)) 
     Portal.transport transport_symmetry P σ.center := map_comm _ _
 
 
-noncomputable def Sides.tranport_at (P : Equiv.Perm F) {p : 𝒰 F} (σ : at_point (𝒮' F S) p) :
+noncomputable def Sides.transport_at (P : Equiv.Perm F) {p : 𝒰 F} (σ : at_point (𝒮' F S) p) :
   at_point (𝒮' F S) (Portal.transport transport_symmetry P p) :=
     ⟨σ.1.transport transport_symmetry P, mem_setOf.mpr <|
       transport_center_comm transport_symmetry P σ.1 |>.trans <| σ.2.symm ▸ rfl⟩
@@ -258,8 +258,8 @@ noncomputable abbrev 𝒢 := combinedGluingPattern 𝒢_trans
 open GenMulti in theorem simultaneous_transport
   (P : Equiv.Perm F) {p : 𝒰 F} (a b : Sides.at_point (𝒮' F S) p) :
     𝒢 𝒢_trans
-      (Sides.lift_at <| Sides.tranport_at transport_symmetry P a)
-      (Sides.lift_at <| Sides.tranport_at transport_symmetry P b) =
+      (Sides.lift_at <| Sides.transport_at transport_symmetry P a)
+      (Sides.lift_at <| Sides.transport_at transport_symmetry P b) =
     𝒢 𝒢_trans (Sides.lift_at a) (Sides.lift_at b) := by
 
   apply congr_arg Γ <| Quotient.eq.mpr _
@@ -282,19 +282,19 @@ open GenMulti in theorem simultaneous_transport
   apply funext
   intro f
   unfold recommendation_map GluingPattern.map recommendation_gluing_pattern GluingPattern.map
-  unfold Sides.tranport_at Sides.restricted_at_of_at rusto_at_of_at
+  unfold Sides.transport_at Sides.restricted_at_of_at rusto_at_of_at
   simp
 
   sorry
 
 
-def matSpace_rel (a b : Sides (𝒮 F S)) : Prop :=
+def matspace_rel (a b : Sides (𝒮 F S)) : Prop :=
   a = b ∨ ∃ (ha : a.center ∈ 𝒰 F) (a' : Sides (𝒮 F S)) (ha' : a'.center = a.center),
     (a'.restrict_of_mem (ha' ▸ ha) |>.transport
       transport_symmetry (𝒢 𝒢_trans ⟨a, rfl⟩ ⟨a', ha'⟩)).lift = b
 
 
-instance instEquivalenceMatSpaceRel : Equivalence <| matSpace_rel 𝒢_trans transport_symmetry where
+instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel 𝒢_trans transport_symmetry where
   refl a := Or.inl rfl
   symm {a b} hab := by
     apply Or.elim hab (Or.inl ·.symm)
@@ -337,7 +337,7 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matSpace_rel 𝒢_trans tra
 
 
 instance instSetoidSides𝒮 : Setoid (Sides (𝒮 F S)) where
-  r := matSpace_rel 𝒢_trans transport_symmetry
+  r := matspace_rel 𝒢_trans transport_symmetry
   iseqv := instEquivalenceMatSpaceRel 𝒢_trans transport_symmetry
 
 

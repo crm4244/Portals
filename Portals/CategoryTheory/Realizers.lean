@@ -101,8 +101,8 @@ theorem center_eq_hub_of_side_transfer (R : ComponentRealizer U S p)
 
 
 noncomputable def side_transfer_at (R : ComponentRealizer U S p)
-  {q : U} (σ : Sides.at_point S q) : Sides.at_point S p :=
-    let hσ : σ.1.center ∈ U := σ.2.symm ▸ q.2
+  {q : X} (hq : q ∈ U) (σ : Sides.at_point S q) : Sides.at_point S p :=
+    let hσ : σ.1.center ∈ U := σ.2.symm ▸ hq
     ⟨R.side_transfer σ.1 hσ, R.center_eq_hub_of_side_transfer σ.1 hσ⟩
 
 

@@ -349,10 +349,10 @@ theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U
     Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm |>.symm)
 
 
-noncomputable def restricted_at_of_at {U : Opens X} {p : U} (σ : Sides.at_point S p) :
-  restricted_at S p.2 :=
+noncomputable def restricted_at_of_at {U : Opens X} {p : X} (hp : p ∈ U) (σ : Sides.at_point S p) :
+  restricted_at S hp :=
     ⟨_, Subtype.val_injective <|
-      (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ p.2).trans σ.2⟩
+      (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ hp).trans σ.2⟩
 
 
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry

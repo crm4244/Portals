@@ -62,8 +62,8 @@ open TopologicalSpace
 variable [TopologicalSpace X]
 
 def respects_realizer {U : Opens X} {p : X} (R : ComponentRealizer U S p) : Prop :=
-  ∀ {q : U} (a b : Sides.at_point S q),
-    γ (R.side_transfer_at a) (R.side_transfer_at b) = γ a b
+  ∀ {q : X} (hq : q ∈ U) (a b : Sides.at_point S q),
+    γ (R.side_transfer_at hq a) (R.side_transfer_at hq b) = γ a b
 
 
 def isLocallyConsistent : Prop :=
