@@ -27,47 +27,55 @@ variable {p : X} {C : Chariot 𝒢_trans p}
 
 
 noncomputable def transfer_apply {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
+  {R : ComponentRealizer U (𝒮 F S) x} (hR : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a : Sides.at_point (𝒮 F S) p) : Chariot 𝒢_trans q :=
     ⟨fun b ↦ C.1 a * 𝒢 𝒢_trans
       (R.side_transfer_at hp a) (R.side_transfer_at hq b),
     fun a' b' ↦ mul_assoc _ _ _ |>.trans <| congr_arg _ <|
-      (𝒢 𝒢_trans |>.trans _ _ _).symm.trans (congr_arg _ <| h hq a' b') |>.symm⟩
+      (𝒢 𝒢_trans |>.trans _ _ _).symm.trans (congr_arg _ <| hR hq a' b') |>.symm⟩
 
 
 theorem transfer_apply_eq {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
+  {R : ComponentRealizer U (𝒮 F S) x} (hR : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a b : Sides.at_point (𝒮 F S) p) :
-    C.transfer_apply 𝒢_trans h hp hq a = C.transfer_apply 𝒢_trans h hp hq b :=
+    C.transfer_apply 𝒢_trans hR hp hq a = C.transfer_apply 𝒢_trans hR hp hq b :=
   Subtype.eq <| funext fun _ ↦ by
-    simp only [transfer_apply, ← C.2 b a, ← h hp b a, mul_assoc]
+    simp only [transfer_apply, ← C.2 b a, ← hR hp b a, mul_assoc]
     exact congr_arg _ <| 𝒢 𝒢_trans |>.trans _ _ _
 
 
 noncomputable def transfer [h_nonempty : Nonempty (Sides.at_point (𝒮 F S) p)]
   {x : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) x}
-  (h : 𝒢 𝒢_trans |>.respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
+  (hR : 𝒢 𝒢_trans |>.respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
     Chariot 𝒢_trans q :=
-  C.transfer_apply 𝒢_trans h hp hq (Classical.choice h_nonempty)
+  C.transfer_apply 𝒢_trans hR hp hq (Classical.choice h_nonempty)
 
 
 theorem transfer_eq_apply {x : X} {U : Opens X}
-  {R : ComponentRealizer U (𝒮 F S) x} (h : 𝒢 𝒢_trans |>.respects_realizer R)
+  {R : ComponentRealizer U (𝒮 F S) x} (hR : 𝒢 𝒢_trans |>.respects_realizer R)
   (hp : p ∈ U) {q : X} (hq : q ∈ U) (a : Sides.at_point (𝒮 F S) p) :
-    C.transfer 𝒢_trans (h_nonempty := ⟨a⟩) h hp hq = C.transfer_apply 𝒢_trans h hp hq a :=
+    C.transfer 𝒢_trans (h_nonempty := ⟨a⟩) hR hp hq = C.transfer_apply 𝒢_trans hR hp hq a :=
   transfer_apply_eq _ _ _ _ _ _
 
 
-open Classical in noncomputable def toMatSpace_apply
-  (C : Chariot 𝒢_trans p) (a : Sides.at_point (𝒮 F S) p) : MatSpace 𝒢_trans transport_symmetry :=
+open Classical in noncomputable def toMatSpace_apply (a : Sides.at_point (𝒮 F S) p) :
+  MatSpace 𝒢_trans transport_symmetry :=
     if h : p ∈ 𝒰 F then ⟦Sides.lift_at (Sides.transport_at
       transport_symmetry (C.1 a) (Sides.restricted_at_of_at h a))⟧
     else ⟦a⟧
 
 
-theorem toMatSpace_apply_eq (C : Chariot 𝒢_trans p) (a b : Sides.at_point (𝒮 F S) p) :
+def isWellDefined_toMatSpace : Prop := ∀ a b,
   C.toMatSpace_apply 𝒢_trans transport_symmetry a =
-    C.toMatSpace_apply 𝒢_trans transport_symmetry b := by
+  C.toMatSpace_apply 𝒢_trans transport_symmetry b
+
+
+theorem isWellDefined_toMatSpace_transfer [h_nonempty : Nonempty (Sides.at_point (𝒮 F S) p)]
+  {x : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) x}
+  (hR : 𝒢 𝒢_trans |>.respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U)
+  (h_wellDefined : C.isWellDefined_toMatSpace 𝒢_trans transport_symmetry) :
+    C.transfer 𝒢_trans hR hp hq |>.isWellDefined_toMatSpace 𝒢_trans transport_symmetry := by
+  sorry
 
   unfold toMatSpace_apply
   if h : p ∈ 𝒰 F then
@@ -92,12 +100,12 @@ theorem toMatSpace_apply_eq (C : Chariot 𝒢_trans p) (a b : Sides.at_point (�
     exact congr_arg _ (sorry : a.1 = b.1)
 
 
-noncomputable def toMatSpace [h : Nonempty (Sides.at_point (𝒮 F S) p)]
-  (C : Chariot 𝒢_trans p) : MatSpace 𝒢_trans transport_symmetry :=
+noncomputable def toMatSpace [h : Nonempty (Sides.at_point (𝒮 F S) p)] :
+  MatSpace 𝒢_trans transport_symmetry :=
     C.toMatSpace_apply 𝒢_trans transport_symmetry (Classical.choice h)
 
 
-theorem toMatSpace_eq_apply (C : Chariot 𝒢_trans p) (a : Sides.at_point (𝒮 F S) p) :
+theorem toMatSpace_eq_apply (a : Sides.at_point (𝒮 F S) p) :
   C.toMatSpace 𝒢_trans transport_symmetry (h := ⟨a⟩) =
     C.toMatSpace_apply 𝒢_trans transport_symmetry a :=
   toMatSpace_apply_eq _ _ _ _ _
