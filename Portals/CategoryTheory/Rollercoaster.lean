@@ -13,13 +13,13 @@ structure Rollercoaster (𝒰 : Set (Set α)) (a b : α) where
   regions : List 𝒰
 
   h_length : regions.length + 1 = points.length
-  points_neq_nil : points ≠ [] := List.ne_nil_of_length_eq_add_one h_length.symm
+  points_ne_nil : points ≠ [] := List.ne_nil_of_length_eq_add_one h_length.symm
 
   mem_region : ∀ n : Fin regions.length, points[n] ∈ regions[n].1
   next_mem_region : ∀ n : Fin regions.length, points[n.succ] ∈ regions[n].1
 
-  head_eq : points.head points_neq_nil = a
-  last_eq : points.getLast points_neq_nil = b
+  head_eq : points.head points_ne_nil = a
+  last_eq : points.getLast points_ne_nil = b
 
 
 
@@ -29,22 +29,24 @@ variable {𝒰 : Set (Set α)} {a b : α}
 variable {R : Rollercoaster 𝒰 a b}
 
 
+theorem len_regions_eq : R.regions.length = R.points.length - 1 :=
+  Nat.eq_sub_of_add_eq R.h_length
 
-theorem len_regions_lt_len_points : R.regions.length < R.points.length :=
-  R.h_length ▸ Nat.lt_add_one _
+theorem len_regions_lt_points : R.regions.length < R.points.length :=
+  R.h_length ▸ Nat.lt_succ_self _
 
-theorem len_points_neq_zero : R.points.length ≠ 0 :=
+theorem len_points_ne_zero : R.points.length ≠ 0 :=
   R.h_length ▸ by aesop
 
 theorem not_points_isEmpty : ¬R.points.isEmpty :=
-  (R.points_neq_nil <| List.isEmpty_iff.mp ·)
+  (R.points_ne_nil <| List.isEmpty_iff.mp ·)
 
 theorem len_points_pos : 0 < R.points.length :=
   R.h_length ▸ Nat.zero_lt_succ _
 
 
 theorem getElem_regions_eq :
-  R.points[R.regions.length]'R.len_regions_lt_len_points = b := by
+  R.points[R.regions.length]'R.len_regions_lt_points = b := by
     simp [← R.last_eq, List.getLast_eq_getElem, ← R.h_length]
 
 
@@ -71,21 +73,24 @@ variable {T : α → Type*}
 variable (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 
 
-def jump (n : Fin R.regions.length) := @f R.regions[n]
-  ⟨R.points[n]' (R.h_length ▸ Nat.lt_succ_of_lt n.2), R.mem_region n⟩
-  ⟨R.points[n.succ]' (R.h_length ▸ Nat.succ_lt_succ n.2), R.next_mem_region n⟩
+def fin_regions_of_points_sub (n : Fin (R.points.length - 1)) :
+  Fin R.regions.length := ⟨n, R.len_regions_eq.symm ▸ n.2⟩
 
 
-def jumpTo : (n : Fin R.points.length) → T a → T R.points[n]
-  | ⟨0, _⟩ => cast <| congr_arg T <|
-    R.head_eq.symm.trans <| List.head_eq_getElem R.points_neq_nil
-  | ⟨n + 1, h⟩ => R.jump f ⟨n, Nat.add_one_lt_add_one_iff.mp <| R.h_length.symm ▸ h⟩ ∘
-    jumpTo ⟨n, Nat.lt_succ_self n |>.trans h⟩
+def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_sub n])
+  ⟨R.points[n], R.mem_region (fin_regions_of_points_sub n)⟩
+  ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.next_mem_region (fin_regions_of_points_sub n)⟩
 
 
-def jumpAll : T a → T b := fun a ↦
-  cast (congr_arg T <| List.getLast_eq_getElem R.points_neq_nil |>.symm.trans R.last_eq) <|
-    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_neq_zero⟩ a
+def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.len_points_pos) → T R.points[n]
+  | ⟨0, _⟩ => id
+  | ⟨n + 1, h⟩ => jump f ⟨n, Nat.lt_pred_of_succ_lt h⟩ ∘ jumpTo ⟨n, Nat.lt_succ_self n |>.trans h⟩
+
+
+def jumpAll : T a → T b := fun x ↦
+  cast (congr_arg T <| List.getLast_eq_getElem R.points_ne_nil |>.symm.trans R.last_eq) <|
+    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_ne_zero⟩ <|
+    cast (congr_arg T <| R.head_eq.symm.trans <| List.head_eq_getElem R.points_ne_nil) x
 
 
 end jumps
@@ -122,6 +127,9 @@ theorem length_map : (R.map h).points.length = R.points.length :=
   List.length_map _
 
 
+theorem length_regions_map : (R.map h).regions.length = R.regions.length := sorry
+
+
 theorem getElem_map (n : Fin (R.map h).points.length) :
   (R.map h).points[n] = m (R.points[n]' (R.length_map h ▸ n.2)) :=
     List.getElem_map _
@@ -130,6 +138,27 @@ theorem getElem_map (n : Fin (R.map h).points.length) :
 
 variable {T : β → Type*}
 variable (f : {U : 𝒰'} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
+
+
+open Classical in theorem jump_map_apply (n : Fin (R.points.length - 1))
+  (x : T <| m <| R.points[0]' len_points_pos) :
+
+  let n' : Fin ((map h).points.length - 1) := ⟨n, lt_of_eq_of_lt' (length_regions_map h).symm n.2⟩
+  let hn : T (m R.points[n'.castSucc.cast _]) = T (R.map h).points[n'] :=
+    congr_arg T <| R.getElem_map h (n'.castSucc.cast <| Nat.sub_one_add_one len_points_ne_zero)
+      |>.symm.trans <| Fin.getElem_fin _ _ _
+  (R.map h).jump f n' x = R.jump (fun {U} ⟨p, hp⟩ ⟨q, hq⟩ ↦ let hU := choose_spec (h U)
+      @f ⟨choose (h U), hU.1⟩ ⟨m p, hU.2 ⟨p, hp, rfl⟩⟩ ⟨m q, hU.2 ⟨q, hq, rfl⟩⟩) n x := sorry
+
+
+open Classical in theorem jumpTo_map_apply (n : Fin R.points.length) (x : T <| m <| R.points[0]'R.len_points_pos) :
+  let n' : Fin (R.map h).points.length := ⟨n, lt_of_eq_of_lt' (R.length_map h).symm n.2⟩
+  let hn : T (m R.points[n']) = T (R.map h).points[n'] :=
+    congr_arg T <| (R.getElem_map h n').symm.trans <| Fin.getElem_fin _ _ _
+  (R.map h).jumpTo (T := T) f n' x = hn ▸ R.jumpTo (T := T ∘ m)
+    (fun {U} ⟨p, hp⟩ ⟨q, hq⟩ ↦ let hU := choose_spec (h U)
+      @f ⟨choose (h U), hU.1⟩ ⟨m p, hU.2 ⟨p, hp, rfl⟩⟩ ⟨m q, hU.2 ⟨q, hq, rfl⟩⟩) n x := sorry
+
 
 open Classical in theorem jumpAll_map_apply (x : T (m a)) :
   (R.map h).jumpAll (T := T) f x = R.jumpAll (T := T ∘ m)
@@ -146,7 +175,7 @@ open Classical in theorem jumpAll_map_apply (x : T (m a)) :
     symm
     apply HEq.congr_simp (cast _ x) (cast _ x) (by
       sorry) _ _ (by
-      have hrw : ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_neq_zero⟩ =
+      have hrw : ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_ne_zero⟩ =
         (⟨0, R.len_points_pos⟩ : Fin R.points.length) := by
         simp only [R.h_length.symm.trans <| Nat.succ_inj.mpr h_ind]
       rw [hrw]
@@ -218,6 +247,8 @@ variable (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 theorem jumpAll_append_apply {c : α} (R' : Rollercoaster 𝒰 b c) (x : T a) :
   (R.append R').jumpAll f x = R'.jumpAll f (R.jumpAll f x) := by
 
+  unfold append jumpAll
+
   sorry
 
 
@@ -240,10 +271,10 @@ theorem nonempty_of_finite_preorder_from [Finite 𝒰] {preorder : Preorder 𝒰
     (fun U ↦ ∀ x ∈ U.1, Nonempty (Rollercoaster 𝒰 x endpoint)) U'
     (fun U h_ind _ hx ↦ by_cases
       (fun h_minimal : @Minimal 𝒰 preorder.toLE Set.univ U ↦
-        Nonempty.intro <| of_pair hx <| endPoint_mem_region_of_minimal U h_minimal)
+        ⟨of_pair hx <| endPoint_mem_region_of_minimal U h_minimal⟩)
       (fun h_minimal : ¬@Minimal 𝒰 preorder.toLE Set.univ U ↦
         let ⟨y, hyU, V, hyV, hVU⟩ := exists_lt_of_not_minimal U h_minimal
-        Nonempty.intro <| (of_pair hx hyU).append <| Classical.choice <| h_ind V hVU y hyV))
+        ⟨(of_pair hx hyU).append <| Classical.choice <| h_ind V hVU y hyV⟩))
 
 
 theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
@@ -267,7 +298,7 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
 
   obtain ⟨t, t_cover⟩ := ‹CompactSpace α›.isCompact_univ.elim_finite_subcover
     (@Subtype.val _ {U | U ∈ 𝒰 ∧ Nonempty U}) (fun ⟨U, hU, _⟩ ↦ h_open ⟨U, hU⟩)
-      (fun x _ ↦ let ⟨U, hU, hx⟩ := h_cover x; ⟨U, ⟨⟨U, hU, Nonempty.intro ⟨x, hx⟩⟩, rfl⟩, hx⟩)
+      (fun x _ ↦ let ⟨U, hU, hx⟩ := h_cover x; ⟨U, ⟨⟨U, hU, ⟨x, hx⟩⟩, rfl⟩, hx⟩)
   let t_set : Set (Set α) := Subtype.val '' SetLike.coe t
 
   have top_mem_iff_minimal_t : ∀ U : t_set,
@@ -306,25 +337,40 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
   obtain ⟨_, ⟨U, rfl⟩, _, ⟨hU, rfl⟩, h_bot⟩ := t_cover <| Set.mem_univ ⊥
   obtain R' := Classical.choice <|
     @nonempty_of_finite_preorder_from α t_set _ (supOrder.lift Subtype.val)
-    ⊤ (top_mem_iff_minimal_t · |>.mp) exists_lt_of_not_minimal_t ⟨U, U, hU, rfl⟩ ⊥ h_bot
-  exact Nonempty.intro <| R'.map (m := id)
-    (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩)
+      ⊤ (top_mem_iff_minimal_t · |>.mp) exists_lt_of_not_minimal_t ⟨U, U, hU, rfl⟩ ⊥ h_bot
+  exact ⟨R'.map (m := id) (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩)⟩
 
 
 
-open unitInterval in theorem nonempty_of_path [TopologicalSpace α]
-  (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
-  {f : I → α} (h_continuous : Continuous f)
-    : Nonempty (Rollercoaster 𝒰 (f 0) (f 1)) :=
-  Nonempty.intro <| @map I {f ⁻¹' U | U : 𝒰} 0 1
+
+open unitInterval
+
+
+def follows (f : I → α) : Prop :=
+  ∃ i : Fin R.points.length → I, f ∘ i = R.points.get ∧ StrictMono i ∧
+    i ⟨0, R.len_points_pos⟩ = 0 ∧ i ⟨R.points.length - 1, Nat.pred_lt R.len_points_ne_zero⟩ = 1 ∧
+    ∀ (x : I) (n : Fin R.regions.length),
+      i ⟨n, n.2.trans R.len_regions_lt_points⟩ ≤ x ∧
+      x ≤ i ⟨n.succ, R.h_length ▸ Nat.succ_lt_succ n.2⟩ →
+        f x ∈ R.regions[n].1
+
+
+variable [TopologicalSpace α]
+
+
+theorem nonempty_of_path (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
+  {path : I → α} (h_continuous : Continuous path) :
+    Nonempty (Rollercoaster 𝒰 (path 0) (path 1)) :=
+  ⟨@map I {path ⁻¹' U | U : 𝒰} 0 1
     (Classical.choice <| nonempty_bot_to_top
       (fun ⟨_, _, rfl⟩ ↦ h_continuous.isOpen_preimage _ <| h_open _)
-      (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| f x; ⟨f ⁻¹' U, ⟨⟨U, hU⟩, rfl⟩, hx⟩))
-    _ _ _ fun ⟨_, ⟨U, h⟩, rfl⟩ ↦ ⟨U, h, Set.image_subset_iff.mpr subset_rfl⟩
+      (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| path x; ⟨path ⁻¹' U, ⟨⟨U, hU⟩, rfl⟩, hx⟩))
+    _ _ _ fun ⟨_, ⟨U, h⟩, rfl⟩ ↦ ⟨U, h, Set.image_subset_iff.mpr subset_rfl⟩⟩
 
 
-
-
+theorem exists_follows (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
+  {path : I → α} (h_continuous : Continuous path) :
+    ∃ R : Rollercoaster 𝒰 (path 0) (path 1), R.follows path := sorry
 
 
 
@@ -342,17 +388,22 @@ def rel (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1) :
 
 
 
-variable (h_cover : ∀ a : α, ∃ U : 𝒰, a ∈ U.1)
+variable (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ a : α, ∃ U : 𝒰, a ∈ U.1)
 
 variable {f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1}
 variable (f_id : ∀ {U : 𝒰} (p : U.1), f p p = id)
 variable (f_trans : ∀ {U : 𝒰} (p q r : U.1), f q r ∘ f p q = f p r)
 variable (f_inter : ∀ {U V : 𝒰} {p q : α} (hpU : p ∈ U.1) (hpV : p ∈ V.1)
-  (hqU : q ∈ U.1) (hqV : q ∈ V.1),
-    f ⟨p, hpU⟩ ⟨q, hqU⟩ = f ⟨p, hpV⟩ ⟨q, hqV⟩)
+  (hqU : q ∈ U.1) (hqV : q ∈ V.1), f ⟨p, hpU⟩ ⟨q, hqU⟩ = f ⟨p, hpV⟩ ⟨q, hqV⟩)
 
 
 
+
+
+theorem rel_of_homotopy {φ : I → I → α} (h_continuous : Continuous φ)
+  (h_follows : R.follows (φ 0)) {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows (φ 1))
+  (ha : ∀ x, φ x 0 = a) (hb : ∀ x, φ x 1 = b) :
+    R.rel f R' := sorry
 
 
 
