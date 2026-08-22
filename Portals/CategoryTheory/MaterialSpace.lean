@@ -127,6 +127,11 @@ theorem transport_mul_apply (P Q : symmetricPerms) (x : 𝒰 F) :
   rfl
 
 
+theorem transport_transport {P Q : symmetricPerms} {x : 𝒰 F} :
+  transport P (transport Q x) = transport (P * Q) x :=
+    transport_mul_apply _ _ _ |>.symm
+
+
 theorem transport_mul (P Q : symmetricPerms) :
   transport (P * Q) =
     transport P ∘ transport Q :=
