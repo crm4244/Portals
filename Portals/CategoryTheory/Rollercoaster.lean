@@ -29,24 +29,24 @@ variable {𝒰 : Set (Set α)} {a b : α}
 variable {R : Rollercoaster 𝒰 a b}
 
 
-theorem len_regions_eq : R.regions.length = R.points.length - 1 :=
+theorem length_regions_eq : R.regions.length = R.points.length - 1 :=
   Nat.eq_sub_of_add_eq R.h_length
 
-theorem len_regions_lt_points : R.regions.length < R.points.length :=
+theorem length_regions_lt_points : R.regions.length < R.points.length :=
   R.h_length ▸ Nat.lt_succ_self _
 
-theorem len_points_ne_zero : R.points.length ≠ 0 :=
+theorem length_points_ne_zero : R.points.length ≠ 0 :=
   R.h_length ▸ by aesop
 
 theorem not_points_isEmpty : ¬R.points.isEmpty :=
   (R.points_ne_nil <| List.isEmpty_iff.mp ·)
 
-theorem len_points_pos : 0 < R.points.length :=
+theorem length_points_pos : 0 < R.points.length :=
   R.h_length ▸ Nat.zero_lt_succ _
 
 
 theorem getElem_regions_eq :
-  R.points[R.regions.length]'R.len_regions_lt_points = b := by
+  R.points[R.regions.length]'R.length_regions_lt_points = b := by
     simp [← R.last_eq, List.getLast_eq_getElem, ← R.h_length]
 
 
@@ -74,7 +74,7 @@ variable (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 
 
 def fin_regions_of_points_sub (n : Fin (R.points.length - 1)) :
-  Fin R.regions.length := ⟨n, R.len_regions_eq.symm ▸ n.2⟩
+  Fin R.regions.length := ⟨n, R.length_regions_eq.symm ▸ n.2⟩
 
 
 def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_sub n])
@@ -82,14 +82,35 @@ def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_
   ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.next_mem_region (fin_regions_of_points_sub n)⟩
 
 
-def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.len_points_pos) → T R.points[n]
+def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.length_points_pos) → T R.points[n]
   | ⟨0, _⟩ => id
   | ⟨n + 1, h⟩ => jump f ⟨n, Nat.lt_pred_of_succ_lt h⟩ ∘ jumpTo ⟨n, Nat.lt_succ_self n |>.trans h⟩
 
 
+theorem jumpTo_eq_of_eq {n n' : Fin R.points.length} (h : n = n') :
+  jumpTo f n = cast (congr_arg (T R.points[·]) h.symm) ∘ (R.jumpTo f n') := by cases h; rfl
+
+
+theorem jumpTo_eq_of_eq_zero {n : Fin R.points.length} (h : n.1 = 0) :
+  jumpTo f n = cast (congr_arg (T R.points[·]) <|
+    Fin.mk_eq_mk (h := R.length_points_pos) |>.mpr h.symm) :=
+  jumpTo_eq_of_eq f (Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h) |>.trans <|
+    congr_arg _ <| jumpTo.eq_def _ _
+
+
+theorem jumpTo_eq_of_eq_succ {n : Fin R.points.length} {n' : ℕ} (h : n = n'.succ) :
+  jumpTo f n =
+    cast (congr_arg (T ∘ R.points.get) <| Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h |>.symm)
+    ∘ (jump f ⟨n', Nat.lt_pred_of_succ_lt <| h ▸ n.2⟩)
+    ∘ (jumpTo f ⟨n', Nat.lt_of_succ_lt <| h ▸ n.2⟩) :=
+  jumpTo_eq_of_eq f (Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h) |>.trans <|
+    congr_arg _ <| jumpTo.eq_def _ _
+
+
+
 def jumpAll : T a → T b := fun x ↦
   cast (congr_arg T <| List.getLast_eq_getElem R.points_ne_nil |>.symm.trans R.last_eq) <|
-    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_ne_zero⟩ <|
+    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.length_points_ne_zero⟩ <|
     cast (congr_arg T <| R.head_eq.symm.trans <| List.head_eq_getElem R.points_ne_nil) x
 
 
@@ -141,17 +162,17 @@ variable (f : {U : 𝒰'} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 
 
 open Classical in theorem jump_map_apply (n : Fin (R.points.length - 1))
-  (x : T <| m <| R.points[0]' len_points_pos) :
+  (x : T <| m <| R.points[0]' length_points_pos) :
 
   let n' : Fin ((map h).points.length - 1) := ⟨n, lt_of_eq_of_lt' (length_regions_map h).symm n.2⟩
   let hn : T (m R.points[n'.castSucc.cast _]) = T (R.map h).points[n'] :=
-    congr_arg T <| R.getElem_map h (n'.castSucc.cast <| Nat.sub_one_add_one len_points_ne_zero)
+    congr_arg T <| R.getElem_map h (n'.castSucc.cast <| Nat.sub_one_add_one length_points_ne_zero)
       |>.symm.trans <| Fin.getElem_fin _ _ _
   (R.map h).jump f n' x = R.jump (fun {U} ⟨p, hp⟩ ⟨q, hq⟩ ↦ let hU := choose_spec (h U)
       @f ⟨choose (h U), hU.1⟩ ⟨m p, hU.2 ⟨p, hp, rfl⟩⟩ ⟨m q, hU.2 ⟨q, hq, rfl⟩⟩) n x := sorry
 
 
-open Classical in theorem jumpTo_map_apply (n : Fin R.points.length) (x : T <| m <| R.points[0]'R.len_points_pos) :
+open Classical in theorem jumpTo_map_apply (n : Fin R.points.length) (x : T <| m <| R.points[0]'R.length_points_pos) :
   let n' : Fin (R.map h).points.length := ⟨n, lt_of_eq_of_lt' (R.length_map h).symm n.2⟩
   let hn : T (m R.points[n']) = T (R.map h).points[n'] :=
     congr_arg T <| (R.getElem_map h n').symm.trans <| Fin.getElem_fin _ _ _
@@ -175,8 +196,8 @@ open Classical in theorem jumpAll_map_apply (x : T (m a)) :
     symm
     apply HEq.congr_simp (cast _ x) (cast _ x) (by
       sorry) _ _ (by
-      have hrw : ⟨R.points.length - 1, Nat.sub_one_lt R.len_points_ne_zero⟩ =
-        (⟨0, R.len_points_pos⟩ : Fin R.points.length) := by
+      have hrw : ⟨R.points.length - 1, Nat.sub_one_lt R.length_points_ne_zero⟩ =
+        (⟨0, R.length_points_pos⟩ : Fin R.points.length) := by
         simp only [R.h_length.symm.trans <| Nat.succ_inj.mpr h_ind]
       rw [hrw]
       unfold jumpTo
@@ -204,7 +225,7 @@ end map
 
 
 section append
-variable {c : α} (R' : Rollercoaster 𝒰 b c)
+variable {c : α} (R) (R' : Rollercoaster 𝒰 b c)
 
 -- we can make this nicer
 def append : Rollercoaster 𝒰 a c where
@@ -240,21 +261,57 @@ def append : Rollercoaster 𝒰 a c where
       exact R'.next_mem_region ⟨_, Nat.sub_lt_left_of_lt_add (le_of_lt hgt) hn⟩
 
 
+instance : HAppend (Rollercoaster 𝒰 a b) (Rollercoaster 𝒰 b c) (Rollercoaster 𝒰 a c) :=
+  ⟨(append · ·)⟩
+
+
+theorem length_append :
+  (R ++ R').points.length = R.points.length + R'.points.length - 1 :=
+    List.length_append.trans <| List.length_tail ▸ Nat.add_sub_assoc
+      (Nat.one_le_of_lt R'.length_points_pos) _ |>.symm
+
+
+
 variable {T : α → Type*}
 variable (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 
 
 theorem jumpAll_append_apply {c : α} (R' : Rollercoaster 𝒰 b c) (x : T a) :
-  (R.append R').jumpAll f x = R'.jumpAll f (R.jumpAll f x) := by
+  (R ++ R').jumpAll f x = R'.jumpAll f (R.jumpAll f x) := by
+  induction hn : R'.regions.length with
+  | zero =>
 
-  unfold append jumpAll
+    have hR' : R'.points.length - 1 = 0 := sorry
+    have __ : (Fin.mk (R'.points.length - 1) (Nat.pred_lt_self R'.length_points_pos)).val = 0 := hR'
 
-  sorry
+    have hRR' : (R ++ R').points.length - 1 = R.points.length - 1 :=
+      congr_arg (· - 1) <| length_append _ _ |>.trans <|
+        Nat.add_sub_assoc (Nat.one_le_of_lt R'.length_points_pos) _ |>.trans <|
+          hR' ▸ Nat.add_zero _
+    have ___ : R.points.length - 1 < (R ++ R').points.length := sorry
+
+
+
+    unfold jumpAll
+
+    rw [jumpTo_eq_of_eq_zero f __]
+    rw [jumpTo_eq_of_eq f (Fin.mk_eq_mk (h' := ___) |>.mpr hRR')]
+
+    simp only [Function.comp_apply, cast_cast]
+
+
+    sorry
+  | succ n ih =>
+
+    unfold jumpAll
+    #check jumpTo_eq_of_eq_succ f
+
+    sorry
 
 
 theorem jumpAll_append {c : α} {R' : Rollercoaster 𝒰 b c} :
-  (R.append R').jumpAll f = R'.jumpAll f ∘ R.jumpAll f :=
-    funext fun _ ↦ jumpAll_append_apply _ _ _
+  (R ++ R').jumpAll f = R'.jumpAll f ∘ R.jumpAll f :=
+    funext (jumpAll_append_apply _ _ _ ·)
 
 
 end append
@@ -348,9 +405,9 @@ open unitInterval
 
 def follows (f : I → α) : Prop :=
   ∃ i : Fin R.points.length → I, f ∘ i = R.points.get ∧ StrictMono i ∧
-    i ⟨0, R.len_points_pos⟩ = 0 ∧ i ⟨R.points.length - 1, Nat.pred_lt R.len_points_ne_zero⟩ = 1 ∧
+    i ⟨0, R.length_points_pos⟩ = 0 ∧ i ⟨R.points.length - 1, Nat.pred_lt R.length_points_ne_zero⟩ = 1 ∧
     ∀ (x : I) (n : Fin R.regions.length),
-      i ⟨n, n.2.trans R.len_regions_lt_points⟩ ≤ x ∧
+      i ⟨n, n.2.trans R.length_regions_lt_points⟩ ≤ x ∧
       x ≤ i ⟨n.succ, R.h_length ▸ Nat.succ_lt_succ n.2⟩ →
         f x ∈ R.regions[n].1
 

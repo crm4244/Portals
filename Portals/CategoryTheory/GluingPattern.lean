@@ -16,14 +16,14 @@ open ComponentRealizer
 
 
 class GluingPattern (S : Set X) (G : Type v) [Group G] where
-  map {p : X} (a b : Sides.at_point S p) : G
-  trans {p : X} (a b c : Sides.at_point S p) :
+  map {p : X} (a b : SidesAt S p) : G
+  trans {p : X} (a b c : SidesAt S p) :
       map a b * map b c = map a c
 
 
 instance (S : Set X) (G : Type v) [Group G] : CoeFun (GluingPattern S G)
-  (fun _ ↦ {p : X} → (a b : Sides.at_point S p) → G) :=
-    {coe γ := @γ.map}
+  (fun _ ↦ {p : X} → (a b : SidesAt S p) → G) where
+    coe γ := @γ.map
 
 
 
@@ -32,13 +32,13 @@ namespace GluingPattern
 variable {S : Set X} {G : Type v} [Group G] (γ : GluingPattern S G)
 
 
-def is_trivial_at (p : X) : Prop := ∀ (a b : Sides.at_point S p), γ a b = 1
+def is_trivial_at (p : X) : Prop := ∀ (a b : SidesAt S p), γ a b = 1
 def is_trivial_on (A : Set X) := ∀ {p : A}, γ.is_trivial_at p
 def is_trivial : Prop := γ.is_trivial_on ⊤
 
 
 theorem refl_id
-  {p : X} (a : Sides.at_point S p) :
+  {p : X} (a : SidesAt S p) :
     γ a a = 1 := by
   have h := γ.trans a a a
   nth_rw 3 [← mul_one (γ a a)] at h
@@ -46,12 +46,12 @@ theorem refl_id
 
 
 in theorem symm_inv_right
-    {p : X} (a b : Sides.at_point S p) : γ a b * γ b a = 1 :=
+    {p : X} (a b : SidesAt S p) : γ a b * γ b a = 1 :=
   (γ.trans a b a).trans (refl_id γ a)
 
 
 in theorem symm_inv_left
-        {p : X} (a b : Sides.at_point S p) : γ b a * γ a b = 1 :=
+        {p : X} (a b : SidesAt S p) : γ b a * γ a b = 1 :=
   (γ.trans b a b).trans (refl_id γ b)
 
 
@@ -62,8 +62,8 @@ open TopologicalSpace
 variable [TopologicalSpace X]
 
 def respects_realizer {U : Opens X} {p : X} (R : ComponentRealizer U S p) : Prop :=
-  ∀ {q : X} (hq : q ∈ U) (a b : Sides.at_point S q),
-    γ (R.side_transfer_at hq a) (R.side_transfer_at hq b) = γ a b
+  ∀ {q : X} (hq : q ∈ U) (a b : SidesAt S q),
+    γ (R.sidesAtTransfer hq a) (R.sidesAtTransfer hq b) = γ a b
 
 
 def isLocallyConsistent : Prop :=

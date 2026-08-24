@@ -1,34 +1,29 @@
-
-
 import Mathlib.Topology.Sets.Opens
-import Portals.CategoryTheory.SideSpace
+import Portals.CategoryTheory.Sides
 
 open Topology TopologicalSpace
 
 
 
-universe u v
 
 
 
 namespace Portal
 
 
-section defs
 
-variable (X : Type u) (Y : Type v) [TopologicalSpace X] [TopologicalSpace Y]
+def PortalMap (X Y : Type*) [TopologicalSpace X] [TopologicalSpace Y] :
+  Type _ := {f : Y → X // IsOpenEmbedding f}
 
-def PortalMap : Type max u v := {f : Y → X // IsOpenEmbedding f}
+
+variable {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
 
 instance : CoeFun (PortalMap X Y) (fun _ ↦ Y → X) := {coe f := f.1}
-
-end defs
 
 
 
 namespace PortalMap
 
-variable {X : Type u} {Y : Type v} [TopologicalSpace X] [TopologicalSpace Y]
 variable (f : PortalMap X Y)
 
 

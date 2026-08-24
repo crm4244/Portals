@@ -144,10 +144,10 @@ theorem center_continuous : Continuous (center (S := S)) := sorry--(Sides S).pro
 end center
 
 
-def touching_component {S : Set X} : Sides S → punctured_components S Set.univ := sorry
+def touchingComponent {S : Set X} : Sides S → punctured_components S Set.univ := sorry
 
---theorem touching_component_comm (S : Set X) {U V : Opens X} (h : V ≤ U) :
-  --touching_component (S := restrict_surface S V) ∘ punctured_component_of_subset S h = lift ∘ touching_component := by sorry
+--theorem touchingComponent_comm (S : Set X) {U V : Opens X} (h : V ≤ U) :
+  --touchingComponent (S := restrict_surface S V) ∘ punctured_component_of_subset S h = lift ∘ touchingComponent := by sorry
 
 
 section components
@@ -271,46 +271,8 @@ end lift
 
 
 
-section at_point
-
-def at_point (S : Set X) (p : X) : Set (Sides S) := { σ : Sides S | σ.center = p }
-
-variable {U : Set X} {p : X}
 
 
-def restricted_at (S : Set X) (hp : p ∈ U) :
-    Set (Sides (restrict_surface S U)) :=
-  at_point (restrict_surface S U) ⟨p, hp⟩
-
-
-def restricted_touching_component_at (S : Set X) (hp : p ∈ U) :
-    restricted_at S hp → restricted_punctured_components S U := by
-  #check (restricted_at S hp).restrict (touching_component (S := restrict_surface S U))
-  sorry
-
-
-
-def lift_at {hp : p ∈ U} (σ : restricted_at S hp) : Sides.at_point S p :=
-  ⟨σ.1, by
-    have h := σ.2
-    unfold restricted_at at_point at h
-    unfold at_point
-    simp
-    simp only [Set.mem_setOf_eq] at h
-
-    --apply Subtype.mk_eq_mk.mp
-    --rw [← h]
-    --apply Subtype.mk_eq_mk.mpr h
-
-    #check lift_comm
-
-    sorry⟩
-
-
-
---theorem center_fiber_discrete (S : Set X) (p : X) : DiscreteTopology (sides_at S p) := sorry
-
-end at_point
 
 noncomputable def homeomorph_pullback_center_restrict (S : Set X) (U : Opens X) :
     Homeomorph (Sides (restrict_surface S U)) (center (S := S) ⁻¹' U) :=
@@ -325,34 +287,28 @@ theorem center_mem_of_restricted {U : Opens X} (σ : Sides (restrict_surface S U
     σ.lift_comm ▸ σ.center.2
 
 
-noncomputable def restrict_of_mem {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
+noncomputable def restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
   Sides (restrict_surface S U) :=
     (homeomorph_pullback_center_restrict S U).symm ⟨σ, hσ⟩
 
 
 theorem restrict_injective {U : Opens X} : Function.Injective
-  fun (σ : {x : Sides S // x.center ∈ U}) ↦ σ.1.restrict_of_mem σ.2 :=
+  fun (σ : {x : Sides S // x.center ∈ U}) ↦ σ.1.restrict σ.2 :=
     fun _ _ h ↦ Homeomorph.injective _ h
 
 
 theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
-    σ.restrict_of_mem.lift = σ := by
+    σ.restrict.lift = σ := by
   sorry
 
 theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
-  σ.lift.restrict_of_mem σ.center_mem_of_restricted = σ :=
+  σ.lift.restrict σ.center_mem_of_restricted = σ :=
     isOpenEmbedding_lift U.2 |>.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
 
 
-theorem center_restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
-  σ.restrict_of_mem.center = ⟨σ.center, hσ⟩ :=
-    Subtype.val_injective (σ.lift_restrict ▸ σ.restrict_of_mem.lift_comm |>.symm)
-
-
-noncomputable def restricted_at_of_at {U : Opens X} {p : X} (hp : p ∈ U) (σ : Sides.at_point S p) :
-  restricted_at S hp :=
-    ⟨_, Subtype.val_injective <|
-      (congr_arg Subtype.val <| σ.1.center_restrict_comm <| σ.2.symm ▸ hp).trans σ.2⟩
+theorem restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
+  σ.restrict.center = ⟨σ.center, hσ⟩ :=
+    Subtype.val_injective (σ.lift_restrict ▸ σ.restrict.lift_comm |>.symm)
 
 
 def subsurface_colift {T : Set X} : S ⊆ T → Sides T → Sides S := sorry

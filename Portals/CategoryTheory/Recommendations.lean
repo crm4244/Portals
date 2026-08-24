@@ -59,8 +59,8 @@ theorem center_eq_of_usto {f : F} (a b : Sides (union_surface S F))
 -/
 
 
-def rusto_at_of_at {f : F} {p : f.1.range} (σ : Sides.at_point (𝒮_restrict S f) p) :
-  Sides.at_point S (f.1.inv p) :=
+def rusto_at_of_at {f : F} {p : f.1.range} (σ : SidesAt (𝒮_restrict S f) p) :
+  SidesAt S (f.1.inv p) :=
     ⟨restricted_union_side_to_original σ.1,
       Set.mem_setOf_eq.mpr (center_rusto_comm σ.1 ▸ congr_arg f.1.inv σ.2)⟩
 
@@ -80,9 +80,9 @@ noncomputable def recommendation_gluing_pattern (γ : GluingPattern S (Equiv.Per
 
 
 noncomputable def recommendation_map (γ : GluingPattern S (Equiv.Perm F))
-  {f : F} {p : f.1.opens_range} (a b : Sides.at_point (𝒮 F S) p.1) :
+  {f : F} {p : f.1.opens_range} (a b : SidesAt (𝒮 F S) p.1) :
     Equiv.Perm F :=
-  recommendation_gluing_pattern γ f (Sides.restricted_at_of_at p.2 a) (Sides.restricted_at_of_at p.2 b)
+  recommendation_gluing_pattern γ f (a.restrict p.2) (b.restrict p.2)
 
 
 
@@ -101,12 +101,12 @@ variable (γ : GluingPattern S (Equiv.Perm F))
 
 def relevant_perms (p : X) : Subgroup (Equiv.Perm F) := Subgroup.closure
   {P : Equiv.Perm F | ∃ (f : relevant_portal_maps F p)
-    (a b : Sides.at_point (𝒮 F S) (Subtype.mk p f.2)),
+    (a b : SidesAt (𝒮 F S) (Subtype.mk p f.2)),
       recommendation_map γ a b = P}
 
 
 noncomputable def relevant_recommendation_map {p : X} (f : relevant_portal_maps F p)
-  (a b : Sides.at_point (𝒮 F S) (Subtype.mk p f.2)) :
+  (a b : SidesAt (𝒮 F S) (Subtype.mk p f.2)) :
     relevant_perms γ p :=
   ⟨recommendation_map γ a b, Subgroup.mem_closure_of_mem <| Set.mem_setOf_eq.mpr ⟨f, a, b, rfl⟩⟩
 

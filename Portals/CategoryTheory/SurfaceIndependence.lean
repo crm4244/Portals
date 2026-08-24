@@ -63,8 +63,8 @@ theorem isEmbedding_incl' (t : Y) : IsEmbedding (incl' (X := X) t) :=
 
 
 def sides_at_map_incl' {S : Set (X × Y)} {t : Y} {p : X}
-  (a : Sides.at_point (incl (X := X) t ⁻¹' ((↑) ⁻¹' S)) p) :
-    Sides.at_point S (incl' t p) :=
+  (a : SidesAt (incl (X := X) t ⁻¹' ((↑) ⁻¹' S)) p) :
+    SidesAt S (incl' t p) :=
   ⟨_, a.2 ▸ a.1.map_comm (S := S) (isEmbedding_incl' t)⟩
   --(Slice.isEmbedding_incl' t) a.1
 
@@ -102,15 +102,12 @@ abbrev ℱ (F : Set (PortalMap X Y)) := Set.range (fun f : F ↦ extrude I f.1)
 variable {F : Set (PortalMap X Y)}
 
 variable {S : Set (Y × I)}
-variable {γ : GluingPattern S (Equiv.Perm (ℱ F))}
-variable {Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F))}
-variable (𝒢_trans : ∀ {p : X × I} (a b c : Sides.at_point (𝒮 (ℱ F) S) p),
-  Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c))
-variable (transport_symmetry : ∀ P (f g : ℱ F) (q : X × I)
-  (hf : q ∈ f.1.range) (hg : q ∈ g.1.range),
-    transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩)
+variable (γ : GluingPattern S (Equiv.Perm (ℱ F)))
+variable (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F)))
+variable (symmetricPerms : Subgroup (Equiv.Perm (ℱ F)))
+variable [CombineTrans γ Γ] [TransportSymmetry symmetricPerms]
 
-#check MatSpace 𝒢_trans transport_symmetry
+#check MatSpace γ Γ symmetricPerms
 
 
 
@@ -137,34 +134,38 @@ noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (E
       (fun _ ⟨_, _⟩ ⟨h1, h2⟩ ↦ ⟨h1, funext fun i ↦
         congr_arg (extrude_equiv I F).permCongr (congr_fun h2 i)⟩)
 
-include 𝒢_trans in theorem 𝒢ₜ_trans : ∀ {p : X} (a b c : Sides.at_point (𝒮 F (Sₜ t S)) p),
-  Γₜ Γ (quattle (γₜ t γ) a b) * Γₜ Γ (quattle (γₜ t γ) b c) = Γₜ Γ (quattle (γₜ t γ) a c) := by
 
-  intro p a b c
-
-  have h := 𝒢_trans
-    (Slice.sides_at_map_incl' (t := 0) a)
-    (Slice.sides_at_map_incl' (t := 0) b)
-    (Slice.sides_at_map_incl' (t := 0) c)
-
-  unfold γₜ quattle recommendation_map GluingPattern.map at h ⊢
-  unfold recommendation_gluing_pattern GluingPattern.map at h ⊢
-  simp only at h ⊢
-
-  --unfold HMul.hMul instHMul Mul.mul Equiv.Perm.instMul Equiv.trans
-  --simp only
-  --apply Equiv.ext
-  --intro f
-  --simp only [Equiv.Perm.coe_mul] at h ⊢
-  unfold Γₜ
-
-  unfold GeneralizedMultiset.of_function GenMulti.of_function at h ⊢
-  simp only [Quotient.map_mk] at h ⊢
-  rw [← Equiv.permCongr_mul]
-  apply congr_arg
+noncomputable abbrev symmetricPermsₜ : Subgroup (Equiv.Perm F) :=
+    symmetricPerms.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
 
 
-  simp only [Equiv.apply_symm_apply] at h ⊢
+
+instance : CombineTrans (γₜ t γ) (Γₜ Γ) where
+  trans {p} a b c := by
+
+    have h := ‹CombineTrans γ Γ›.trans
+      (Slice.sides_at_map_incl' (t := 0) a)
+      (Slice.sides_at_map_incl' (t := 0) b)
+      (Slice.sides_at_map_incl' (t := 0) c)
+
+    unfold γₜ quattle recommendation_map GluingPattern.map at h ⊢
+    unfold recommendation_gluing_pattern GluingPattern.map at h ⊢
+    simp only at h ⊢
+
+    --unfold HMul.hMul instHMul Mul.mul Equiv.Perm.instMul Equiv.trans
+    --simp only
+    --apply Equiv.ext
+    --intro f
+    --simp only [Equiv.Perm.coe_mul] at h ⊢
+    unfold Γₜ
+
+    unfold GeneralizedMultiset.of_function GenMulti.of_function at h ⊢
+    simp only [Quotient.map_mk] at h ⊢
+    rw [← Equiv.permCongr_mul]
+    apply congr_arg
+
+
+    simp only [Equiv.apply_symm_apply] at h ⊢
 
 
 
@@ -173,79 +174,86 @@ include 𝒢_trans in theorem 𝒢ₜ_trans : ∀ {p : X} (a b c : Sides.at_poin
 
 
 
-  #check Quotient.eq.mpr (by
-    unfold GenMulti.instSetoid GenMulti.rel
-    simp
-    let e : relevant_portal_maps F p ≃ relevant_portal_maps (ℱ F) (p, 0) := by
-      apply Equiv.subtypeEquiv (extrude_equiv I F)
-      intro f
-      unfold extrude_equiv Equiv.ofInjective Equiv.ofLeftInverse
-      simp only [Equiv.coe_fn_mk]
-      unfold extrude PortalMap.range
-      simp only [Set.mem_range, Set.range_prodMap, Set.range_id, Set.mem_prod, Set.mem_univ,
-        and_true]
+    #check Quotient.eq.mpr (by
+      unfold GenMulti.instSetoid GenMulti.rel
+      simp
+      let e : relevant_portal_maps F p ≃ relevant_portal_maps (ℱ F) (p, 0) := by
+        apply Equiv.subtypeEquiv (extrude_equiv I F)
+        intro f
+        unfold extrude_equiv Equiv.ofInjective Equiv.ofLeftInverse
+        simp only [Equiv.coe_fn_mk]
+        unfold extrude PortalMap.range
+        simp only [Set.mem_range, Set.range_prodMap, Set.range_id, Set.mem_prod, Set.mem_univ,
+          and_true]
 
-    use e
-    ext f f'
-    congr
-
-
-
-    simp
-
-    unfold e Equiv.subtypeEquiv
-    unfold extrude_equiv Equiv.ofInjective Equiv.ofLeftInverse extrude Prod.map
-    simp?
-
-
-    sorry : GenMulti.instSetoid (Equiv.Perm (ℱ F))
-      { index := relevant_portal_maps F p,
-          val := fun i ↦ (extrude_equiv I F).permCongr (recommendation_map (γₜ t γ) (f := i.1) _ _) }
-      { index := relevant_portal_maps (ℱ F) (p, 0),
-          val := fun i ↦ recommendation_map (f := i.1) γ _ _ })
+      use e
+      ext f f'
+      congr
 
 
 
-  sorry
+      simp
 
-include transport_symmetry in theorem transport_symmetry₀ : ∀ P (f g : F) (q : X)
-  (hf : q ∈ f.1.range) (hg : q ∈ g.1.range),
-    transportOf P ⟨q, hf⟩ = transportOf P ⟨q, hg⟩ := by
-  intro P f g q hf hg
+      unfold e Equiv.subtypeEquiv
+      unfold extrude_equiv Equiv.ofInjective Equiv.ofLeftInverse extrude Prod.map
+      simp?
 
-  let f' := extrude_equiv I F f
-  let g' := extrude_equiv I F g
-  let P' := (extrude_equiv I F).permCongr P
 
-  have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (extrude_equiv I F l).1.range :=
-    ⟨(l.1.inv ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
-      Prod.eq_iff_fst_eq_snd_eq.mpr ⟨l.1.inv_right ⟨q, hl⟩, rfl⟩⟩
-
-  have h := transport_symmetry P' f' g' (q, 0) (h_prod_mem hf) (h_prod_mem hg)
-
-  unfold transportOf at h ⊢
-  unfold P' f' g' at h
-  unfold extrude_equiv at h
-  simp only [Equiv.ofInjective_apply, Equiv.permCongr_apply, Equiv.ofInjective_symm_apply] at h
-  unfold extrude Prod.map at h
-  simp only [Prod.mk.injEq] at h
-  apply And.left at h
-
-  have h_final {l : F} (hl : q ∈ l.1.range) :
-    ((extrude I l.1).inv ⟨(q, 0), h_prod_mem hl⟩).1 = l.1.inv ⟨q, hl⟩ :=
-      l.1.2.injective <| Eq.trans
-        (by simpa only using congr_arg Prod.fst <| extrude_equiv I F l |>.1.inv_right _)
-        (l.1.inv_right ⟨q, hl⟩).symm
-
-  exact (h_final hf) ▸ (h_final hg) ▸ h
+      sorry : GenMulti.instSetoid (Equiv.Perm (ℱ F))
+        { index := relevant_portal_maps F p,
+            val := fun i ↦ (extrude_equiv I F).permCongr
+              (recommendation_map (γₜ t γ) (f := i.1) _ _) }
+        { index := relevant_portal_maps (ℱ F) (p, 0),
+            val := fun i ↦ recommendation_map (f := i.1) γ _ _ })
 
 
 
-def MatSpaceₜ := MatSpace (𝒢ₜ_trans t (𝒢_trans := 𝒢_trans))
-  (transport_symmetry₀ (transport_symmetry := transport_symmetry))
+    sorry
 
-noncomputable instance : TopologicalSpace (MatSpaceₜ 𝒢_trans transport_symmetry t) :=
-  instTopologicalSpaceQuotient
+
+
+instance : TransportSymmetry (X := X) (Y := Y) (symmetricPermsₜ symmetricPerms) where
+  symmetry P f g q hf hg := by
+
+    let f' := extrude_equiv I F f
+    let g' := extrude_equiv I F g
+    let P' : symmetricPerms := ⟨(extrude_equiv I F).permCongr P, sorry⟩
+
+    have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (extrude_equiv I F l).1.range :=
+      ⟨(l.1.inv ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
+        Prod.eq_iff_fst_eq_snd_eq.mpr ⟨l.1.inv_right ⟨q, hl⟩, rfl⟩⟩
+
+    have h := ‹TransportSymmetry symmetricPerms›.symmetry
+      P' f' g' (q, 0) (h_prod_mem hf) (h_prod_mem hg)
+
+    unfold transportOf at h ⊢
+    unfold P' f' g' at h
+    unfold extrude_equiv at h
+    simp only [Equiv.ofInjective_apply, Equiv.permCongr_apply, Equiv.ofInjective_symm_apply] at h
+    unfold extrude Prod.map at h
+    simp only [Prod.mk.injEq] at h
+    apply And.left at h
+
+    have h_final {l : F} (hl : q ∈ l.1.range) :
+      ((extrude I l.1).inv ⟨(q, 0), h_prod_mem hl⟩).1 = l.1.inv ⟨q, hl⟩ :=
+        l.1.2.injective <| Eq.trans
+          (by simpa only using congr_arg Prod.fst <| extrude_equiv I F l |>.1.inv_right _)
+          (l.1.inv_right ⟨q, hl⟩).symm
+
+    exact (h_final hf) ▸ (h_final hg) ▸ h
+
+
+
+
+
+
+
+abbrev MatSpaceₜ := MatSpace (γₜ t γ) (Γₜ Γ) (symmetricPermsₜ symmetricPerms)
+
+
+
+
+
 
 end slice_portal
 
