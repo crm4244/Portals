@@ -299,7 +299,6 @@ noncomputable def quattle (γ : GluingPattern S (Equiv.Perm F))
 
 variable (γ : GluingPattern S (Equiv.Perm F))
 variable (Γ : GeneralizedMultiset (Equiv.Perm F) → Equiv.Perm F)
-variable (symmetricPerms : Subgroup (Equiv.Perm F))
 
 
 class CombineTrans : Prop where
@@ -307,7 +306,7 @@ class CombineTrans : Prop where
     Γ (quattle γ a b) * Γ (quattle γ b c) = Γ (quattle γ a c)
 
 
-variable [CombineTrans γ Γ] [TransportSymmetry symmetricPerms]
+variable [CombineTrans γ Γ]
 
 noncomputable def combinedGluingPattern : GluingPattern (𝒮 F S) (Equiv.Perm F) :=
   { map a b := Γ (quattle γ a b), trans := ‹CombineTrans γ Γ›.trans}
@@ -315,8 +314,13 @@ noncomputable def combinedGluingPattern : GluingPattern (𝒮 F S) (Equiv.Perm F
 noncomputable abbrev 𝒢 := combinedGluingPattern γ Γ
 
 
+
+variable [TransportSymmetry (𝒢 γ Γ).closure_range]
+
+
+
 theorem simultaneous_transport
-  (P : symmetricPerms) {p : 𝒰 F} (a b : SidesAt (𝒮' F S) p) :
+  (P : (𝒢 γ Γ).closure_range) {p : 𝒰 F} (a b : SidesAt (𝒮' F S) p) :
     𝒢 γ Γ (SidesAt.transport P a).lift (SidesAt.transport P b).lift = 𝒢 γ Γ a.lift b.lift := by
 
   apply congr_arg Γ <| Quotient.eq.mpr _
@@ -346,16 +350,17 @@ theorem simultaneous_transport
   sorry
 
 
-
-
+private noncomputable abbrev getSymmetricGluingPerm {p} (a b : SidesAt (𝒮 F S) p) :
+  (𝒢 γ Γ).closure_range :=
+    ⟨𝒢 γ Γ a b, Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩⟩
 
 
 def matspace_rel (a b : Sides (𝒮 F S)) : Prop :=
   a = b ∨ ∃ (ha : a.center ∈ 𝒰 F) (a' : Sides (𝒮 F S)) (ha' : a'.center = a.center),
-    a'.transport' ⟨𝒢 γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩, (sorry : _ ∈ symmetricPerms)⟩ (ha' ▸ ha) = b
+    a'.transport' (getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩) (ha' ▸ ha) = b
 
 
-instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetricPerms where
+instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ where
   refl a := Or.inl rfl
 
   symm {a b} hab := by
@@ -363,7 +368,7 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
     intro ⟨ha, a', ha', hb⟩
     apply Or.inr
     use hb.symm ▸ Sides.center_mem_of_restricted _
-    use a.transport' ⟨𝒢 γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩, (sorry : _ ∈ symmetricPerms)⟩ ha
+    use a.transport' (getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩) ha
     use (by
       simp only [hb.symm, Sides.center_transport'_comm,
         Sides.center_transport_comm, Sides.restrict_comm]
@@ -371,6 +376,7 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
 
     apply Sides.transport'_mul _ _ _ _ |>.symm.trans
     simp only [MulMemClass.mk_mul_mk]
+
     sorry
 
   trans {a b c} hab hbc := by
@@ -380,7 +386,7 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
     intro ⟨hb, b', hb', hbc'⟩
     apply Or.inr
     use ha
-    use b'.transport' ⟨𝒢 γ Γ ⟨a', ha'⟩ ⟨a, rfl⟩, (sorry : _ ∈ symmetricPerms)⟩ (hb' ▸ hb)
+    use b'.transport' (getSymmetricGluingPerm γ Γ ⟨a', ha'⟩ ⟨a, rfl⟩) (hb' ▸ hb)
     use (by
 
       apply Sides.center_transport'_comm _ _ _ |>.trans
@@ -396,16 +402,16 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ symmetri
 
 
 
-def MatSpace := Quotient {
-  r := matspace_rel γ Γ symmetricPerms
-  iseqv := instEquivalenceMatSpaceRel γ Γ symmetricPerms
+def MatSpace : Type _ := Quotient {
+  r := matspace_rel γ Γ
+  iseqv := instEquivalenceMatSpaceRel γ Γ
 }
 
 
 namespace MatSpace
 
 
-instance : TopologicalSpace (MatSpace γ Γ symmetricPerms) := instTopologicalSpaceQuotient
+instance : TopologicalSpace (MatSpace γ Γ) := instTopologicalSpaceQuotient
 
 -- woohoo!!!
 

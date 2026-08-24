@@ -66,31 +66,26 @@ end transfer
 variable {X : Type*} [TopologicalSpace X]
 variable {F : Set (PortalMap X Y)} {γ : GluingPattern S (Equiv.Perm F)}
 variable {Γ : GeneralizedMultiset (Equiv.Perm F) → Equiv.Perm F} [CombineTrans γ Γ]
-variable {p : X}
-
-def allSymmetric (symmetricPerms : Subgroup (Equiv.Perm F)) (C : Chariot (𝒢 γ Γ) p) : Prop :=
-  ∀ a, C a ∈ symmetricPerms
-
-variable {symmetricPerms : Subgroup (Equiv.Perm F)} [TransportSymmetry symmetricPerms]
-variable {C : Chariot (𝒢 γ Γ) p} (hC : C.allSymmetric symmetricPerms)
+variable {p : X} {C : Chariot (𝒢 γ Γ) p}
 
 
-theorem allSymmetric_transfer [h_nonempty : Nonempty (SidesAt (𝒮 F S) p)]
+def allSymmetric (C : Chariot (𝒢 γ Γ) p) : Prop :=
+  ∀ a, C a ∈ (𝒢 γ Γ).closure_range
+
+
+theorem allSymmetric_transfer (hC : C.allSymmetric) [h_nonempty : Nonempty (SidesAt (𝒮 F S) p)]
   {hub : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) hub}
   (hR : (𝒢 γ Γ).respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
-    C.transfer hR hp hq |>.allSymmetric symmetricPerms := by
+    (C.transfer hR hp hq).allSymmetric :=
+  fun _ ↦ (𝒢 γ Γ).closure_range.mul_mem (by
+    exact (by assumption : C.allSymmetric) _) (Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩)
 
-  intro a
-  unfold map transfer transfer_apply
-  simp only
-  apply symmetricPerms.mul_mem
-  · exact hC _
-  · sorry
 
+variable [TransportSymmetry (𝒢 γ Γ).closure_range] (hC : C.allSymmetric)
 
 
 open Classical in noncomputable def toMatSpace_apply (a : SidesAt (𝒮 F S) p) :
-  MatSpace γ Γ symmetricPerms :=
+  MatSpace γ Γ :=
     if h : p ∈ 𝒰 F then ⟦Sides.transport' ⟨C a, hC a⟩ a.1 (a.2.symm ▸ h)⟧
     else ⟦a.1⟧
 
@@ -126,7 +121,7 @@ theorem toMatSpace_apply_eq (a b : SidesAt (𝒮 F S) p) :
 
 
 noncomputable def toMatSpace [h : Nonempty (SidesAt (𝒮 F S) p)] :
-  MatSpace γ Γ symmetricPerms :=
+  MatSpace γ Γ :=
     C.toMatSpace_apply hC (Classical.choice h)
 
 

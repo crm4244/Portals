@@ -104,10 +104,9 @@ variable {F : Set (PortalMap X Y)}
 variable {S : Set (Y × I)}
 variable (γ : GluingPattern S (Equiv.Perm (ℱ F)))
 variable (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F)))
-variable (symmetricPerms : Subgroup (Equiv.Perm (ℱ F)))
-variable [CombineTrans γ Γ] [TransportSymmetry symmetricPerms]
+variable [CombineTrans γ Γ] [TransportSymmetry (𝒢 γ Γ).closure_range]
 
-#check MatSpace γ Γ symmetricPerms
+#check MatSpace γ Γ
 
 
 
@@ -136,7 +135,7 @@ noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (E
 
 
 noncomputable abbrev symmetricPermsₜ : Subgroup (Equiv.Perm F) :=
-    symmetricPerms.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
+    (𝒢 γ Γ).closure_range.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
 
 
 
@@ -212,18 +211,18 @@ instance : CombineTrans (γₜ t γ) (Γₜ Γ) where
 
 
 
-instance : TransportSymmetry (X := X) (Y := Y) (symmetricPermsₜ symmetricPerms) where
+instance : TransportSymmetry (X := X) (Y := Y) (𝒢 (γₜ t γ) (Γₜ Γ)).closure_range where
   symmetry P f g q hf hg := by
 
     let f' := extrude_equiv I F f
     let g' := extrude_equiv I F g
-    let P' : symmetricPerms := ⟨(extrude_equiv I F).permCongr P, sorry⟩
+    let P' : (𝒢 γ Γ).closure_range := ⟨(extrude_equiv I F).permCongr P, sorry⟩
 
     have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (extrude_equiv I F l).1.range :=
       ⟨(l.1.inv ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
         Prod.eq_iff_fst_eq_snd_eq.mpr ⟨l.1.inv_right ⟨q, hl⟩, rfl⟩⟩
 
-    have h := ‹TransportSymmetry symmetricPerms›.symmetry
+    have h := ‹TransportSymmetry (𝒢 γ Γ).closure_range›.symmetry
       P' f' g' (q, 0) (h_prod_mem hf) (h_prod_mem hg)
 
     unfold transportOf at h ⊢
@@ -248,7 +247,7 @@ instance : TransportSymmetry (X := X) (Y := Y) (symmetricPermsₜ symmetricPerms
 
 
 
-abbrev MatSpaceₜ := MatSpace (γₜ t γ) (Γₜ Γ) (symmetricPermsₜ symmetricPerms)
+abbrev MatSpaceₜ : Type _ := MatSpace (γₜ t γ) (Γₜ Γ)
 
 
 

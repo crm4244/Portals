@@ -1,5 +1,6 @@
 
 import Portals.CategoryTheory.Realizers
+import Mathlib.Algebra.Group.Subgroup.Lattice
 
 
 universe u v
@@ -83,6 +84,11 @@ theorem isLocallyConsistent'_of_isLocallyConsistent (γ : GluingPattern S G)
     isLocallyConsistent γ R → isLocallyConsistent' γ R :=
   fun h _ _ _ hrp hrq _ _ ha hb ↦ (h hrp ha hb).trans (h hrq ha hb).symm
 -/
+
+
+def closure_range : Subgroup G := Subgroup.closure
+  {P | ∃ (p : X) (a b : SidesAt S p), γ a b = P}
+
 
 end GluingPattern
 
