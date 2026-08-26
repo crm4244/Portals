@@ -73,13 +73,37 @@ variable {T : α → Type*}
 variable (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 
 
-def fin_regions_of_points_sub (n : Fin (R.points.length - 1)) :
+lemma f_heq
+  {U U' : 𝒰} (hU : U = U')
+  {p : U.1} {p' : U'.1} (hp : p ≍ p')
+  {q : U.1} {q' : U'.1} (hq : q ≍ q')
+  {x : T p.1} {x' : T p'.1} (hx : x ≍ x') :
+    @f U p q x ≍ @f U' p' q' x' :=
+  by cases hU; cases hp; cases hq; cases hx; rfl
+
+
+def fin_regions_of_points_pred (n : Fin (R.points.length - 1)) :
   Fin R.regions.length := ⟨n, R.length_regions_eq.symm ▸ n.2⟩
 
 
-def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_sub n])
-  ⟨R.points[n], R.mem_region (fin_regions_of_points_sub n)⟩
-  ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.next_mem_region (fin_regions_of_points_sub n)⟩
+def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_pred n])
+  ⟨R.points[n], R.mem_region (fin_regions_of_points_pred n)⟩
+  ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.next_mem_region (fin_regions_of_points_pred n)⟩
+
+
+theorem jump_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'}
+  {n : Fin (R.points.length - 1)} {n' : Fin (R'.points.length - 1)}
+  (h_n : R.points[n] = R'.points[n'])
+  (h_succ : R.points[↑n + 1] = R'.points[↑n' + 1])
+  (h_region : R.regions[fin_regions_of_points_pred n] =
+    R'.regions[fin_regions_of_points_pred n'])
+  (x : T R.points[n]) :
+    R'.jump f n' (cast (congr_arg T h_n) x) =
+    cast (congr_arg T h_succ) (R.jump f n x) :=
+  eq_cast_iff_heq.mpr <| f_heq f h_region.symm
+    (Subtype.heq_iff_coe_eq (fun _ ↦ h_region ▸ Iff.rfl) |>.mpr h_n.symm)
+    (Subtype.heq_iff_coe_eq (fun _ ↦ h_region ▸ Iff.rfl) |>.mpr h_succ.symm)
+    (cast_heq_iff_heq _ _ _ |>.mpr HEq.rfl)
 
 
 def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.length_points_pos) → T R.points[n]
@@ -99,13 +123,36 @@ theorem jumpTo_eq_of_eq_zero {n : Fin R.points.length} (h : n.1 = 0) :
 
 
 theorem jumpTo_eq_of_eq_succ {n : Fin R.points.length} {n' : ℕ} (h : n = n'.succ) :
-  jumpTo f n =
+  R.jumpTo f n =
     cast (congr_arg (T ∘ R.points.get) <| Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h |>.symm)
-    ∘ (jump f ⟨n', Nat.lt_pred_of_succ_lt <| h ▸ n.2⟩)
-    ∘ (jumpTo f ⟨n', Nat.lt_of_succ_lt <| h ▸ n.2⟩) :=
+    ∘ (R.jump f ⟨n', Nat.lt_pred_of_succ_lt <| h ▸ n.2⟩)
+    ∘ (R.jumpTo f ⟨n', Nat.lt_of_succ_lt <| h ▸ n.2⟩) :=
   jumpTo_eq_of_eq f (Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h) |>.trans <|
     congr_arg _ <| jumpTo.eq_def _ _
 
+
+theorem jumpTo_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'} {n : ℕ}
+  (hnR : n < R.points.length) (hnR' : n < R'.points.length)
+  (h_points_eq : ∀ (i : ℕ) (hi : i ≤ n),
+    R.points[i]'(lt_of_le_of_lt hi hnR) = R'.points[i]'(lt_of_le_of_lt hi hnR'))
+  (h_regions_eq : ∀ (i : ℕ) (hi : i < n),
+    R.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <| R.h_length ▸ hnR) =
+    R'.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <| R'.h_length ▸ hnR'))
+  (x : T R.points[0]) :
+    R'.jumpTo f ⟨n, hnR'⟩ (cast (congr_arg T <| h_points_eq 0 <| Nat.zero_le n) x) =
+      cast (congr_arg T <| h_points_eq n le_rfl) (R.jumpTo f ⟨n, hnR⟩ x) := by
+
+  induction n with
+  | zero => unfold jumpTo; rfl
+  | succ n h_ind =>
+    simp only [jumpTo, Function.comp_apply]
+    rw [h_ind (Nat.lt_of_succ_lt hnR) (Nat.lt_of_succ_lt hnR')
+      (fun i hi ↦ h_points_eq i <| Nat.le_succ_of_le hi)
+      (fun i hi ↦ h_regions_eq i <| Nat.lt_succ_of_lt hi) x]
+    exact R.jump_cast_apply f
+      (n := ⟨n, Nat.lt_pred_of_succ_lt hnR⟩) (n' := ⟨n, Nat.lt_pred_of_succ_lt hnR'⟩)
+      (h_points_eq n <| Nat.le_succ n) (h_points_eq n.succ le_rfl)
+      (h_regions_eq n <| Nat.lt_succ_self n) _
 
 
 def jumpAll : T a → T b := fun x ↦
@@ -281,26 +328,29 @@ theorem jumpAll_append_apply {c : α} (R' : Rollercoaster 𝒰 b c) (x : T a) :
   induction hn : R'.regions.length with
   | zero =>
 
-    have hR' : R'.points.length - 1 = 0 := sorry
-    have __ : (Fin.mk (R'.points.length - 1) (Nat.pred_lt_self R'.length_points_pos)).val = 0 := hR'
+    have h1 : R'.points.length - 1 = 0 := sorry
+    have h2 : (Fin.mk (R'.points.length - 1) (Nat.pred_lt_self R'.length_points_pos)).val = 0 := h1
 
-    have hRR' : (R ++ R').points.length - 1 = R.points.length - 1 :=
+    have h3 : (R ++ R').points.length - 1 = R.points.length - 1 :=
       congr_arg (· - 1) <| length_append _ _ |>.trans <|
         Nat.add_sub_assoc (Nat.one_le_of_lt R'.length_points_pos) _ |>.trans <|
-          hR' ▸ Nat.add_zero _
-    have ___ : R.points.length - 1 < (R ++ R').points.length := sorry
+          h1 ▸ Nat.add_zero _
+    have h4 : R.points.length - 1 < R.points.length := Nat.pred_lt_self R.length_points_pos
+    have h5 : R.points.length - 1 < (R ++ R').points.length := sorry
 
+    have h := jumpTo_cast_apply f h4 h5
+      (fun i hi ↦ (List.getElem_append
+        (lt_of_le_of_lt hi h5) |>.trans <|
+        dif_pos (lt_of_le_of_lt hi <| Nat.pred_lt_self R.length_points_pos) |>.trans rfl).symm)
+      (fun i hi ↦ (List.getElem_append
+        (List.length_append ▸ hn ▸ R.length_regions_eq.symm ▸ hi) |>.trans <|
+        dif_pos (R.length_regions_eq.symm ▸ hi)).symm)
+      (cast jumpAll._proof_4 x)
+    rw [cast_cast] at h
 
+    simp only [jumpAll, jumpTo_eq_of_eq f (Fin.mk_eq_mk (h' := h5) |>.mpr h3),
+      Function.comp_apply, h, jumpTo_eq_of_eq_zero f h2, cast_cast]
 
-    unfold jumpAll
-
-    rw [jumpTo_eq_of_eq_zero f __]
-    rw [jumpTo_eq_of_eq f (Fin.mk_eq_mk (h' := ___) |>.mpr hRR')]
-
-    simp only [Function.comp_apply, cast_cast]
-
-
-    sorry
   | succ n ih =>
 
     unfold jumpAll
@@ -403,13 +453,15 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
 open unitInterval
 
 
-def follows (f : I → α) : Prop :=
-  ∃ i : Fin R.points.length → I, f ∘ i = R.points.get ∧ StrictMono i ∧
-    i ⟨0, R.length_points_pos⟩ = 0 ∧ i ⟨R.points.length - 1, Nat.pred_lt R.length_points_ne_zero⟩ = 1 ∧
-    ∀ (x : I) (n : Fin R.regions.length),
-      i ⟨n, n.2.trans R.length_regions_lt_points⟩ ≤ x ∧
-      x ≤ i ⟨n.succ, R.h_length ▸ Nat.succ_lt_succ n.2⟩ →
-        f x ∈ R.regions[n].1
+def follows (f : I → α) : Prop := ∃ i : Fin R.points.length → I,
+  f ∘ i = R.points.get ∧
+  StrictMono i ∧
+  i ⟨0, R.length_points_pos⟩ = 0 ∧
+  i ⟨R.points.length - 1, Nat.pred_lt R.length_points_ne_zero⟩ = 1 ∧
+  ∀ (x : I) (n : Fin R.regions.length),
+    i ⟨n, n.2.trans R.length_regions_lt_points⟩ ≤ x ∧
+    x ≤ i ⟨n.succ, R.h_length ▸ Nat.succ_lt_succ n.2⟩ →
+      f x ∈ R.regions[n].1
 
 
 variable [TopologicalSpace α]
