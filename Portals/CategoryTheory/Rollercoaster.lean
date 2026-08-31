@@ -1,6 +1,6 @@
---import Mathlib.Topology.Basic
 import Mathlib.Topology.Sets.Opens
 import Mathlib.Topology.UnitInterval
+import Mathlib.Topology.Connected.PathConnected
 
 open Topology TopologicalSpace
 
@@ -12,14 +12,14 @@ structure Rollercoaster (𝒰 : Set (Set α)) (a b : α) where
   points : List α
   regions : List 𝒰
 
-  h_length : regions.length + 1 = points.length
-  points_ne_nil : points ≠ [] := List.ne_nil_of_length_eq_add_one h_length.symm
+  len_rgs_add_one_eq_len_pts : regions.length + 1 = points.length
+  pts_ne_nil : points ≠ [] := List.ne_nil_of_length_eq_add_one len_rgs_add_one_eq_len_pts.symm
 
-  mem_region : ∀ n : Fin regions.length, points[n] ∈ regions[n].1
-  next_mem_region : ∀ n : Fin regions.length, points[n.succ] ∈ regions[n].1
+  mem_rgs : ∀ n : Fin regions.length, points[n] ∈ regions[n].1
+  succ_mem_rgs : ∀ n : Fin regions.length, points[n.succ] ∈ regions[n].1
 
-  head_eq : points.head points_ne_nil = a
-  last_eq : points.getLast points_ne_nil = b
+  head_pts_eq : points.head pts_ne_nil = a
+  getLast_pts_eq : points.getLast pts_ne_nil = b
 
 
 
@@ -29,41 +29,290 @@ variable {𝒰 : Set (Set α)} {a b : α}
 variable {R : Rollercoaster 𝒰 a b}
 
 
-theorem length_regions_eq : R.regions.length = R.points.length - 1 :=
-  Nat.eq_sub_of_add_eq R.h_length
 
-theorem length_regions_lt_points : R.regions.length < R.points.length :=
-  R.h_length ▸ Nat.lt_succ_self _
-
-theorem length_points_ne_zero : R.points.length ≠ 0 :=
-  R.h_length ▸ by aesop
-
-theorem not_points_isEmpty : ¬R.points.isEmpty :=
-  (R.points_ne_nil <| List.isEmpty_iff.mp ·)
-
-theorem length_points_pos : 0 < R.points.length :=
-  R.h_length ▸ Nat.zero_lt_succ _
+def head : α := a
+def last : α := b
 
 
-theorem getElem_regions_eq :
-  R.points[R.regions.length]'R.length_regions_lt_points = b := by
-    simp [← R.last_eq, List.getLast_eq_getElem, ← R.h_length]
+theorem len_rgs_eq_len_pts_sub_one : R.regions.length = R.points.length - 1 :=
+  Nat.eq_sub_of_add_eq R.len_rgs_add_one_eq_len_pts
+
+theorem len_rgs_lt_len_pts : R.regions.length < R.points.length :=
+  R.len_rgs_add_one_eq_len_pts ▸ Nat.lt_succ_self _
+
+theorem len_pts_ne_zero : R.points.length ≠ 0 :=
+  Nat.ne_zero_of_lt R.len_rgs_lt_len_pts
+
+theorem len_pts_pos : 0 < R.points.length :=
+  Nat.pos_of_ne_zero R.len_pts_ne_zero
+
+theorem not_isEmpty_pts : ¬R.points.isEmpty :=
+  (R.pts_ne_nil <| List.isEmpty_iff.mp ·)
+
+theorem head_mem_pts : a ∈ R.points :=
+  List.mem_of_head? <| List.head?_eq_head R.pts_ne_nil |>.trans <|
+    congr_arg some R.head_pts_eq
+
+theorem last_mem_pts : b ∈ R.points :=
+  List.mem_of_getLast? <| List.getLast?_eq_getLast R.pts_ne_nil |>.trans <|
+    congr_arg some R.getLast_pts_eq
+
+
+@[simp] theorem getElem_zero : R.points[0]'R.len_pts_pos = a := by
+
+  sorry
+@[simp] theorem getElem_len_pts_sub_one : R.points[R.points.length - 1]'sorry = b := sorry
+@[simp] theorem getElem_len_rgs : R.points[R.regions.length]'sorry = b := sorry
 
 
 
-theorem head_eq_last (h : R.regions.length = 0) : a = b := by
-  simp [← R.head_eq, List.head_eq_getElem, ← R.last_eq, List.getLast_eq_getElem, ← R.h_length, h]
 
 
-def of_pair {U : 𝒰} {p q : α} (hp : p ∈ U.1) (hq : q ∈ U.1) : Rollercoaster 𝒰 p q where
-  points := [p, q]
+
+section trivial
+
+def trivial (𝒰 : Set (Set α)) (a : α) : Rollercoaster 𝒰 a a where
+  points := [a]
+  regions := []
+  len_rgs_add_one_eq_len_pts := by simp
+  mem_rgs := by simp
+  succ_mem_rgs := by simp
+  head_pts_eq := rfl
+  getLast_pts_eq := rfl
+
+
+@[simp] theorem rgs_trivial : (trivial 𝒰 a).regions = [] := rfl
+@[simp] theorem len_rgs_trivial : (trivial 𝒰 a).regions.length = 0 := by simp
+@[simp] theorem pts_trivial : (trivial 𝒰 a).points = [a] := rfl
+@[simp] theorem len_pts_trivial : (trivial 𝒰 a).points.length = 1 := by simp
+
+
+def isTrivial : Prop := R ≍ (trivial 𝒰 a)
+theorem isTrivial_iff (R : Rollercoaster 𝒰 a a) : R.isTrivial ↔ R = trivial 𝒰 a := heq_iff_eq
+
+
+theorem isTrivial_trivial : (trivial 𝒰 a).isTrivial := HEq.rfl
+theorem trivial_heq_of_eq : a = b → trivial 𝒰 a ≍ trivial 𝒰 b := (congr_arg_heq _ ·)
+
+@[simp] theorem last_eq_head_of_isTrivial (h : R.isTrivial) : b = a := sorry
+@[simp] theorem getLast_pts_of_isTrivial (h : R.isTrivial) : R.points.getLast R.pts_ne_nil = a := sorry
+@[simp] theorem getElem_len_pts_sub_one_of_isTrivial (h : R.isTrivial) : R.points[R.points.length - 1]'sorry = a := sorry
+@[simp] theorem getElem_len_rgs_of_isTrivial (h : R.isTrivial) : R.points[R.regions.length]'R.len_rgs_lt_len_pts = a := sorry
+theorem last_eq_getElem_zero_of_isTrivial (h : R.isTrivial) : b = R.points[0]'R.len_pts_pos := sorry
+theorem last_eq_head_pts_of_isTrivial (h : R.isTrivial) : b = R.points.head R.pts_ne_nil := sorry
+
+
+theorem pts_eq_singleton_of_isTrivial (h : R.isTrivial) : R.points = [a] := sorry
+
+theorem isTrivial_of_pts_eq_singleton (h : R.points = [a]) : R.isTrivial := by sorry
+
+@[simp] theorem pts_eq_singleton_iff_isTrivial : R.points = [a] ↔ R.isTrivial :=
+  ⟨(isTrivial_of_pts_eq_singleton ·), (pts_eq_singleton_of_isTrivial ·)⟩
+
+theorem len_pts_eq_one_of_isTrivial (h : R.isTrivial) : R.points.length = 1 :=
+  by simp [R.pts_eq_singleton_of_isTrivial h]
+
+theorem isTrivial_of_len_pts_eq_one (h : R.points.length = 1) : R.isTrivial :=
+  let ⟨_, h'⟩ := List.length_eq_one_iff.mp h
+  isTrivial_of_pts_eq_singleton <| by
+    simp [h']; exact (List.eq_of_mem_singleton <| h'.symm ▸ R.head_mem_pts).symm
+
+@[simp] theorem len_pts_eq_one_iff_isTrivial : R.points.length = 1 ↔ R.isTrivial :=
+  ⟨(isTrivial_of_len_pts_eq_one ·), (len_pts_eq_one_of_isTrivial ·)⟩
+
+theorem len_pts_sub_one_eq_zero_of_isTrivial (h : R.isTrivial) : R.points.length - 1 = 0 :=
+  by simp [R.pts_eq_singleton_of_isTrivial h]
+
+theorem isTrivial_of_len_pts_sub_one_eq_zero (h : R.points.length - 1 = 0) : R.isTrivial := sorry
+
+@[simp] theorem len_pts_sub_one_eq_zero_iff_isTrivial : R.points.length - 1 = 0 ↔ R.isTrivial :=
+  ⟨(isTrivial_of_len_pts_sub_one_eq_zero ·), (len_pts_sub_one_eq_zero_of_isTrivial ·)⟩
+
+theorem len_rgs_eq_zero_of_isTrivial (h : R.isTrivial) : R.regions.length = 0 := sorry
+theorem isTrivial_of_len_rgs_eq_zero (h : R.regions.length = 0) : R.isTrivial := sorry
+@[simp] theorem len_rgs_eq_zero_iff_isTrivial : R.regions.length = 0 ↔ R.isTrivial :=
+  ⟨(isTrivial_of_len_rgs_eq_zero ·), (len_rgs_eq_zero_of_isTrivial ·)⟩
+
+theorem rgs_eq_nil_of_isTrivial (h : R.isTrivial) : R.regions = [] := sorry
+theorem isTrivial_of_rgs_eq_nil (h : R.regions = []) : R.isTrivial := sorry
+@[simp] theorem rgs_eq_nil_iff_isTrivial : R.regions = [] ↔ R.isTrivial :=
+  ⟨(R.isTrivial_of_rgs_eq_nil ·), (R.rgs_eq_nil_of_isTrivial ·)⟩
+
+@[simp] theorem len_rgs_ne_zero_iff_not_isTrivial : R.regions.length ≠ 0 ↔ ¬R.isTrivial := sorry
+@[simp] theorem len_rgs_pos_iff_not_isTrivial : 0 < R.regions.length ↔ ¬R.isTrivial := sorry
+@[simp] theorem rgs_ne_nil_iff_not_isTrivial : R.regions ≠ [] ↔ ¬R.isTrivial := sorry
+
+
+end trivial
+
+
+
+
+
+section of_pair
+
+variable {U : 𝒰} (ha : a ∈ U.1) (hb : b ∈ U.1)
+
+
+def of_pair : Rollercoaster 𝒰 a b where
+  points := [a, b]
   regions := [U]
-  h_length := by simp
-  head_eq := rfl
-  last_eq := rfl
-  mem_region := by simp [hp]
-  next_mem_region := by simp [hq]
+  len_rgs_add_one_eq_len_pts := by simp
+  mem_rgs := by simp [ha]
+  succ_mem_rgs := by simp [hb]
+  head_pts_eq := rfl
+  getLast_pts_eq := rfl
 
+
+@[simp] theorem rgs_ofPair : (of_pair ha hb).regions = [U] := rfl
+@[simp] theorem len_rgs_ofPair : (of_pair ha hb).regions.length = 1 := by simp
+@[simp] theorem pts_ofPair : (of_pair ha hb).points = [a, b] := rfl
+@[simp] theorem len_pts_ofPair : (of_pair ha hb).points.length = 2 := by simp
+@[simp] theorem getElem_one_pts_ofPair : (of_pair ha hb).points[1] = b := sorry
+
+theorem eq_ofPair_iff_rgs_eq_singleton : R = of_pair ha hb ↔ R.regions = [U] := sorry
+theorem eq_ofPair_iff_len_rgs_eq_one : R = of_pair ha hb ↔ R.regions.length = 1 := sorry
+theorem eq_ofPair_iff_len_pts_eq_two : R = of_pair ha hb ↔ R.points.length = 2 := sorry
+
+theorem not_isTrivial_ofPair {ha : a ∈ U.1} {hb : b ∈ U.1} : ¬(of_pair ha hb).isTrivial := sorry
+
+
+end of_pair
+
+
+
+
+
+section drop
+
+variable {n : ℕ} (hn : n < R.points.length)
+
+
+def drop : Rollercoaster 𝒰 (R.points[n]) b where
+  points := R.points.drop n
+  regions := R.regions.drop n
+  len_rgs_add_one_eq_len_pts := by
+    simp only [List.length_drop, R.len_rgs_add_one_eq_len_pts.symm]
+    apply Nat.sub_add_comm (Nat.le_of_lt_succ <| by simp [R.len_rgs_add_one_eq_len_pts, hn]) |>.symm
+  mem_rgs t := by
+    simp only [Fin.getElem_fin, List.getElem_drop]
+    exact R.mem_rgs ⟨n + t, Nat.add_lt_of_lt_sub' <| List.length_drop ▸ t.2⟩
+  succ_mem_rgs t := by
+    simp only [Fin.getElem_fin, List.getElem_drop]
+    exact R.succ_mem_rgs ⟨n + t, Nat.add_lt_of_lt_sub' <| List.length_drop ▸ t.2⟩
+  head_pts_eq := by simp
+  getLast_pts_eq := by simp [R.getLast_pts_eq]
+
+
+theorem drop_zero : R.drop (n := 0) R.len_pts_pos ≍ R := sorry
+theorem isTrivial_drop_len_pts_sub_one :
+  R.drop (n := R.points.length - 1) (Nat.sub_one_lt R.len_pts_ne_zero) |>.isTrivial := sorry
+
+
+
+
+end drop
+
+
+
+
+
+-- need both of these for induction
+#check List.drop
+#check List.take
+
+
+--theorem len_regions_eq_len_tail_points : R.regions.length = R.points.tail.length :=
+  --R.length_regions_eq.trans R.points.length_tail.symm
+
+
+--theorem tail_points_ne_nil_of_len_regions_pos (h : 0 < R.regions.length) : R.points.tail ≠ [] :=
+  --R.points.tail.ne_nil_of_length_pos <| R.len_regions_eq_len_tail_points ▸ h
+
+
+/-
+def tail (h_nontrivial : 0 < R.regions.length) :
+  Rollercoaster 𝒰 (R.points.tail.head <| tail_points_ne_nil_of_len_regions_pos h_nontrivial) b :=
+
+  let fin_tail_regl_to_succ (n : Fin R.regions.tail.length) : Fin R.regions.length :=
+    ⟨n + 1, R.regions.length_tail_add_one h_nontrivial ▸ Nat.succ_lt_succ n.isLt⟩
+  {
+    points := R.points.tail
+    regions := R.regions.tail
+    h_length := R.regions.length_tail_add_one h_nontrivial |>.trans R.len_regions_eq_len_tail_points
+    head_eq := rfl
+    last_eq := List.getLast_tail _ |>.trans R.last_eq
+    mem_region n := by
+      simp only [Fin.getElem_fin, List.getElem_tail]
+      exact R.mem_region <| fin_tail_regl_to_succ n
+    next_mem_region n := by
+      simp only [Fin.getElem_fin, List.getElem_tail]
+      exact R.next_mem_region <| fin_tail_regl_to_succ n
+  }
+-/
+
+/-
+def dropLast (h_nontrivial : 0 < R.regions.length) :
+  Rollercoaster 𝒰 a <| R.points.getLast R.points_ne_nil where
+    points := R.points.dropLast
+    regions := R.regions.dropLast
+    h_length := by sorry
+    head_eq := by
+      apply List.head_dropLast (by
+        apply List.ne_nil_iff_length_pos.mpr
+
+        rw [List.length_dropLast]
+
+        sorry) |>.trans R.head_eq
+    last_eq := by sorry
+    mem_region := by sorry
+    next_mem_region := by sorry
+-/
+
+
+/-
+section extract
+
+def extract {start stop : Fin R.points.length} (hlt : start < stop) :
+  Rollercoaster 𝒰 R.points[start] R.points[stop] where
+    points := R.points.extract start stop
+    regions := R.regions.extract start stop
+    h_length := by sorry
+    head_eq :=
+      have h_drop_start_ne_nil : R.points.drop start ≠ [] :=
+        (not_le_of_gt start.isLt <| List.drop_eq_nil_iff.mp ·)
+      by exact (List.head_take
+        (fun h ↦ not_or_intro (not_le_of_gt hlt <| Nat.le_of_sub_eq_zero ·)
+          h_drop_start_ne_nil (List.take_eq_nil_iff.mp h)
+        )).trans <| (List.head_drop h_drop_start_ne_nil).trans rfl
+    last_eq := by sorry
+    mem_region := by sorry
+    next_mem_region := by sorry
+
+end extract
+-/
+
+
+
+
+
+def heq_rec {motive : {a b : α} → Rollercoaster 𝒰 a b → Sort*}
+  {a b a' b' : α} (ha : a = a') (hb : b = b')
+  {R : Rollercoaster 𝒰 a b} {R' : Rollercoaster 𝒰 a' b'} (h : R ≍ R') : motive R → motive R' :=
+    fun hR ↦ by cases ha; cases hb; cases h; exact hR
+
+
+theorem induction_drop {P : {a b : α} → Rollercoaster 𝒰 a b → Prop}
+  (h_trivial : P (trivial 𝒰 b))
+  (h_ind : ∀ (n : ℕ) (hn : n < R.points.length - 1),
+    P (R.drop (n := n + 1) <| Nat.add_lt_of_lt_sub hn) →
+    P (R.drop (n := n) <| hn.trans <| Nat.pred_lt_self R.len_pts_pos)) : P R :=
+  heq_rec R.getElem_zero rfl R.drop_zero <| Nat.decreasingInduction
+    (n := R.points.length - 1)
+    (motive := fun n hn ↦ P <| R.drop (n := n) <| Nat.lt_of_le_pred R.len_pts_pos hn) h_ind
+    (heq_rec R.getElem_len_pts_sub_one.symm rfl (isTrivial_drop_len_pts_sub_one (R := R) |>.trans <|
+      trivial_heq_of_eq (𝒰 := 𝒰) R.getElem_len_pts_sub_one).symm h_trivial)
+    (Nat.zero_le _)
 
 
 
@@ -176,22 +425,22 @@ variable (h : ∀ A : 𝒰, ∃ A' ∈ 𝒰', m '' A ⊆ A')
 open Classical in noncomputable def map : Rollercoaster 𝒰' (m a) (m b) where
   points := R.points.map m
   regions := R.regions.map fun A : 𝒰 ↦ ⟨choose (h A), choose_spec (h A) |>.1⟩
-  h_length := by simp only [List.length_map, R.h_length]
-  head_eq := by simp [R.head_eq]
-  last_eq := by simp [R.last_eq]
-  mem_region := fun ⟨n, hn⟩ ↦ by
+  len_rgs_add_one_eq_len_pts := by simp only [List.length_map, R.len_rgs_add_one_eq_len_pts]
+  head_pts_eq := by simp [R.head_pts_eq]
+  getLast_pts_eq := by simp [R.getLast_pts_eq]
+  mem_rgs := fun ⟨n, hn⟩ ↦ by
     simp only [List.length_map] at hn
     simp only [Fin.getElem_fin, List.getElem_map]
     exact (choose_spec <| h <| R.regions[n]).2
-      ⟨R.points[n]' (by simp [← R.h_length, Nat.lt_succ_of_lt hn]), R.mem_region ⟨n, hn⟩, rfl⟩
-  next_mem_region := fun ⟨n, hn⟩ ↦ by
+      ⟨R.points[n]' (hn.trans R.len_rgs_lt_len_pts), R.mem_rgs ⟨n, hn⟩, rfl⟩
+  succ_mem_rgs := fun ⟨n, hn⟩ ↦ by
     simp only [List.length_map] at hn
     simp only [Fin.getElem_fin, List.getElem_map]
     exact (choose_spec <| h <| R.regions[n]).2
-      ⟨R.points[n + 1]' (by simp [← R.h_length, hn]), R.next_mem_region ⟨n, hn⟩, rfl⟩
+      ⟨R.points[n + 1]' (by simp [← R.len_rgs_add_one_eq_len_pts, hn]), R.succ_mem_rgs ⟨n, hn⟩, rfl⟩
 
 
-theorem length_map : (R.map h).points.length = R.points.length :=
+@[simp] theorem length_map : (R.map h).points.length = R.points.length :=
   List.length_map _
 
 
@@ -233,37 +482,16 @@ open Classical in theorem jumpAll_map_apply (x : T (m a)) :
     (fun {U} ⟨p, hp⟩ ⟨q, hq⟩ ↦ let hU := choose_spec (h U)
       @f ⟨choose (h U), hU.1⟩ ⟨m p, hU.2 ⟨p, hp, rfl⟩⟩ ⟨m q, hU.2 ⟨q, hq, rfl⟩⟩) x := by
 
-/-
-  induction h_ind : R.regions.length
-  · unfold jumpAll
-
-    --unfold jumpTo
-
-    apply cast_eq_iff_heq.mpr _
-    symm
-    apply HEq.congr_simp (cast _ x) (cast _ x) (by
-      sorry) _ _ (by
-      have hrw : ⟨R.points.length - 1, Nat.sub_one_lt R.length_points_ne_zero⟩ =
-        (⟨0, R.length_points_pos⟩ : Fin R.points.length) := by
-        simp only [R.h_length.symm.trans <| Nat.succ_inj.mpr h_ind]
-      rw [hrw]
-      unfold jumpTo
-      rw [R.h_length.symm.trans <| Nat.succ_inj.mpr h_ind]
-
-      sorry) |>.mpr
-
-    #check R.h_length.symm.trans <| Nat.succ_inj.mpr h_ind
-
-    simp?
-
-
-
-
+  induction hn : R.regions.length with
+  | zero =>
+    unfold jumpAll
+    rw [jumpTo_eq_of_eq_zero f (by simp only [R.length_map h, R.length_regions_eq.symm, hn]),
+      jumpTo_eq_of_eq_zero _ (by simp only [R.length_regions_eq.symm, hn])]
+    simp only [cast_cast]
+  | succ n h_ind =>
 
 
     sorry
--/
-  sorry
 
 end map
 
@@ -384,10 +612,10 @@ theorem nonempty_of_finite_preorder_from [Finite 𝒰] {preorder : Preorder 𝒰
         ⟨(of_pair hx hyU).append <| Classical.choice <| h_ind V hVU y hyV⟩))
 
 
-theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
+noncomputable def bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
   [DenselyOrdered α] [OrderTopology α] [CompactSpace α]
   (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U) :
-    Nonempty (Rollercoaster 𝒰 ⊥ ⊤) := by
+    Rollercoaster 𝒰 ⊥ ⊤ := by
 
   let supOrder : Preorder (Set α) := {
     le A B := ∀ b ∈ B, ∃ a ∈ A, b ≤ a
@@ -403,7 +631,7 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
         fun hA ↦ let ⟨b', hb', hle⟩ := hA a ha; not_lt_of_ge hle <| hB b' hb'⟩,
       fun ⟨_, h⟩ ↦ by simp at h; exact h⟩}
 
-  obtain ⟨t, t_cover⟩ := ‹CompactSpace α›.isCompact_univ.elim_finite_subcover
+  choose t t_cover using ‹CompactSpace α›.isCompact_univ.elim_finite_subcover
     (@Subtype.val _ {U | U ∈ 𝒰 ∧ Nonempty U}) (fun ⟨U, hU, _⟩ ↦ h_open ⟨U, hU⟩)
       (fun x _ ↦ let ⟨U, hU, hx⟩ := h_cover x; ⟨U, ⟨⟨U, hU, ⟨x, hx⟩⟩, rfl⟩, hx⟩)
   let t_set : Set (Set α) := Subtype.val '' SetLike.coe t
@@ -425,7 +653,7 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
     fun ⟨_, U, hU, rfl⟩ h_minimal ↦
       let ⟨⟨V, hV, hV_nonempty⟩, _, ⟨hVt, rfl⟩, hsup⟩ :=
         Set.mem_iUnion.mp <| t_cover <| Set.mem_univ <| sSup U
-      have h_le_of_mem : ∀ x ∈ U.1, x < sSup U :=
+      have h_lt_of_mem : ∀ x ∈ U.1, x < sSup U :=
         fun _ hmem ↦ lt_iff_le_and_ne.mpr ⟨le_sSup hmem,
           fun heq ↦ not_congr (top_mem_iff_minimal_t <| _) |>.mp h_minimal
             ((top_le_iff.mp <| @le_of_not_gt _ _ ⊤ (sSup U.1)
@@ -436,50 +664,60 @@ theorem nonempty_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
                 lt_iff_not_ge.mp hygt <| le_sSup <| hico <| Set.mem_Ico.mpr ⟨hygt.le, hylt⟩))
               ▸ heq ▸ hmem)⟩
       let ⟨_, hl, hlioc⟩ := exists_Ioc_subset_of_mem_nhds (IsOpen.mem_nhds (h_open ⟨V, hV⟩) hsup)
-        ⟨_, h_le_of_mem _ (Classical.choice U.2.2).2⟩
+        ⟨_, h_lt_of_mem _ (Classical.choice U.2.2).2⟩
       let ⟨x, hx, hxl⟩ := lt_sSup_iff.mp hl
       ⟨x, hx, ⟨V, ⟨V, hV, hV_nonempty⟩, hVt, rfl⟩,
-        hlioc <| Set.mem_Ioc.mpr ⟨hxl, le_sSup hx⟩, sSup U, hsup, h_le_of_mem⟩
+        hlioc <| Set.mem_Ioc.mpr ⟨hxl, le_sSup hx⟩, sSup U, hsup, h_lt_of_mem⟩
 
-  obtain ⟨_, ⟨U, rfl⟩, _, ⟨hU, rfl⟩, h_bot⟩ := t_cover <| Set.mem_univ ⊥
+  choose _ x0 x1 using t_cover <| Set.mem_univ ⊥
+  choose U x00 using x0
+  cases x00
+  choose _ x10 h_bot using x1
+  choose hU x11 using x10
+  cases x11
+
   obtain R' := Classical.choice <|
     @nonempty_of_finite_preorder_from α t_set _ (supOrder.lift Subtype.val)
       ⊤ (top_mem_iff_minimal_t · |>.mp) exists_lt_of_not_minimal_t ⟨U, U, hU, rfl⟩ ⊥ h_bot
-  exact ⟨R'.map (m := id) (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩)⟩
+  exact R'.map (m := id) (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩)
 
 
 
 
 open unitInterval
 
-
-def follows (f : I → α) : Prop := ∃ i : Fin R.points.length → I,
-  f ∘ i = R.points.get ∧
-  StrictMono i ∧
-  i ⟨0, R.length_points_pos⟩ = 0 ∧
-  i ⟨R.points.length - 1, Nat.pred_lt R.length_points_ne_zero⟩ = 1 ∧
-  ∀ (x : I) (n : Fin R.regions.length),
-    i ⟨n, n.2.trans R.length_regions_lt_points⟩ ≤ x ∧
-    x ≤ i ⟨n.succ, R.h_length ▸ Nat.succ_lt_succ n.2⟩ →
-      f x ∈ R.regions[n].1
-
-
 variable [TopologicalSpace α]
 
 
+
+def follows (f : C(I, α)) : Prop := ∃ i : Fin R.points.length → I,
+  f ∘ i = R.points.get ∧
+  StrictMono i ∧
+  i ⟨0, R.len_pts_pos⟩ = 0 ∧
+  i ⟨R.points.length - 1, Nat.pred_lt R.len_pts_ne_zero⟩ = 1 ∧
+  ∀ (x : I) (n : Fin R.regions.length),
+    i ⟨n, n.2.trans R.len_rgs_lt_len_pts⟩ ≤ x ∧
+    x ≤ i ⟨n.succ, R.len_rgs_add_one_eq_len_pts ▸ Nat.succ_lt_succ n.2⟩ →
+      f x ∈ R.regions[n].1
+
+
+
+
 theorem nonempty_of_path (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
-  {path : I → α} (h_continuous : Continuous path) :
-    Nonempty (Rollercoaster 𝒰 (path 0) (path 1)) :=
+  (path : C(I, α)) : Nonempty (Rollercoaster 𝒰 (path 0) (path 1)) :=
   ⟨@map I {path ⁻¹' U | U : 𝒰} 0 1
-    (Classical.choice <| nonempty_bot_to_top
-      (fun ⟨_, _, rfl⟩ ↦ h_continuous.isOpen_preimage _ <| h_open _)
+    (bot_to_top (fun ⟨_, _, rfl⟩ ↦ path.continuous.isOpen_preimage _ <| h_open _)
       (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| path x; ⟨path ⁻¹' U, ⟨⟨U, hU⟩, rfl⟩, hx⟩))
     _ _ _ fun ⟨_, ⟨U, h⟩, rfl⟩ ↦ ⟨U, h, Set.image_subset_iff.mpr subset_rfl⟩⟩
 
 
-theorem exists_follows (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
-  {path : I → α} (h_continuous : Continuous path) :
-    ∃ R : Rollercoaster 𝒰 (path 0) (path 1), R.follows path := sorry
+
+theorem exists_path_follows (h_pathconnected : ∀ U ∈ 𝒰, IsPathConnected U) :
+    ∃ x : Path a b, R.follows x := by
+
+
+  sorry
+
 
 
 
@@ -510,9 +748,10 @@ variable (f_inter : ∀ {U V : 𝒰} {p q : α} (hpU : p ∈ U.1) (hpV : p ∈ V
 
 
 theorem rel_of_homotopy {φ : I → I → α} (h_continuous : Continuous φ)
-  (h_follows : R.follows (φ 0)) {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows (φ 1))
-  (ha : ∀ x, φ x 0 = a) (hb : ∀ x, φ x 1 = b) :
-    R.rel f R' := sorry
+  {R : Rollercoaster 𝒰 a b} (h_follows : R.follows (φ 0))
+  {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows (φ 1))
+  (h_endpoints : ∀ x, φ x 0 = a ∧ φ x 1 = b) :
+    rel f R R' := sorry
 
 
 
