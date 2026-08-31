@@ -331,6 +331,8 @@ theorem simultaneous_transport
     -- maybe build this equiv in the transport section
     toFun f := ⟨P.1 f.1, transport_relevant P f⟩
     invFun f := ⟨P⁻¹.1 f.1, by
+      simp
+
       #check f.2
       #check pretransport P p
       #check transport_relevant P⁻¹ (p := transport P p) ⟨f.1, sorry⟩

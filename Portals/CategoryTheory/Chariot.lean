@@ -77,8 +77,7 @@ theorem allSymmetric_transfer (hC : C.allSymmetric) [h_nonempty : Nonempty (Side
   {hub : X} {U : Opens X} {R : ComponentRealizer U (𝒮 F S) hub}
   (hR : (𝒢 γ Γ).respects_realizer R) (hp : p ∈ U) {q : X} (hq : q ∈ U) :
     (C.transfer hR hp hq).allSymmetric :=
-  fun _ ↦ (𝒢 γ Γ).closure_range.mul_mem (by
-    exact (by assumption : C.allSymmetric) _) (Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩)
+  fun _ ↦ (𝒢 γ Γ).closure_range.mul_mem (hC _) (Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩)
 
 
 variable [TransportSymmetry (𝒢 γ Γ).closure_range] (hC : C.allSymmetric)
@@ -107,12 +106,18 @@ theorem toMatSpace_apply_eq (a b : SidesAt (𝒮 F S) p) :
 
     rw [Sides.transport'_mul _ _ _ _ |>.symm]
     simp only [MulMemClass.mk_mul_mk]
-    congr -- i dont like using congr
-    apply C.chariotCondition a b |>.symm.trans _ |>.symm
-    apply congr_arg (C a * ·)
+    congr
+    apply C.chariotCondition a b |>.symm.trans (congr_arg (C a * ·) _) |>.symm
+    have sim := simultaneous_transport γ Γ ⟨C a, hC a⟩ a.restrict b.restrict
+    simp [SidesAt.transport, SidesAt.lift, SidesAt.restrict, Sides.lift_restrict] at sim
+    have meep : pretransport ⟨C a, hC a⟩ ⟨p, h⟩ =
+      (Sides.transport ⟨C a, hC a⟩ (a.1.restrict <| a.2.symm ▸ h)).lift.center := by
+        simp only [Sides.lift_comm, Sides.center_transport_comm,
+          Sides.restrict_comm a.1 _, transport, a.2]
+    exact sim.symm.trans <| (𝒢 γ Γ).congr_map meep
+      (Subtype.heq_iff_coe_eq (fun _ ↦ ⟨(·.trans meep), (·.trans meep.symm)⟩) |>.mpr rfl)
+      (Subtype.heq_iff_coe_eq (fun _ ↦ ⟨(·.trans meep), (·.trans meep.symm)⟩) |>.mpr rfl)
 
-    -- use simultaneous_transport
-    sorry
   · intro h
     unfold toMatSpace_apply
     rw [dif_neg h, dif_neg h]

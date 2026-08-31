@@ -113,7 +113,7 @@ noncomputable def relevant_recommendation_map {p : X} (f : relevant_portal_maps 
 
 def irrelevants_locally_trivial : Prop :=
   ∀ (p : X), ∃ (U : Opens X) (_ : p ∈ U), ∀ {f : F}, p ∉ f.1.range →
-    (recommendation_gluing_pattern γ f).is_trivial_on (Subtype.val ⁻¹' U)
+    (recommendation_gluing_pattern γ f).isTrivial_on (Subtype.val ⁻¹' U)
 
 
 
