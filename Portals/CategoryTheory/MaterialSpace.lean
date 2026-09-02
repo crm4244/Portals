@@ -128,7 +128,7 @@ theorem transport_mul_apply (x : 𝒰 F) :
 
 
 
-theorem transport_mul :transport (P * Q) = transport P ∘ transport Q :=
+theorem transport_mul : transport (P * Q) = transport P ∘ transport Q :=
   funext <| transport_mul_apply P Q
 
 
@@ -208,12 +208,11 @@ noncomputable def transport : Sides (𝒮' F S) → Sides (𝒮' F S) :=
 
 
 
-theorem center_transport_comm (σ : Sides (𝒮' F S)) :
-  (σ.transport P).center =
-    Portal.transport P σ.center := map_comm _ _
+@[simp] theorem center_transport_comm (σ : Sides (𝒮' F S)) :
+  (σ.transport P).center = Portal.transport P σ.center := map_comm _ _
 
 
-theorem center_transport_mem (σ : Sides (𝒮' F S)) :
+@[simp] theorem center_transport_mem (σ : Sides (𝒮' F S)) :
   (σ.transport P).center.1 ∈ 𝒰 F :=
     σ.center_transport_comm P ▸ pretransport_mem P σ.center
 
@@ -231,11 +230,12 @@ noncomputable def transport' : Sides (𝒮 F S) :=
   σ.restrict.transport P |>.lift
 
 
-theorem center_transport'_comm : (σ.transport' P).center = ((σ.restrict hσ).transport P).center :=
-  σ.restrict.transport P |>.lift_comm
+@[simp] theorem center_transport'_comm :
+  (σ.transport' P).center = (σ.restrict.transport P).center :=
+    σ.restrict.transport P |>.lift_comm
 
 
-theorem center_transport'_mem : (σ.transport' P).center ∈ 𝒰 F :=
+@[simp] theorem center_transport'_mem : (σ.transport' P).center ∈ 𝒰 F :=
   σ.center_transport'_comm P ▸ σ.restrict.center_transport_mem P
 
 
@@ -255,7 +255,7 @@ noncomputable def SidesAt.transport {p : 𝒰 F} :
 
 noncomputable def SidesAt.transport' {p : 𝒰 F} (σ : SidesAt (𝒮 F S) p) :
   SidesAt (𝒮 F S) (Portal.transport P p) :=
-    SidesAt.transport P (σ.restrict p.2) |>.lift
+    ⟨Sides.transport' P σ.1 <| σ.2.symm ▸ p.2, sorry⟩
 
 
 
@@ -320,8 +320,8 @@ variable [TransportSymmetry (𝒢 γ Γ).closure_range]
 
 
 theorem simultaneous_transport
-  (P : (𝒢 γ Γ).closure_range) {p : 𝒰 F} (a b : SidesAt (𝒮' F S) p) :
-    𝒢 γ Γ (SidesAt.transport P a).lift (SidesAt.transport P b).lift = 𝒢 γ Γ a.lift b.lift := by
+  (P : (𝒢 γ Γ).closure_range) {p : 𝒰 F} (a b : SidesAt (𝒮 F S) p) :
+    𝒢 γ Γ (SidesAt.transport' P a) (SidesAt.transport' P b) = 𝒢 γ Γ a b := by
 
   apply congr_arg Γ <| Quotient.eq.mpr _
   symm
@@ -346,7 +346,7 @@ theorem simultaneous_transport
   apply funext
   intro f
   unfold recommendation_map GluingPattern.map recommendation_gluing_pattern GluingPattern.map
-  unfold SidesAt.transport SidesAt.restrict rusto_at_of_at
+  --unfold SidesAt.transport SidesAt.restrict rusto_at_of_at
   simp
 
   sorry
@@ -365,42 +365,70 @@ def matspace_rel (a b : Sides (𝒮 F S)) : Prop :=
 instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ where
   refl a := Or.inl rfl
 
-  symm {a b} hab := by
+  symm {a _} hab := by
     apply Or.elim hab (Or.inl ·.symm)
     intro ⟨ha, a', ha', hb⟩
+    cases hb
     apply Or.inr
-    use hb.symm ▸ Sides.center_mem_of_restricted _
-    use a.transport' (getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩) ha
+    use Sides.center_mem_of_restricted _
+    let P := getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩
+    use a.transport' P ha
     use (by
-      simp only [hb.symm, Sides.center_transport'_comm,
+      simp only [Sides.center_transport'_comm,
         Sides.center_transport_comm, Sides.restrict_comm]
       exact congr_arg (Subtype.val ∘ transport _) (Subtype.mk_eq_mk.mpr ha'.symm))
 
     apply Sides.transport'_mul _ _ _ _ |>.symm.trans
-    simp only [MulMemClass.mk_mul_mk]
+    simp only [P, MulMemClass.mk_mul_mk]
+    simp only [simultaneous_transport γ Γ P (p := ⟨a.center, ha⟩) ⟨a, rfl⟩ ⟨a', ha'⟩ |>.symm, P,
+      SidesAt.transport']
+    --simp [(𝒢 γ Γ).congr_map _ _]
+
+
+
+
+
+
 
     sorry
 
-  trans {a b c} hab hbc := by
+  trans {a _ _} hab hbc := by
     apply Or.elim hab (· ▸ hbc)
-    intro ⟨ha, a', ha', hab'⟩
+    intro ⟨ha, a', ha', h⟩
+    cases h
     apply Or.elim hbc (· ▸ hab)
-    intro ⟨hb, b', hb', hbc'⟩
+    intro ⟨hb, b', hb', h⟩
+    cases h
     apply Or.inr
     use ha
-    use b'.transport' (getSymmetricGluingPerm γ Γ ⟨a', ha'⟩ ⟨a, rfl⟩) (hb' ▸ hb)
-    use (by
+    let a'' := b'.transport' (getSymmetricGluingPerm γ Γ ⟨a', ha'⟩ ⟨a, rfl⟩) (hb' ▸ hb)
+    use a''
+    have ha'' : a''.center = a.center := by
 
-      apply Sides.center_transport'_comm _ _ _ |>.trans
+      --simp [Sides.center_transport_comm _, Sides.restrict_comm _ _]
+
+      --apply Sides.center_transport'_comm _ _ _ |>.trans
 
 
-      sorry)
+      sorry
+    use ha''
     apply Sides.transport'_mul _ _ _ _ |>.symm.trans
-    simp only [MulMemClass.mk_mul_mk]
-    --rw [(𝒢 γ Γ).trans _ _ _]
+    congr
 
 
-    sorry
+
+    have sim := simultaneous_transport γ Γ (getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩)
+      (p := ⟨_, ha⟩) ⟨a', ha'⟩ ⟨a'', ha''⟩
+    simp only [MulMemClass.mk_mul_mk, (𝒢 γ Γ).trans, a'', sim.symm, SidesAt.transport']
+    apply Subtype.eq
+    apply (𝒢 γ Γ).congr_map _ _ _
+    · simp [Sides.center_transport'_comm, Sides.center_transport_comm _, Sides.restrict_comm _ _]
+      exact congr_arg _ <| Subtype.eq ha'.symm
+    · exact rfl
+    · simp [Sides.transport']
+      -- need Sides.transport_mul or Sides.transport'_mul
+      -- need Sides.transport_one
+      sorry
 
 
 

@@ -39,7 +39,7 @@ def isTrivial_on (A : Set X) := ∀ {p : A}, γ.isTrivial_at p
 def isTrivial : Prop := γ.isTrivial_on ⊤
 
 
-theorem refl_id
+@[simp] theorem refl_id
   {p : X} (a : SidesAt S p) :
     γ a a = 1 := by
   have h := γ.trans a a a
@@ -47,20 +47,23 @@ theorem refl_id
   exact mul_left_cancel h
 
 
-theorem symm_inv_right
+@[simp] theorem symm_inv_right
     {p : X} (a b : SidesAt S p) : γ a b * γ b a = 1 :=
   (γ.trans a b a).trans (refl_id γ a)
 
 
-theorem symm_inv_left
+@[simp] theorem symm_inv_left
         {p : X} (a b : SidesAt S p) : γ b a * γ a b = 1 :=
   (γ.trans b a b).trans (refl_id γ b)
 
 
 theorem congr_map {p p' : X} (h : p = p')
-  {a b : SidesAt S p} {a' b' : SidesAt S p'} (ha : a ≍ a') (hb : b ≍ b') :
+  {a b : SidesAt S p} {a' b' : SidesAt S p'} (ha : a.1 = a'.1) (hb : b.1 = b'.1) :
     γ a b = γ a' b' := by
-  cases h; cases ha; cases hb; rfl
+  cases h
+  cases Subtype.heq_iff_coe_eq (fun _ ↦ Iff.rfl) |>.mpr ha
+  cases Subtype.heq_iff_coe_eq (fun _ ↦ Iff.rfl) |>.mpr hb
+  rfl
 
 
 open TopologicalSpace

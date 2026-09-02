@@ -108,13 +108,15 @@ theorem toMatSpace_apply_eq (a b : SidesAt (𝒮 F S) p) :
     simp only [MulMemClass.mk_mul_mk]
     congr
     apply C.chariotCondition a b |>.symm.trans (congr_arg (C a * ·) _) |>.symm
-    have sim := simultaneous_transport γ Γ ⟨C a, hC a⟩ a.restrict b.restrict
-    simp [SidesAt.transport, SidesAt.lift, SidesAt.restrict, Sides.lift_restrict] at sim
+
     have meep : pretransport ⟨C a, hC a⟩ ⟨p, h⟩ =
       (Sides.transport ⟨C a, hC a⟩ (a.1.restrict <| a.2.symm ▸ h)).lift.center := by
         simp only [Sides.lift_comm, Sides.center_transport_comm,
           Sides.restrict_comm a.1 _, transport, a.2]
-    exact sim.symm.trans <| (𝒢 γ Γ).congr_map meep
+
+    exact simultaneous_transport _ _ _ (p := ⟨p, h⟩) _ _ |>.symm.trans <| (𝒢 γ Γ).congr_map (by
+        simp [Sides.center_transport_comm _ _, Sides.restrict_comm _ _]
+        exact congr_arg _ <| Subtype.eq a.2.symm)
       (Subtype.heq_iff_coe_eq (fun _ ↦ ⟨(·.trans meep), (·.trans meep.symm)⟩) |>.mpr rfl)
       (Subtype.heq_iff_coe_eq (fun _ ↦ ⟨(·.trans meep), (·.trans meep.symm)⟩) |>.mpr rfl)
 

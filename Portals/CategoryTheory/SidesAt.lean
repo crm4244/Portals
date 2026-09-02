@@ -46,12 +46,12 @@ noncomputable def restrict {U : Opens X} (hp : p ∈ U := by assumption) :
       (congr_arg Subtype.val <| σ.1.restrict_comm <| σ.center_mem_of_mem hp).trans σ.2⟩
 
 
-theorem lift_restrict {U : Opens X} (hp : p ∈ U) :
+@[simp] theorem lift_restrict {U : Opens X} (hp : p ∈ U) :
   σ.restrict.lift = σ :=
     Subtype.eq <| σ.1.lift_restrict (σ.2.symm ▸ hp)
 
 
-theorem restrict_lift {U : Opens X} {hp : p ∈ U}
+@[simp] theorem restrict_lift {U : Opens X} {hp : p ∈ U}
   (σ : SidesAt (Sides.restrict_surface S U) ⟨p, hp⟩) :
     σ.lift.restrict hp = σ :=
   Subtype.eq σ.1.restrict_lift

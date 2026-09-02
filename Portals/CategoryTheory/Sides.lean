@@ -218,7 +218,7 @@ variable {Y : Type*} [TopologicalSpace Y] {f : Y → X}
 
 def map (hf : IsEmbedding f) : Sides (f ⁻¹' S) → Sides (S) := sorry
 
-theorem map_comm (hf : IsEmbedding f) (σ : Sides (f ⁻¹' S)) :
+@[simp] theorem map_comm (hf : IsEmbedding f) (σ : Sides (f ⁻¹' S)) :
   (σ.map hf).center = f σ.center := sorry
 
 theorem isOpenEmbedding_map (hf : IsOpenEmbedding f) :
@@ -259,7 +259,7 @@ variable {U : Set X}
 def lift : Sides (restrict_surface S U) → Sides (S) :=
   map IsEmbedding.subtypeVal
 
-theorem lift_comm (σ : Sides (restrict_surface S U)) : σ.lift.center = σ.center.1 :=
+@[simp] theorem lift_comm (σ : Sides (restrict_surface S U)) : σ.lift.center = σ.center.1 :=
   σ.map_comm IsEmbedding.subtypeVal
 
 theorem isOpenEmbedding_lift : IsOpen U → IsOpenEmbedding (lift (S := S) (U := U))
@@ -297,16 +297,16 @@ theorem restrict_injective {U : Opens X} : Function.Injective
     fun _ _ h ↦ Homeomorph.injective _ h
 
 
-theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
+@[simp] theorem lift_restrict {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
     σ.restrict.lift = σ := by
   sorry
 
-theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
+@[simp] theorem restrict_lift {U : Opens X} (σ : Sides (restrict_surface S U)) :
   σ.lift.restrict σ.center_mem_of_restricted = σ :=
     isOpenEmbedding_lift U.2 |>.injective (σ.lift.lift_restrict σ.center_mem_of_restricted)
 
 
-theorem restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
+@[simp] theorem restrict_comm {U : Opens X} (σ : Sides S) (hσ : σ.center ∈ U := by assumption) :
   σ.restrict.center = ⟨σ.center, hσ⟩ :=
     Subtype.val_injective (σ.lift_restrict ▸ σ.restrict.lift_comm |>.symm)
 
