@@ -1,4 +1,4 @@
-import Portals.CategoryTheory.EtaleSpace
+--import Portals.CategoryTheory.EtaleSpace
 --import Portals.Legacy.Basic
 
 import Mathlib.CategoryTheory.Opposites
@@ -50,7 +50,7 @@ import Mathlib.Topology.Category.TopCat.Limits.Pullbacks
 
 
 
-open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits Sheaf
+open Topology TopologicalSpace CategoryTheory Opposite TopCat Limits
 
 universe u
 variable {X : Type u} [TopologicalSpace X]

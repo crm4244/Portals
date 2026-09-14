@@ -1,4 +1,4 @@
-import Portals.CategoryTheory.MaterialSpace
+import PortalTheory.MaterialSpace
 import Mathlib.Topology.UnitInterval
 
 
@@ -135,7 +135,7 @@ noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (E
 
 
 noncomputable abbrev symmetricPermsₜ : Subgroup (Equiv.Perm F) :=
-    (𝒢 γ Γ).closure_range.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
+  (𝒢 γ Γ).closure_range.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
 
 
 
@@ -264,25 +264,25 @@ open Topology TopologicalSpace
 
 def 𝒪 (p : X) : Set (Opens (X × I)) :=
   {U | ∃ (t : I) (R : ComponentRealizer U (𝒮 (ℱ F) S) (p, t)),
-    (combinedGluingPattern 𝒢_trans).respects_realizer R}
+    (combinedGluingPattern γ Γ).respects_realizer R}
 
 abbrev fiber (p : X) := {(x, _) : X × I | x = p}
 
-theorem 𝒪_covers_fiber (p : X) : fiber p ⊆ ⋃ (U : 𝒪 𝒢_trans p), U := by
+theorem 𝒪_covers_fiber (p : X) : fiber p ⊆ ⋃ (U : 𝒪 γ Γ p), U := by
   -- follows from local consistency
   sorry
 
 theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
-  ∃ t : Finset (𝒪 𝒢_trans p), Set.univ ⊆ ⋃ i ∈ t, Prod.mk p ⁻¹' i.1.1 :=
+  ∃ t : Finset (𝒪 γ Γ p), Set.univ ⊆ ⋃ i ∈ t, Prod.mk p ⁻¹' i.1.1 :=
   (compactSpace_Icc 0 1 : CompactSpace I).isCompact_univ.elim_finite_subcover
-    (fun U : 𝒪 𝒢_trans p ↦ Prod.mk p ⁻¹' U)
+    (fun U : 𝒪 γ Γ p ↦ Prod.mk p ⁻¹' U)
     (fun ⟨⟨_, U⟩, _⟩ ↦ Continuous.prodMk_right (Y := I) p |>.isOpen_preimage _ U)
-    (fun _ _ ↦ let ⟨_, ⟨U, rfl⟩, h⟩ := 𝒪_covers_fiber 𝒢_trans p rfl; ⟨_, ⟨U, rfl⟩, h⟩)
+    (fun _ _ ↦ let ⟨_, ⟨U, rfl⟩, h⟩ := 𝒪_covers_fiber γ Γ p rfl; ⟨_, ⟨U, rfl⟩, h⟩)
 
 #check Quotient
 
-def 𝒯 (hγ : (combinedGluingPattern 𝒢_trans).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
-  (t : I) (α : Sides.at_point (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
+def 𝒯 (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
+  (t : I) (α : SidesAt (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
 
 
     -- for each finite subcover, show inductively that the product is well defined
@@ -292,17 +292,17 @@ def 𝒯 (hγ : (combinedGluingPattern 𝒢_trans).isLocallyConsistent) (a : Sid
 
 structure rollercoaster (p : X) where
   list_of_ts : List I
-  list_of_Us : List (𝒪 𝒢_trans p)
+  list_of_Us : List (𝒪 γ Γ p)
   h_length : list_of_ts.length = list_of_Us.length + 1
   t_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n]) ∈ list_of_Us[n].1
   t_next_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n.succ]) ∈ list_of_Us[n].1
 
 
 
-def surface_independence (hγ : (combinedGluingPattern 𝒢_trans).isLocallyConsistent)
+def surface_independence (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent)
   (h0 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 0) IsEmbedding.subtypeVal))
   (h1 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 1) IsEmbedding.subtypeVal)) :
-    MatSpaceₜ 𝒢_trans transport_symmetry 0 ≃ₜ MatSpaceₜ 𝒢_trans transport_symmetry 1 := by
+    MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 := by
 
   sorry
 

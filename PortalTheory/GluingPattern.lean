@@ -1,5 +1,5 @@
 
-import Portals.CategoryTheory.Realizers
+import PortalTheory.ComponentRealizer
 import Mathlib.Algebra.Group.Subgroup.Lattice
 
 

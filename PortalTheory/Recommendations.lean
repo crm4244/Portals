@@ -1,9 +1,6 @@
 import Mathlib.Algebra.Group.End
-import Mathlib.Algebra.Group.Subgroup.Lattice
-import Mathlib.Topology.Algebra.Group.Defs
-import Mathlib.Topology.Algebra.InfiniteSum.Basic
-import Portals.CategoryTheory.PortalMap
-import Portals.CategoryTheory.GluingPattern
+import PortalTheory.PortalMap
+import PortalTheory.GluingPattern
 
 
 

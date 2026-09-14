@@ -1,4 +1,4 @@
-import Portals.CategoryTheory.Sides
+import PortalTheory.Sides
 
 open Portal TopologicalSpace
 

@@ -1,4 +1,4 @@
-name = "Portals"
+name = "Portal"
 version = "0.1.0"
 keywords = ["math"]
 defaultTargets = ["Portals"]
@@ -15,4 +15,4 @@ name = "mathlib"
 scope = "leanprover-community"
 
 [[lean_lib]]
-name = "Portals"
+name = "PortalTheory"

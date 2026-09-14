@@ -1,5 +1,5 @@
 import Mathlib.Topology.Sets.Opens
-import Portals.CategoryTheory.Sides
+import PortalTheory.Sides
 
 open Topology TopologicalSpace
 
