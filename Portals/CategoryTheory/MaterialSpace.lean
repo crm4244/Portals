@@ -270,7 +270,6 @@ theorem transport_relevant {p : 𝒰 F} (f : relevant_portal_maps F p) :
 
 
 
--- rewrite this to use SidesAt.lift to condense the proofs
 theorem rusto_transport_eq {a : Sides (𝒮 F S)} {f : F} (hf : a.center ∈ f.1.range) :
     restricted_union_side_to_original (a.restrict (U := f.1.opens_range) hf) =
     restricted_union_side_to_original (a.restrict (range_subset_𝒰 f hf)
@@ -322,34 +321,19 @@ variable [TransportSymmetry (𝒢 γ Γ).closure_range]
 theorem simultaneous_transport
   (P : (𝒢 γ Γ).closure_range) {p : 𝒰 F} (a b : SidesAt (𝒮 F S) p) :
     𝒢 γ Γ (SidesAt.transport' P a) (SidesAt.transport' P b) = 𝒢 γ Γ a b := by
-
-  apply congr_arg Γ <| Quotient.eq.mpr _
-  symm
-  unfold GenMulti.instSetoid GenMulti.rel GenMulti.of_function
-  simp only
+  apply congr_arg Γ <| Quotient.eq.mpr _ |>.symm
   use {
-    -- maybe build this equiv in the transport section
     toFun f := ⟨P.1 f.1, transport_relevant P f⟩
     invFun f := ⟨P⁻¹.1 f.1, by
-      simp
-
-      #check f.2
-      #check pretransport P p
-      #check transport_relevant P⁻¹ (p := transport P p) ⟨f.1, sorry⟩
-      sorry⟩
+      have h : p = transport P⁻¹ (transport P p) := by
+        simp [transport_mul_apply _ _ _ |>.symm, transport_one_apply]
+      exact Subtype.coe_eq_iff.mpr ⟨pretransport_mem _ _, h⟩ ▸ transport_relevant P⁻¹ f⟩
     left_inv f := Subtype.eq <| P.1.symm_apply_apply f.1
-    right_inv f := Subtype.eq <| P.1.apply_symm_apply f.1
-  }
-
-  unfold Function.comp
-  simp?
-  apply funext
-  intro f
-  unfold recommendation_map GluingPattern.map recommendation_gluing_pattern GluingPattern.map
-  --unfold SidesAt.transport SidesAt.restrict rusto_at_of_at
-  simp
-
-  sorry
+    right_inv f := Subtype.eq <| P.1.apply_symm_apply f.1 }
+  exact funext fun f ↦ γ.congr_map
+    ((P.1 f.1).1.2.injective <| pretransport_eq_transportOf P f.2 |>.symm.trans <|
+      (P.1 f.1).1.inv_right ⟨pretransport P p, transport_relevant P f⟩ |>.symm)
+    (rusto_transport_eq P <| a.2.symm ▸ f.2) (rusto_transport_eq P <| b.2.symm ▸ f.2)
 
 
 private noncomputable abbrev getSymmetricGluingPerm {p} (a b : SidesAt (𝒮 F S) p) :
