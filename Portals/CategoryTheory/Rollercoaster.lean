@@ -1,6 +1,7 @@
 import Mathlib.Topology.Sets.Opens
 import Mathlib.Topology.UnitInterval
 import Mathlib.Topology.Connected.PathConnected
+import Mathlib.Topology.Homotopy.Path
 
 open Topology TopologicalSpace
 
@@ -214,6 +215,71 @@ theorem isTrivial_drop_len_pts_sub_one :
 end drop
 
 
+section take
+
+variable {n : ℕ} (hn : n < R.points.length - 1)
+
+
+
+
+def take : Rollercoaster 𝒰 a (R.points[n]) :=
+  have h : R.points.take (n + 1) ≠ [] :=
+    (not_or_intro (Nat.not_succ_le_zero n ·.le) R.pts_ne_nil <| List.take_eq_nil_iff.mp ·)
+  {
+    points := R.points.take (n + 1)
+    regions := R.regions.take n
+    len_rgs_add_one_eq_len_pts := by
+      rw [List.length_take_of_le <| R.len_rgs_eq_len_pts_sub_one ▸ hn.le]
+      rw [List.length_take_of_le <| le_of_eq_of_le'
+        (Nat.sub_one_add_one_eq_of_pos R.len_pts_pos) <| Nat.succ_le_succ hn.le]
+    mem_rgs t := by
+      simp only [Fin.getElem_fin, List.getElem_take]
+      exact R.mem_rgs ⟨t.1, lt_of_le_of_lt' (min_le_right _ _) <|
+        lt_of_eq_of_lt' List.length_take t.2⟩
+    succ_mem_rgs t := by
+      simp only [Fin.getElem_fin, List.getElem_take]
+      exact R.succ_mem_rgs ⟨t.1, lt_of_le_of_lt' (min_le_right _ _) <|
+        lt_of_eq_of_lt' List.length_take t.2⟩
+    head_pts_eq := List.head_take h |>.trans R.head_pts_eq
+    getLast_pts_eq := List.getLast_take h |>.trans <| Option.getD_eq_iff.mpr <|
+      Or.inl <| getElem?_eq_some_getElem_iff _ |>.mpr True.intro
+  }
+
+
+/-
+def take : Rollercoaster 𝒰 a (R.points[n - 1]) :=
+  have h_take_nonempty : R.points.take n ≠ [] := List.ne_nil_of_length_pos <|
+    List.length_take ▸ lt_inf_iff.mpr ⟨hpos, R.len_pts_pos⟩
+  {
+    points := R.points.take n
+    regions := R.regions.take (n - 1)
+    len_rgs_add_one_eq_len_pts := by
+      have h : n - 1 ≤ R.regions.length :=
+        le_of_eq_of_le' R.len_rgs_eq_len_pts_sub_one.symm <| Nat.sub_le_sub_right hn.le 1
+      rw [List.length_take_of_le hn.le, List.length_take_of_le h]
+      exact Nat.sub_one_add_one_eq_of_pos hpos
+    mem_rgs t := by
+      simp only [Fin.getElem_fin, List.getElem_take]
+      exact R.mem_rgs ⟨t.1, lt_of_le_of_lt' (min_le_right _ _) <|
+        lt_of_eq_of_lt' List.length_take t.2⟩
+    succ_mem_rgs t := by
+      simp only [Fin.getElem_fin, List.getElem_take]
+      exact R.succ_mem_rgs ⟨t.1, lt_of_le_of_lt' (min_le_right _ _) <|
+        lt_of_eq_of_lt' List.length_take t.2⟩
+    head_pts_eq := List.head_take h_take_nonempty |>.trans R.head_pts_eq
+    getLast_pts_eq := List.getLast_take h_take_nonempty |>.trans <|
+      Option.getD_eq_iff.mpr <| Or.inl <| getElem?_eq_some_getElem_iff _ |>.mpr True.intro
+  }
+-/
+
+
+
+
+
+
+end take
+
+
 
 
 
@@ -316,6 +382,13 @@ theorem induction_drop {P : {a b : α} → Rollercoaster 𝒰 a b → Prop}
 
 
 
+theorem induction_take {P : {a b : α} → Rollercoaster 𝒰 a b → Prop}
+  (h_trivial : P (trivial 𝒰 a))
+  (h_ind : ∀ (n : ℕ) (hn : n < R.points.length - 2),
+    P (R.take (n := n) <| hn.trans sorry) →
+    P (R.take (n := n + 1) sorry)) : P R := sorry
+
+
 section jumps
 
 variable {T : α → Type*}
@@ -332,12 +405,12 @@ lemma f_heq
 
 
 def fin_regions_of_points_pred (n : Fin (R.points.length - 1)) :
-  Fin R.regions.length := ⟨n, R.length_regions_eq.symm ▸ n.2⟩
+  Fin R.regions.length := ⟨n, R.len_rgs_eq_len_pts_sub_one.symm ▸ n.2⟩
 
 
 def jump (n : Fin (R.points.length - 1)) := @f (R.regions[fin_regions_of_points_pred n])
-  ⟨R.points[n], R.mem_region (fin_regions_of_points_pred n)⟩
-  ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.next_mem_region (fin_regions_of_points_pred n)⟩
+  ⟨R.points[n], R.mem_rgs (fin_regions_of_points_pred n)⟩
+  ⟨R.points[n.succ]' (Nat.add_lt_of_lt_sub n.2), R.succ_mem_rgs (fin_regions_of_points_pred n)⟩
 
 
 theorem jump_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'}
@@ -355,7 +428,7 @@ theorem jump_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'}
     (cast_heq_iff_heq _ _ _ |>.mpr HEq.rfl)
 
 
-def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.length_points_pos) → T R.points[n]
+def jumpTo : (n : Fin R.points.length) → T (R.points[0]'R.len_pts_pos) → T R.points[n]
   | ⟨0, _⟩ => id
   | ⟨n + 1, h⟩ => jump f ⟨n, Nat.lt_pred_of_succ_lt h⟩ ∘ jumpTo ⟨n, Nat.lt_succ_self n |>.trans h⟩
 
@@ -366,7 +439,7 @@ theorem jumpTo_eq_of_eq {n n' : Fin R.points.length} (h : n = n') :
 
 theorem jumpTo_eq_of_eq_zero {n : Fin R.points.length} (h : n.1 = 0) :
   jumpTo f n = cast (congr_arg (T R.points[·]) <|
-    Fin.mk_eq_mk (h := R.length_points_pos) |>.mpr h.symm) :=
+    Fin.mk_eq_mk (h := R.len_pts_pos) |>.mpr h.symm) :=
   jumpTo_eq_of_eq f (Fin.eq_mk_iff_val_eq (hk := h ▸ n.2) |>.mpr h) |>.trans <|
     congr_arg _ <| jumpTo.eq_def _ _
 
@@ -385,8 +458,9 @@ theorem jumpTo_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'} {n : ℕ}
   (h_points_eq : ∀ (i : ℕ) (hi : i ≤ n),
     R.points[i]'(lt_of_le_of_lt hi hnR) = R'.points[i]'(lt_of_le_of_lt hi hnR'))
   (h_regions_eq : ∀ (i : ℕ) (hi : i < n),
-    R.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <| R.h_length ▸ hnR) =
-    R'.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <| R'.h_length ▸ hnR'))
+    R.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <| R.len_rgs_add_one_eq_len_pts ▸ hnR) =
+    R'.regions[i]'(lt_of_lt_of_le hi <| Nat.le_of_lt_add_one <|
+      R'.len_rgs_add_one_eq_len_pts ▸ hnR'))
   (x : T R.points[0]) :
     R'.jumpTo f ⟨n, hnR'⟩ (cast (congr_arg T <| h_points_eq 0 <| Nat.zero_le n) x) =
       cast (congr_arg T <| h_points_eq n le_rfl) (R.jumpTo f ⟨n, hnR⟩ x) := by
@@ -405,9 +479,18 @@ theorem jumpTo_cast_apply {a' b' : α} {R' : Rollercoaster 𝒰 a' b'} {n : ℕ}
 
 
 def jumpAll : T a → T b := fun x ↦
-  cast (congr_arg T <| List.getLast_eq_getElem R.points_ne_nil |>.symm.trans R.last_eq) <|
-    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.length_points_ne_zero⟩ <|
-    cast (congr_arg T <| R.head_eq.symm.trans <| List.head_eq_getElem R.points_ne_nil) x
+  cast (congr_arg T <| List.getLast_eq_getElem R.pts_ne_nil |>.symm.trans R.getLast_pts_eq) <|
+    R.jumpTo f ⟨R.points.length - 1, Nat.sub_one_lt R.len_pts_ne_zero⟩ <|
+    cast (congr_arg T <| R.head_pts_eq.symm.trans <| List.head_eq_getElem R.pts_ne_nil) x
+
+
+theorem jumpAll_induction {P : {x : α} → T x → Prop} {x : T a} (h0 : P x)
+  (h_ind : ∀ {U : 𝒰} {p q : U.1} (y : T p.1), P y → P (f p q y)) :
+    P (R.jumpAll f x) := by
+
+
+  sorry
+
 
 
 end jumps
@@ -747,13 +830,13 @@ variable (f_inter : ∀ {U V : 𝒰} {p q : α} (hpU : p ∈ U.1) (hpV : p ∈ V
 
 
 
-theorem rel_of_homotopy {φ : I → I → α} (h_continuous : Continuous φ)
-  {R : Rollercoaster 𝒰 a b} (h_follows : R.follows (φ 0))
-  {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows (φ 1))
-  (h_endpoints : ∀ x, φ x 0 = a ∧ φ x 1 = b) :
+theorem rel_of_homotopy {π π' : Path a b} (φ : Path.Homotopy π π')
+  {R : Rollercoaster 𝒰 a b} (h_follows : R.follows π)
+  {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows π') :
     rel f R R' := sorry
 
 
+#check Path.Homotopy
 
 
 end Rollercoaster
