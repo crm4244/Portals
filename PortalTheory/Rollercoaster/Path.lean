@@ -2,6 +2,18 @@ import PortalTheory.Rollercoaster.Link
 import PortalTheory.Rollercoaster.Operations
 import PortalTheory.Rollercoaster.Induction
 import PortalTheory.Rollercoaster.Jump
+import Mathlib.Topology.Algebra.Module.LocallyConvex
+
+
+
+
+
+open unitInterval
+
+instance : LocPathConnectedSpace I := Convex.locPathConnectedSpace ℝ (convex_Icc 0 1)
+
+
+
 
 
 namespace Rollercoaster
@@ -11,25 +23,50 @@ variable {R : Rollercoaster 𝒰 a b}
 
 
 
-theorem nonempty_of_finite_preorder_from [Finite 𝒰] {preorder : Preorder 𝒰} {endpoint : α}
+theorem exists_strictMono [TopologicalSpace α] [LinearOrder α] [OrderTopology α] [DenselyOrdered α]
+  [Finite 𝒰] {preorder : Preorder 𝒰} {endpoint : α}
   (endPoint_mem_region_of_minimal : ∀ U : 𝒰, @Minimal 𝒰 preorder.toLE Set.univ U → endpoint ∈ U.1)
   (exists_lt_of_not_minimal : ∀ U : 𝒰, ¬@Minimal 𝒰 preorder.toLE Set.univ U →
-    ∃ x ∈ U.1, ∃ V : 𝒰, x ∈ V.1 ∧ preorder.lt V U) :
-      ∀ U : 𝒰, ∀ x ∈ U.1, Nonempty (Rollercoaster 𝒰 x endpoint) :=
-  fun U' ↦ @Finite.to_wellFoundedLT.induction 𝒰 preorder.toLT
-    (fun U ↦ ∀ x ∈ U.1, Nonempty (Rollercoaster 𝒰 x endpoint)) U'
-    (fun U h_ind _ hx ↦ by_cases
-      (fun h_minimal : @Minimal 𝒰 preorder.toLE Set.univ U ↦
-        ⟨link hx <| endPoint_mem_region_of_minimal U h_minimal⟩)
-      (fun h_minimal : ¬@Minimal 𝒰 preorder.toLE Set.univ U ↦
-        let ⟨y, hyU, V, hyV, hVU⟩ := exists_lt_of_not_minimal U h_minimal
-        ⟨(link hx hyU).append <| Classical.choice <| h_ind V hVU y hyV⟩))
+    ∀ x ∈ U.1, ∃ y ∈ U.1, x < y ∧ y < endpoint ∧ ∃ V : 𝒰, y ∈ V.1 ∧ preorder.lt V U) {U' : 𝒰} :
+      ∀ x ∈ U'.1, x < endpoint → ∃ R : Rollercoaster 𝒰 x endpoint, StrictMono R.points.get :=
+  @Finite.to_wellFoundedLT.induction 𝒰 preorder.toLT
+    (fun U ↦ ∀ x ∈ U.1, x < endpoint → ∃ R : Rollercoaster 𝒰 x endpoint, StrictMono R.points.get) U'
+    (fun U h_ind x hx ↦ by_cases
+      (fun (h_minimal : @Minimal 𝒰 preorder.toLE Set.univ U) h_lt_endpoint ↦
+        ⟨link hx <| endPoint_mem_region_of_minimal U h_minimal, fun a b hab ↦
+          match ha : a.1 with
+          | 0 => by
+            simp [ha, eq_of_le_of_ge (Nat.le_of_lt_succ b.isLt)
+              (Nat.succ_le_of_lt <| lt_of_eq_of_lt ha.symm hab)]
+            exact h_lt_endpoint
+          | n + 1 =>
+            False.elim <| Nat.not_lt_zero n <| Nat.lt_of_succ_lt_succ <|
+              Nat.lt_of_succ_lt_succ <| lt_of_lt_of_le
+                (Nat.succ_lt_succ <| lt_of_eq_of_lt ha.symm hab) (Nat.succ_le_of_lt b.isLt)⟩)
+      (fun (h_minimal : ¬@Minimal 𝒰 preorder.toLE Set.univ U) h_lt_endpoint ↦ by
+        let ⟨y, hyU, hxy, hy, V, hyV, hVU⟩ := exists_lt_of_not_minimal U h_minimal x hx
+        have ⟨R₀, hR₀⟩ := h_ind V hVU y hyV hy
+        exact ⟨link hx hyU ++ R₀, by
+          intro a b hab
+          apply lt_of_eq_of_lt'
+            (getElem_pts_append_right _ _ <| Nat.one_le_of_lt hab).symm
+          let m := a.1
+          match ha : m with
+          | 0 =>
+            subst m
+            simp [ha]
+            exact lt_of_lt_of_le hxy <| le_of_eq_of_le R₀.getElem_zero.symm <|
+              hR₀.monotone <| Fin.mk_le_mk.mpr <| Nat.zero_le _
+          | n + 1 =>
+            subst m
+            simp [ha]
+            exact hR₀ <| Fin.mk_lt_mk.mpr <| Nat.lt_sub_of_add_lt <| lt_of_eq_of_lt ha.symm hab⟩))
 
 
-noncomputable def bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
-  [DenselyOrdered α] [OrderTopology α] [CompactSpace α]
+theorem exists_bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
+  [DenselyOrdered α] [OrderTopology α] [CompactSpace α] [Nontrivial α]
   (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U) :
-    Rollercoaster 𝒰 ⊥ ⊤ := by
+    ∃ R : Rollercoaster 𝒰 ⊥ ⊤, StrictMono R.points.get := by
 
   let supOrder : Preorder (Set α) := {
     le A B := ∀ b ∈ B, ∃ a ∈ A, b ≤ a
@@ -63,8 +100,8 @@ noncomputable def bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
 
   have exists_lt_of_not_minimal_t : ∀ U : t_set,
     ¬@Minimal t_set (supOrder.lift Subtype.val).toLE Set.univ U →
-      ∃ x ∈ U.1, ∃ V, x ∈ V.1 ∧ (supOrder.lift Subtype.val).lt V U :=
-    fun ⟨_, U, hU, rfl⟩ h_minimal ↦
+      ∀ x ∈ U.1, ∃ y ∈ U.1, x < y ∧ y < ⊤ ∧ ∃ V, y ∈ V.1 ∧ (supOrder.lift Subtype.val).lt V U :=
+    fun ⟨_, U, hU, rfl⟩ h_minimal x hx ↦
       let ⟨⟨V, hV, hV_nonempty⟩, _, ⟨hVt, rfl⟩, hsup⟩ :=
         Set.mem_iUnion.mp <| t_cover <| Set.mem_univ <| sSup U
       have h_lt_of_mem : ∀ x ∈ U.1, x < sSup U :=
@@ -73,15 +110,16 @@ noncomputable def bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
             ((top_le_iff.mp <| @le_of_not_gt _ _ ⊤ (sSup U.1)
               (fun h_sSup_lt_top ↦
                 let ⟨x, hx, hico⟩ := exists_Ico_subset_of_mem_nhds
-                  (IsOpen.mem_nhds (h_open ⟨U, U.2.1⟩) (heq ▸ hmem)) ⟨⊤, h_sSup_lt_top⟩
+                  (h_open ⟨U, U.2.1⟩ |>.mem_nhds <| heq ▸ hmem) ⟨⊤, h_sSup_lt_top⟩
                 let ⟨y, hygt, hylt⟩ := DenselyOrdered.dense _ _ hx
                 lt_iff_not_ge.mp hygt <| le_sSup <| hico <| Set.mem_Ico.mpr ⟨hygt.le, hylt⟩))
               ▸ heq ▸ hmem)⟩
-      let ⟨_, hl, hlioc⟩ := exists_Ioc_subset_of_mem_nhds (IsOpen.mem_nhds (h_open ⟨V, hV⟩) hsup)
+      let ⟨_, hl, hlioc⟩ := exists_Ioc_subset_of_mem_nhds (h_open ⟨V, hV⟩ |>.mem_nhds hsup)
         ⟨_, h_lt_of_mem _ (Classical.choice U.2.2).2⟩
-      let ⟨x, hx, hxl⟩ := lt_sSup_iff.mp hl
-      ⟨x, hx, ⟨V, ⟨V, hV, hV_nonempty⟩, hVt, rfl⟩,
-        hlioc <| Set.mem_Ioc.mpr ⟨hxl, le_sSup hx⟩, sSup U, hsup, h_lt_of_mem⟩
+      let ⟨y, hy, hyl⟩ := lt_sSup_iff.mp <| max_lt hl <| h_lt_of_mem x hx
+      have ⟨hy', hxy⟩ := max_lt_iff.mp hyl
+      ⟨y, hy, hxy, lt_top_of_lt <| h_lt_of_mem y hy, ⟨V, ⟨V, hV, hV_nonempty⟩, hVt, rfl⟩,
+        hlioc <| Set.mem_Ioc.mpr ⟨hy', le_sSup hy⟩, sSup U, hsup, h_lt_of_mem⟩
 
   choose _ x0 x1 using t_cover <| Set.mem_univ ⊥
   choose U x00 using x0
@@ -90,10 +128,11 @@ noncomputable def bot_to_top [TopologicalSpace α] [CompleteLinearOrder α]
   choose hU x11 using x10
   cases x11
 
-  obtain R' := Classical.choice <|
-    @nonempty_of_finite_preorder_from α t_set _ (supOrder.lift Subtype.val)
-      ⊤ (top_mem_iff_minimal_t · |>.mp) exists_lt_of_not_minimal_t ⟨U, U, hU, rfl⟩ ⊥ h_bot
-  exact R'.map (m := id) (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩)
+  obtain ⟨R', hR'⟩ := @exists_strictMono α t_set _ _ _ _ _ (supOrder.lift Subtype.val)
+    ⊤ (top_mem_iff_minimal_t · |>.mp) exists_lt_of_not_minimal_t ⟨U, U, hU, rfl⟩ ⊥ h_bot bot_lt_top
+  exact ⟨R'.map (m := id) (fun ⟨_, ⟨⟨U, hU, _⟩, _, rfl⟩⟩ ↦ ⟨U, hU, fun _ ⟨_, h, rfl⟩ ↦ h⟩),
+    fun _ _ h ↦ by simp [map]; exact hR' h⟩
+
 
 
 
@@ -124,22 +163,34 @@ theorem not_follows_of_isTrivial (h_trivial : R.isTrivial) (π : Path a b) :
 
 
 
-theorem exists_of_path (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U)
-  (π : C(I, α)) : ∃ R : Rollercoaster 𝒰 (π 0) (π 1), R.follows π :=
-  ⟨@map I {π ⁻¹' U | U : 𝒰} 0 1
-    (bot_to_top (fun ⟨_, _, rfl⟩ ↦ π.continuous.isOpen_preimage _ <| h_open _)
-      (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| π x; ⟨π ⁻¹' U, ⟨⟨U, hU⟩, rfl⟩, hx⟩))
-    _ _ _ fun ⟨_, ⟨U, h⟩, rfl⟩ ↦ ⟨U, h, Set.image_subset_iff.mpr subset_rfl⟩, sorry⟩
+theorem exists_of_path (h_open : ∀ U : 𝒰, IsOpen U.1)
+  (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U) (π : C(I, α)) :
+    ∃ R : Rollercoaster 𝒰 (π 0) (π 1), R.follows π :=
+  let 𝒰' : Set (Set I) := {U' | ∃ (U : 𝒰) (x : I), connectedComponentIn (π ⁻¹' U) x = U'}
+  let ⟨R, hR⟩ := exists_bot_to_top (𝒰 := 𝒰')
+    (fun ⟨_, U, x, rfl⟩ ↦ π.continuous.isOpen_preimage U (h_open U) |>.connectedComponentIn)
+    (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| π x; ⟨_, ⟨⟨U, hU⟩, x, rfl⟩, mem_connectedComponentIn hx⟩)
+  have hmap : ∀ U' : 𝒰', ∃ U ∈ 𝒰, ⇑π '' U' ⊆ U := fun ⟨_, ⟨U, h⟩, x, rfl⟩ ↦
+    ⟨U, h, Set.image_subset_iff.mpr <| connectedComponentIn_subset (π ⁻¹' U) x⟩
+  ⟨@map I 𝒰' 0 1 R α π 𝒰 hmap, (R.points[·]), funext (R.getElem_pts_map hmap · |>.symm),
+    fun a b hab ↦ hR <| Fin.cast_lt_cast (R.length_map hmap) |>.mpr hab,
+    by simp only [Fin.getElem_fin, getElem_zero]; rfl,
+    by simp only [length_map, Fin.getElem_fin, getElem_len_pts_sub_one]; rfl,
+    fun x n hx ↦ Set.mem_preimage.mp <| Set.image_subset_iff.mp (R.getElem_rgs_map hmap n) <|
+      have hn : n < R.regions.length := lt_of_lt_of_eq n.2 <| R.len_rgs_map hmap
+      have hOrdConnected : Set.OrdConnected <| R.regions[n]'hn |>.1 :=
+        let ⟨_, _, _, rfl⟩ := R.regions[n]'hn; isPreconnected_connectedComponentIn.ordConnected
+      hOrdConnected.out' (R.mem_rgs ⟨n, hn⟩) (R.succ_mem_rgs ⟨n, hn⟩) hx⟩
 
 
 
-theorem exists_path_follows (h_pathconnected : ∀ U ∈ 𝒰, IsPathConnected U) :
+theorem exists_path_follows_of_pathConnected (h_pathConnected : ∀ U ∈ 𝒰, IsPathConnected U) :
     ¬R.isTrivial → ∃ π : Path a b, R.follows π := by
 
   apply R.induction_take
   · exact (False.elim <| · isTrivial_trivial)
   · have h := fun (i : Fin R.regions.length) ↦
-      (h_pathconnected R.regions[i] R.regions[i].2).joinedIn
+      (h_pathConnected R.regions[i] R.regions[i].2).joinedIn
         (R.points[i]'sorry) (R.mem_rgs i) (R.points[i.succ]'sorry) (R.succ_mem_rgs i)
     intro n hn h_ind h_nontrivial
     have hn' : n < R.points.length - 1 := sorry
@@ -208,10 +259,10 @@ variable (f_inter : ∀ {U V : 𝒰} {p q : α} (hpU : p ∈ U.1) (hpV : p ∈ V
 
 
 
-theorem rel_of_homotopic {π π' : Path a b} (φ : π.Homotopic π')
-  {R : Rollercoaster 𝒰 a b} (h_follows : R.follows π)
-  {R' : Rollercoaster 𝒰 a b} (h_follows' : R'.follows π') :
-    rel f R R' := sorry
+theorem rel_of_homotopic {π₀ π₁ : Path a b} (φ : Path.Homotopic π₀ π₁)
+  {R₀ : Rollercoaster 𝒰 a b} (h_follows_0 : R.follows π₀)
+  {R₁ : Rollercoaster 𝒰 a b} (h_follows_1 : R₁.follows π₁) :
+    R₀.jumpAll f = R₁.jumpAll f := sorry
 
 
 #check Path.Homotopy

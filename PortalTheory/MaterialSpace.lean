@@ -139,7 +139,7 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ where
 
 
 
-def MatSpace : Type _ := Quotient {
+abbrev MatSpace : Type _ := Quotient {
   r := matspace_rel γ Γ
   iseqv := instEquivalenceMatSpaceRel γ Γ
 }
@@ -148,7 +148,7 @@ def MatSpace : Type _ := Quotient {
 namespace MatSpace
 
 
-instance : TopologicalSpace (MatSpace γ Γ) := instTopologicalSpaceQuotient
+--instance : TopologicalSpace (MatSpace γ Γ) := instTopologicalSpaceQuotient
 
 -- woohoo!!!
 

@@ -223,10 +223,17 @@ open Classical in noncomputable def map : Rollercoaster 𝒰' (m a) (m b) where
 theorem len_rgs_map : (R.map h).regions.length = R.regions.length := sorry
 
 
-theorem getElem_map (n : Fin (R.map h).points.length) :
+@[simp] theorem getElem_pts_map (n : Fin (R.map h).points.length) :
   (R.map h).points[n] = m (R.points[n]' (R.length_map h ▸ n.2)) :=
     List.getElem_map _
 
+
+
+@[simp] theorem getElem_rgs_map (n : Fin (R.map h).regions.length) :
+  m '' (R.regions[n]'(R.len_rgs_map h ▸ n.2)) ⊆ (R.map h).regions[n] := by
+    simp_all only [Fin.getElem_fin]
+    simp only [map, List.getElem_map]
+    exact Classical.choose_spec (h <| R.regions[n]'_) |>.2
 
 
 
@@ -284,10 +291,31 @@ instance : HAppend (Rollercoaster 𝒰 a b) (Rollercoaster 𝒰 b c) (Rollercoas
   ⟨(append · ·)⟩
 
 
-theorem length_append :
+@[simp] theorem length_pts_append :
   (R ++ R').points.length = R.points.length + R'.points.length - 1 :=
     List.length_append.trans <| List.length_tail ▸ Nat.add_sub_assoc
       (Nat.one_le_of_lt R'.len_pts_pos) _ |>.symm
+
+
+@[simp] theorem getElem_pts_append_left {i : ℕ} (h : i < R.points.length)
+  {h' : i < (R ++ R').points.length} :
+    (R ++ R').points[i] = R.points[i] :=
+  (List.getElem_append_left h).trans rfl
+
+
+@[simp] theorem getElem_pts_append_right {i : ℕ} (h₁ : R.points.length - 1 ≤ i)
+  {h₂ : i < (R ++ R').points.length} :
+    (R ++ R').points[i] = R'.points[i + 1 - R.points.length]'(Nat.sub_lt_left_of_lt_add
+      (Nat.le_succ_of_pred_le h₁) <| Nat.succ_lt_of_lt_pred <|
+        lt_of_eq_of_lt' (R.length_pts_append R') h₂) := by
+  apply Or.by_cases h₁.eq_or_lt
+  · intro h
+    apply List.getElem_append_left (lt_of_eq_of_lt h.symm <| Nat.pred_lt R.len_pts_ne_zero) |>.trans
+    simp [h.symm, Nat.sub_one_add_one R.len_pts_ne_zero]
+  · intro h
+    have h' : R.points.length ≤ i := Nat.le_of_pred_lt h
+    exact List.getElem_append_right h' |>.trans <| (List.getElem_tail _).trans <|
+      congr_arg R'.points.get <| Fin.mk_eq_mk.mpr <| Nat.sub_add_comm h' |>.symm
 
 
 

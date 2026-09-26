@@ -177,7 +177,7 @@ theorem jumpAll_append_apply (x : T a) :
     have h2 : (Fin.mk (R'.points.length - 1) (Nat.pred_lt_self R'.len_pts_pos)).val = 0 := h1
 
     have h3 : (R ++ R').points.length - 1 = R.points.length - 1 :=
-      congr_arg (· - 1) <| length_append _ _ |>.trans <|
+      congr_arg (· - 1) <| length_pts_append _ _ |>.trans <|
         Nat.add_sub_assoc (Nat.one_le_of_lt R'.len_pts_pos) _ |>.trans <|
           h1 ▸ Nat.add_zero _
     have h4 : R.points.length - 1 < R.points.length := Nat.pred_lt_self R.len_pts_pos

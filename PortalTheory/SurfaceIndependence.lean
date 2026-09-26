@@ -262,15 +262,36 @@ end slice_portal
 open Topology TopologicalSpace
 
 
-def 𝒪 (p : X) : Set (Opens (X × I)) :=
-  {U | ∃ (t : I) (R : ComponentRealizer U (𝒮 (ℱ F) S) (p, t)),
+def matSpaceHomeomorphT (h_bijective : Function.Bijective
+  (Sides.map (S := 𝒮 F (Sₜ 0 S)) (Y := @Slice X I 0) IsEmbedding.subtypeVal)) :
+    MatSpaceₜ γ Γ 0 ≃ₜ {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 0} where
+  toFun m := by
+    #check Classical.choose m.exists_rep
+    #check Equiv.ofBijective _ h_bijective |>.invFun
+    --⟨, sorry⟩
+  invFun := sorry
+  left_inv := sorry
+  right_inv := sorry
+  continuous_toFun := sorry
+  continuous_invFun := sorry
+
+
+
+
+def 𝒪 : Set (Opens (X × I)) :=
+  {U | ∃ (p : X) (t : I) (R : ComponentRealizer U (𝒮 (ℱ F) S) (p, t)),
     (combinedGluingPattern γ Γ).respects_realizer R}
 
+
+
+
+/-
 abbrev fiber (p : X) := {(x, _) : X × I | x = p}
 
 theorem 𝒪_covers_fiber (p : X) : fiber p ⊆ ⋃ (U : 𝒪 γ Γ p), U := by
   -- follows from local consistency
   sorry
+
 
 theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
   ∃ t : Finset (𝒪 γ Γ p), Set.univ ⊆ ⋃ i ∈ t, Prod.mk p ⁻¹' i.1.1 :=
@@ -280,6 +301,10 @@ theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
     (fun _ _ ↦ let ⟨_, ⟨U, rfl⟩, h⟩ := 𝒪_covers_fiber γ Γ p rfl; ⟨_, ⟨U, rfl⟩, h⟩)
 
 #check Quotient
+-/
+
+
+
 
 def 𝒯 (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
   (t : I) (α : SidesAt (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
@@ -290,18 +315,11 @@ def 𝒯 (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent) (a : Sides (�
 
     sorry
 
-structure rollercoaster (p : X) where
-  list_of_ts : List I
-  list_of_Us : List (𝒪 γ Γ p)
-  h_length : list_of_ts.length = list_of_Us.length + 1
-  t_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n]) ∈ list_of_Us[n].1
-  t_next_mem : ∀ n : Fin list_of_Us.length, (p, list_of_ts[n.succ]) ∈ list_of_Us[n].1
 
 
-
-def surface_independence (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent)
-  (h0 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 0) IsEmbedding.subtypeVal))
-  (h1 : Function.Bijective (Sides.map (S := S) (Y := @Slice Y I 1) IsEmbedding.subtypeVal)) :
+def surface_independence (hγ : combinedGluingPattern γ Γ |>.isLocallyConsistent)
+  (h0 : Function.Bijective <| Sides.map (S := S) (Y := @Slice Y I 0) IsEmbedding.subtypeVal)
+  (h1 : Function.Bijective <| Sides.map (S := S) (Y := @Slice Y I 1) IsEmbedding.subtypeVal) :
     MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 := by
 
   sorry
