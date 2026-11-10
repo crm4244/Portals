@@ -43,13 +43,13 @@ theorem len_rgs_eq_len_pts_sub_one : R.regions.length = R.points.length - 1 :=
 theorem len_rgs_lt_len_pts : R.regions.length < R.points.length :=
   R.len_rgs_add_one_eq_len_pts ▸ Nat.lt_succ_self _
 
-theorem len_pts_ne_zero : R.points.length ≠ 0 :=
+@[simp] theorem len_pts_ne_zero : R.points.length ≠ 0 :=
   Nat.ne_zero_of_lt R.len_rgs_lt_len_pts
 
 theorem len_pts_pos : 0 < R.points.length :=
   Nat.pos_of_ne_zero R.len_pts_ne_zero
 
-theorem not_isEmpty_pts : ¬R.points.isEmpty :=
+@[simp] theorem not_isEmpty_pts : ¬R.points.isEmpty :=
   (R.pts_ne_nil <| List.isEmpty_iff.mp ·)
 
 theorem head_mem_pts : a ∈ R.points :=

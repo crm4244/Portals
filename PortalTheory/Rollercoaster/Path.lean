@@ -246,6 +246,20 @@ def rel (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
     R1.jumpAll f = R2.jumpAll f
 
 
+instance : Equivalence (α := Rollercoaster 𝒰 a b) (rel f) :=
+  Equivalence.comap eq_equivalence _
+
+
+theorem append_reverse_rel_trivial : rel f (R ++ R.reverse) (trivial _ _) := by
+  apply R.induction_take rfl
+  unfold rel jumpAll
+  simp?
+
+  intro _ _ _
+
+  sorry
+
+
 
 variable (h_open : ∀ U : 𝒰, IsOpen U.1) (h_cover : ∀ a : α, ∃ U : 𝒰, a ∈ U.1)
 

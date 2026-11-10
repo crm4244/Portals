@@ -1,5 +1,6 @@
 import PortalTheory.Rollercoaster.Basic
 import PortalTheory.Rollercoaster.Operations
+import PortalTheory.Rollercoaster.Induction
 
 
 
@@ -169,7 +170,39 @@ variable {c : α} (R) (R' : Rollercoaster 𝒰 b c)
 
 
 theorem jumpAll_append_apply (x : T a) :
-  (R ++ R').jumpAll f x = R'.jumpAll f (R.jumpAll f x) := by
+  (R ++ R').jumpAll f x = R'.jumpAll f (R.jumpAll f x) :=
+
+  R'.induction_take
+    (P := fun {b' c} R' ↦ ∃ hb : b' = b,
+      (R ++ hb ▸ R').jumpAll f x = (hb ▸ R').jumpAll f (R.jumpAll f x))
+    (by
+      use rfl
+      simp only [jumpAll]
+      simp [jumpTo_eq_of_eq_zero]
+      have hhh : (R ++ trivial 𝒰 b).points.length - 1 < R.points.length := sorry
+      have h := (R ++ trivial 𝒰 b).jumpTo_cast_apply (R' := R) f jumpAll._proof_3 hhh
+        (fun _ _ ↦ by simp)
+        (fun _ _ ↦ by simp)
+        (cast (congr_arg T getElem_zero.symm) x)
+      --#check List.get_eq
+      #check List.getElem_cons
+      #check R.points.getElem_of_eq (congr_arg points R.append_trivial.symm) hhh
+      #check getElem_pts_append_left
+      #check congr_arg T (sorry : R.points[(R ++ trivial 𝒰 b).points.length - 1]'hhh = b)
+
+
+
+
+      sorry)
+    (by
+      intro n hn h_ind
+      simp_all [jumpAll, jumpTo_eq_of_eq_succ]
+      #check jump_cast_apply
+
+      sorry) |>.2
+
+/-
+
   induction hn : R'.regions.length with
   | zero =>
 
@@ -199,10 +232,10 @@ theorem jumpAll_append_apply (x : T a) :
   | succ n ih =>
 
     unfold jumpAll
-    #check jumpTo_eq_of_eq_succ f
+    rw [jumpTo_eq_of_eq_succ f]
 
     sorry
-
+-/
 
 theorem jumpAll_append : (R ++ R').jumpAll f = R'.jumpAll f ∘ R.jumpAll f :=
   funext (jumpAll_append_apply _ _ _ ·)

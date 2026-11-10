@@ -187,6 +187,38 @@ end extract
 
 
 
+section reverse
+
+def reverse : Rollercoaster 𝒰 b a where
+  points := R.points.reverse
+  regions := R.regions.reverse
+  len_rgs_add_one_eq_len_pts := by simp [R.len_rgs_add_one_eq_len_pts]
+  mem_rgs n := by
+    simp [R.len_rgs_add_one_eq_len_pts.symm, Nat.sub_right_comm]
+    have hn := lt_of_lt_of_eq n.2 R.regions.length_reverse
+    exact getElem_congr
+      (Eq.refl R.points)
+      (Nat.sub_one_add_one <| Nat.sub_ne_zero_of_lt hn).symm
+      (Nat.sub_lt_of_lt R.len_rgs_lt_len_pts)
+      ▸ R.succ_mem_rgs
+        ⟨_, by simp [Nat.sub_sub]; exact R.len_rgs_pos_iff_not_isTrivial.mp <| Nat.zero_lt_of_lt hn⟩
+  succ_mem_rgs n := by
+    simp [R.len_rgs_add_one_eq_len_pts.symm, Nat.sub_add_eq, Nat.sub_right_comm]
+    exact R.mem_rgs ⟨_, by simp [Nat.sub_sub]; exact R.len_rgs_pos_iff_not_isTrivial.mp <|
+      Nat.zero_lt_of_lt <| lt_of_lt_of_eq n.2 R.regions.length_reverse⟩
+  head_pts_eq := by simp [R.getLast_pts_eq]
+  getLast_pts_eq := by simp [R.head_pts_eq]
+
+
+theorem reverse_trivial : (trivial 𝒰 a).reverse = trivial 𝒰 a := rfl
+theorem isTrivial_reverse : R.isTrivial → R.reverse.isTrivial := sorry
+theorem isTrivial_of_isTrivial_reverse : R.reverse.isTrivial → R.isTrivial := sorry
+theorem isTrivial_reverse_iff : R.reverse.isTrivial ↔ R.isTrivial :=
+  ⟨isTrivial_of_isTrivial_reverse, isTrivial_reverse⟩
+
+
+end reverse
+
 
 
 
@@ -291,23 +323,29 @@ instance : HAppend (Rollercoaster 𝒰 a b) (Rollercoaster 𝒰 b c) (Rollercoas
   ⟨(append · ·)⟩
 
 
-@[simp] theorem length_pts_append :
-  (R ++ R').points.length = R.points.length + R'.points.length - 1 :=
-    List.length_append.trans <| List.length_tail ▸ Nat.add_sub_assoc
-      (Nat.one_le_of_lt R'.len_pts_pos) _ |>.symm
+@[simp] theorem len_pts_append : (R ++ R').points.length = R.points.length + R'.points.length - 1 :=
+  List.length_append.trans <| List.length_tail ▸ Nat.add_sub_assoc
+    (Nat.one_le_of_lt R'.len_pts_pos) _ |>.symm
+
+@[simp] theorem len_rgs_append : (R ++ R').regions.length = R.regions.length + R'.regions.length :=
+  List.length_append
 
 
-@[simp] theorem getElem_pts_append_left {i : ℕ} (h : i < R.points.length)
-  {h' : i < (R ++ R').points.length} :
-    (R ++ R').points[i] = R.points[i] :=
-  (List.getElem_append_left h).trans rfl
+theorem len_pts_append_ge : R.points.length ≤ (R ++ R').points.length :=
+  R.len_pts_append R' ▸ le_of_le_of_eq (Nat.le_add_right _ _)
+    (Nat.add_sub_assoc R'.len_pts_pos.succ_le _).symm
+
+
+@[simp] theorem getElem_pts_append_left {i : ℕ} (h : i < R.points.length) :
+    (R ++ R').points[i]'(lt_of_lt_of_le h <| len_pts_append_ge R R') = R.points[i] :=
+  List.getElem_append_left h |>.trans rfl
 
 
 @[simp] theorem getElem_pts_append_right {i : ℕ} (h₁ : R.points.length - 1 ≤ i)
-  {h₂ : i < (R ++ R').points.length} :
+  (h₂ : i < (R ++ R').points.length) :
     (R ++ R').points[i] = R'.points[i + 1 - R.points.length]'(Nat.sub_lt_left_of_lt_add
       (Nat.le_succ_of_pred_le h₁) <| Nat.succ_lt_of_lt_pred <|
-        lt_of_eq_of_lt' (R.length_pts_append R') h₂) := by
+        lt_of_eq_of_lt' (R.len_pts_append R') h₂) := by
   apply Or.by_cases h₁.eq_or_lt
   · intro h
     apply List.getElem_append_left (lt_of_eq_of_lt h.symm <| Nat.pred_lt R.len_pts_ne_zero) |>.trans
@@ -316,6 +354,24 @@ instance : HAppend (Rollercoaster 𝒰 a b) (Rollercoaster 𝒰 b c) (Rollercoas
     have h' : R.points.length ≤ i := Nat.le_of_pred_lt h
     exact List.getElem_append_right h' |>.trans <| (List.getElem_tail _).trans <|
       congr_arg R'.points.get <| Fin.mk_eq_mk.mpr <| Nat.sub_add_comm h' |>.symm
+
+
+
+@[simp] theorem append_of_isTrivial (h_trivial : R'.isTrivial) :
+  R ++ R' = (R'.last_eq_head_of_isTrivial h_trivial).symm ▸ R := sorry
+
+@[simp] theorem append_of_isTrivial' (h_trivial : R.isTrivial) :
+  R ++ R' = (R.last_eq_head_of_isTrivial h_trivial).symm ▸ R' := sorry
+
+@[simp] theorem append_trivial : R ++ trivial 𝒰 b = R :=
+  R.append_of_isTrivial _ isTrivial_trivial
+
+@[simp] theorem trivial_append : trivial 𝒰 a ++ R = R :=
+  append_of_isTrivial' _ R isTrivial_trivial
+
+@[simp] theorem isTrivial_append_iff : (R ++ R').isTrivial ↔ R.isTrivial ∧ R'.isTrivial :=
+  len_rgs_eq_zero_iff_isTrivial.symm.trans <| len_rgs_append R R' ▸ Nat.add_eq_zero.trans <|
+    and_congr R.len_rgs_eq_zero_iff_isTrivial R'.len_rgs_eq_zero_iff_isTrivial
 
 
 
