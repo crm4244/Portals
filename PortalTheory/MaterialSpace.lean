@@ -69,7 +69,7 @@ def matspace_rel (a b : Sides (𝒮 F S)) : Prop :=
     a'.transport' (getSymmetricGluingPerm γ Γ ⟨a, rfl⟩ ⟨a', ha'⟩) (ha' ▸ ha) = b
 
 
-instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ where
+theorem equivalence_matspace_rel : Equivalence (matspace_rel γ Γ) where
   refl a := Or.inl rfl
 
   symm {a _} hab := by
@@ -139,10 +139,12 @@ instance instEquivalenceMatSpaceRel : Equivalence <| matspace_rel γ Γ where
 
 
 
-abbrev MatSpace : Type _ := Quotient {
+def matSpaceSetoid : Setoid (Sides (𝒮 F S)) where
   r := matspace_rel γ Γ
-  iseqv := instEquivalenceMatSpaceRel γ Γ
-}
+  iseqv := equivalence_matspace_rel γ Γ
+
+
+abbrev MatSpace : Type _ := Quotient (matSpaceSetoid γ Γ)
 
 
 namespace MatSpace

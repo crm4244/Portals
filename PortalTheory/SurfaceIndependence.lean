@@ -272,12 +272,21 @@ end slice_portal
 open Topology TopologicalSpace
 
 
+def 𝒪 : Set (Set (X × I)) :=
+  {U | ∃ (hU : IsOpen U) (p : X × I) (R : ComponentRealizer ⟨U, hU⟩ (𝒮 (ℱ F) S) p),
+    (𝒢 γ Γ).respects_realizer R}
+
+
+def matSlice (t : I) := {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = t}
+
+
+
 def bijProjT (F : Set (PortalMap X Y)) (S : Set (Y × I)) (t : I) : Prop :=
   Function.Bijective <| Sides.map (S := 𝒮 F (Sₜ t S)) (Y := @Slice X I t) Slice.isEmbedding_proj
 
 
 def matSpaceHomeomorphT {t : I} (h_bijective : bijProjT F S t) :
-    MatSpaceₜ γ Γ t ≃ₜ {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = t} where
+    MatSpaceₜ γ Γ t ≃ₜ matSlice γ Γ t where
   toFun m := by
     #check Classical.choose m.exists_rep
     #check Equiv.ofBijective _ h_bijective |>.invFun
@@ -291,106 +300,101 @@ def matSpaceHomeomorphT {t : I} (h_bijective : bijProjT F S t) :
 
 
 
+section fiberTransport
+
+variable [h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p)]
+
+
+
+-- reformatting some functions from Chariot.lean to fit with what Rollercoaster expects
+
+private noncomputable def chariot_transfer'
+  {U : 𝒪 γ Γ} (p q : U.1) (C : Chariot (𝒢 γ Γ) p) :
+    Chariot (𝒢 γ Γ) q :=
+  C.transfer U.2.2.choose_spec.2 p.2 q.2
+
+private def chariot_allSymmetric_transfer'
+  {U : 𝒪 γ Γ} {p q : U.1} (C : Chariot (𝒢 γ Γ) p)
+  (hC : C.allSymmetric) :
+    (chariot_transfer' γ Γ p q C).allSymmetric :=
+  C.allSymmetric_transfer hC U.2.2.choose_spec.2 p.2 q.2
 
 
 
 
-/-
-abbrev fiber (p : X) := {(x, _) : X × I | x = p}
+noncomputable def fiberTransport {a : Sides (𝒮 (ℱ F) S)}
+  (R : Rollercoaster (𝒪 γ Γ) a.center (a.center.1, 1)) :
+    matSlice γ Γ 1 :=
 
-theorem 𝒪_covers_fiber (p : X) : fiber p ⊆ ⋃ (U : 𝒪 γ Γ p), U := by
-  -- follows from local consistency
-  sorry
+  let Ca0 : Chariot (𝒢 γ Γ) a.center := ⟨(𝒢 γ Γ ⟨a, rfl⟩ ·), ((𝒢 γ Γ).trans ⟨a, rfl⟩ · ·)⟩
+  let Ca1 : Chariot (𝒢 γ Γ) (a.center.1, 1) := R.jumpAll (chariot_transfer' γ Γ) Ca0
 
-
-theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
-  ∃ t : Finset (𝒪 γ Γ p), Set.univ ⊆ ⋃ i ∈ t, Prod.mk p ⁻¹' i.1.1 :=
-  (compactSpace_Icc 0 1 : CompactSpace I).isCompact_univ.elim_finite_subcover
-    (fun U : 𝒪 γ Γ p ↦ Prod.mk p ⁻¹' U)
-    (fun ⟨⟨_, U⟩, _⟩ ↦ Continuous.prodMk_right (Y := I) p |>.isOpen_preimage _ U)
-    (fun _ _ ↦ let ⟨_, ⟨U, rfl⟩, h⟩ := 𝒪_covers_fiber γ Γ p rfl; ⟨_, ⟨U, rfl⟩, h⟩)
-
-#check Quotient
--/
-
-
-
-
-def 𝒯 (hγ : (𝒢 γ Γ).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
-  (t : I) (α : SidesAt (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
-
-
-    -- for each finite subcover, show inductively that the product is well defined
-    -- build a setoid out of the finite subcovers related by matching outputs
-
-    sorry
-
-#check Continuous.quotient_lift
-
-
-open Classical in noncomputable def fiberTransportFunction
-  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p))
-  (hγ : (𝒢 γ Γ).isLocallyConsistent) (a : Sides (𝒮 (ℱ F) S))
-  (R : RespectedRealizerRollercoaster (𝒢 γ Γ) a.center ⟨a.center.1, 1⟩) :
-    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 1} := by
-
-  let Ca0 := Chariot.mk (𝒢 γ Γ ⟨a, rfl⟩ ·) ((𝒢 γ Γ).trans ⟨a, rfl⟩ · ·)
   have h0 : Ca0.allSymmetric := fun _ ↦ Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩
-
-  /-let transfer_formatted {U : ⊤} (p q : U.1) (C : Chariot (𝒢 γ Γ) p) :
-      Chariot (𝒢 γ Γ) q := by
-        apply C.transfer
-        · #check U.2.2
-          sorry
-        · sorry
-        · sorry
-
-  let allSymmetric_transfer_formatted
-    {U : Opens.carrier '' 𝒪 γ Γ} {p q : U.1} (C : Chariot (𝒢 γ Γ) p) (hC : C.allSymmetric) :
-      transfer_formatted p q C |>.allSymmetric := by
-    unfold transfer_formatted
-    simp only
-    #check C.allSymmetric_transfer hC
-    apply C.allSymmetric_transfer hC
--/
-  let Ca1 := R.coaster.jumpAll fun {U} p q ↦ Chariot.transfer
   have h1 : Ca1.allSymmetric := R.jumpAll_induction
-    transfer_formatted h0 allSymmetric_transfer_formatted
+    (chariot_transfer' γ Γ) h0 (chariot_allSymmetric_transfer' γ Γ)
 
-  let m := Ca1.toMatSpace h1
-  exact ⟨m, by
-    -- use h_nonempty to pick a side x of ⟨a.center.1, 1⟩ and transport it by the permutation Ca1 x
-    -- use transport (Ca1 x) x
-    -- there should be a lemma like "⟦transport (Ca1 x) x⟧ = m" in the Chariot file
-    -- we need transport to preserve the t=1. this is a property of our extruded F
-
-    sorry⟩
+  ⟨Ca1.toMatSpace h1, ⟨_, rfl, by
+    split
+    · -- we need transport to preserve the t=1. this is a property of our extruded F
+      sorry
+    · exact congr_arg Prod.snd (h_nonempty (a.center.1, 1)).some.2⟩⟩
 
 
-def surface_independence_helper (hγ : (𝒢 γ Γ).isLocallyConsistent) :
-    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 0} ≃ₜ
-    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 1} where
-  toFun := fun ⟨m, hm⟩ ↦ by
-    -- build a rollercoaster R
-    choose a ham ha0 using Set.mem_setOf.mp hm
-    -- build a's Chariot C
-    -- jumpAll C across R
-    -- do C.toMatSpace
-    -- Quotient this whole process
-    sorry
+-- this one is independent of the choice of Rollercoaster
+noncomputable def fiberTransport' (a : Sides (𝒮 (ℱ F) S)) :=
+  Quotient.lift
+    (s := Rollercoaster.instSetoidRel (chariot_transfer' γ Γ))
+    (fiberTransport γ Γ (a := a))
+    (fun _ _ _ ↦ Subtype.mk_eq_mk.mpr <| Quotient.eq.mpr <| Or.inl rfl)
+
+
+-- this one is independent of the choice of representative side a
+noncomputable def fiberTransport'' : MatSpace γ Γ → matSlice γ Γ 1 :=
+  Quotient.lift (s := matSpaceSetoid γ Γ)
+    (fun a ↦ fiberTransport' γ Γ a (
+      -- choose the rollercoaster following the fiber path using Rollercoaster.exists_follows
+      sorry))
+    (fun a b h ↦ by
+      --
+      sorry)
+
+
+-- this one includes initial slice data, and then ignores it
+noncomputable def fiberTransport''' : matSlice γ Γ 0 → matSlice γ Γ 1 :=
+  fun ⟨m, _⟩ ↦ fiberTransport'' γ Γ m
+
+
+
+theorem continuous_fiberTransport''' (hγ : (𝒢 γ Γ).isLocallyConsistent) :
+  Continuous (fiberTransport''' γ Γ) := sorry
+
+
+end fiberTransport
+
+
+
+
+
+
+private noncomputable def surface_independence_helper
+  (hγ : (𝒢 γ Γ).isLocallyConsistent)
+  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p)) :
+    matSlice γ Γ 0 ≃ₜ matSlice γ Γ 1 where
+  toFun := fiberTransport''' γ Γ
   invFun := sorry
   left_inv := sorry
   right_inv := sorry
-  continuous_toFun := sorry
+  continuous_toFun := continuous_fiberTransport''' γ Γ hγ
   continuous_invFun := sorry
 
 
 
-def surface_independence (hγ : (𝒢 γ Γ).isLocallyConsistent)
+noncomputable def surface_independence (hγ : (𝒢 γ Γ).isLocallyConsistent)
+  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p))
   (h0 : bijProjT F S 0) (h1 : bijProjT F S 1) :
     MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 :=
   (matSpaceHomeomorphT γ Γ h0).trans <|
-  (surface_independence_helper γ Γ hγ).trans
+  (surface_independence_helper γ Γ hγ h_nonempty).trans
   (matSpaceHomeomorphT γ Γ h1).symm
 
 

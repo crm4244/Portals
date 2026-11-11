@@ -20,16 +20,18 @@ open Sides
 
 
 
-class ComponentRealizer (U : Opens X) (S : Set X) (hub : X) where
-  hub_mem : hub ∈ U
+def ComponentRealizer (U : Opens X) (S : Set X) (hub : X) : Prop :=
+  ∃ hub_mem : hub ∈ U, Function.Bijective (SidesAt.restricted_touchingComponent S hub_mem)
+
+
+  /-
   touching_component_inv : restricted_punctured_components S U →
     SidesAt (restrict_surface S U) ⟨hub, hub_mem⟩
   touching_component_left_inv : Function.LeftInverse touching_component_inv
     (SidesAt.restricted_touchingComponent S hub_mem)
   touching_component_right_inv : Function.RightInverse touching_component_inv
     (SidesAt.restricted_touchingComponent S hub_mem)
-
-
+-/
 
 
 namespace ComponentRealizer
@@ -56,23 +58,29 @@ end Defs
 
 
 
-def restricted_hub (R : ComponentRealizer U S p) : U := ⟨p, R.hub_mem⟩
+def restricted_hub (R : ComponentRealizer U S p) : U := ⟨p, R.choose⟩
 
 
 
 
-def equiv (R : ComponentRealizer U S p) :
-  Equiv (SidesAt (restrict_surface S U) ⟨p, R.hub_mem⟩) R.punctured_components := {
-    toFun := SidesAt.restricted_touchingComponent S R.hub_mem
+noncomputable def equiv (R : ComponentRealizer U S p) :
+  Equiv (SidesAt (restrict_surface S U) ⟨p, R.choose⟩) R.punctured_components :=
+    Equiv.ofBijective _ R.choose_spec
+
+  /-
+  {
+    toFun := SidesAt.restricted_touchingComponent S R.choose
     invFun := R.touching_component_inv
     left_inv := R.touching_component_left_inv
     right_inv := R.touching_component_right_inv
   }
+-/
+
 
 
 theorem restricted_touching_component_at_bijective (R : ComponentRealizer U S p) :
-  Function.Bijective (SidesAt.restricted_touchingComponent S R.hub_mem) :=
-   R.equiv.bijective
+  Function.Bijective (SidesAt.restricted_touchingComponent S R.choose) :=
+   R.choose_spec
 
 
 
@@ -81,9 +89,16 @@ def touching_component (R : ComponentRealizer U S p) :
    Sides.touchingComponent (S := R.restricted_surface)
 
 
-def restricted_side_transfer (R : ComponentRealizer U S p) (σ : Sides R.restricted_surface) :
-  SidesAt (restrict_surface S U) ⟨p, R.hub_mem⟩ :=
-    R.touching_component_inv (R.touching_component σ)
+
+noncomputable def touching_component_inv (R : ComponentRealizer U S p) :
+  restricted_punctured_components S U → SidesAt (restrict_surface S U) R.restricted_hub :=
+    R.equiv.invFun
+
+
+noncomputable def restricted_side_transfer
+  (R : ComponentRealizer U S p) (σ : Sides R.restricted_surface) :
+    SidesAt (restrict_surface S U) ⟨p, R.choose⟩ :=
+  R.touching_component_inv (R.touching_component σ)
 
 
 noncomputable def sidesTransfer (R : ComponentRealizer U S p)
@@ -95,7 +110,7 @@ theorem center_sidesTransfer_eq (R : ComponentRealizer U S p)
   (σ : Sides S) (hσ : σ.center ∈ U := by aesop) :
     (R.sidesTransfer σ).center = p :=
   let σ_at_p := R.restricted_side_transfer σ.restrict
-  σ_at_p.1.lift_comm.trans <| Subtype.coe_eq_iff.mpr ⟨R.hub_mem, σ_at_p.2⟩
+  σ_at_p.1.lift_comm.trans <| Subtype.coe_eq_iff.mpr ⟨R.choose, σ_at_p.2⟩
 
 
 noncomputable def sidesAtTransfer (R : ComponentRealizer U S p)

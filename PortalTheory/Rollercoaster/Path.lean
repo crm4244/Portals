@@ -249,6 +249,9 @@ def rel (f : {U : 𝒰} → (p : U.1) → (q : U.1) → T p.1 → T q.1)
 instance : Equivalence (α := Rollercoaster 𝒰 a b) (rel f) :=
   Equivalence.comap eq_equivalence _
 
+instance instSetoidRel : Setoid (Rollercoaster 𝒰 a b) :=
+  ⟨rel f, instEquivalenceRel f⟩
+
 
 theorem append_reverse_rel_trivial : rel f (R ++ R.reverse) (trivial _ _) := by
   apply R.induction_take rfl

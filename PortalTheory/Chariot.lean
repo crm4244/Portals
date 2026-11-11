@@ -82,10 +82,8 @@ theorem allSymmetric_transfer (hC : C.allSymmetric) [h_nonempty : Nonempty (Side
 variable [TransportSymmetry (𝒢 γ Γ).closure_range] (hC : C.allSymmetric)
 
 
-open Classical in noncomputable def toMatSpace_apply (a : SidesAt (𝒮 F S) p) :
-  MatSpace γ Γ :=
-    if h : p ∈ 𝒰 F then ⟦Sides.transport' ⟨C a, hC a⟩ a.1 (a.2.symm ▸ h)⟧
-    else ⟦a.1⟧
+open Classical in noncomputable def toMatSpace_apply (a : SidesAt (𝒮 F S) p) : MatSpace γ Γ :=
+  ⟦if h : p ∈ 𝒰 F then Sides.transport' ⟨C a, hC a⟩ a.1 (a.2.symm ▸ h) else a.1⟧
 
 
 theorem toMatSpace_apply_eq (a b : SidesAt (𝒮 F S) p) :
