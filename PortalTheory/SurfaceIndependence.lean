@@ -1,4 +1,7 @@
 import PortalTheory.MaterialSpace
+import PortalTheory.Chariot
+import PortalTheory.RealizerRollercoaster
+import PortalTheory.Rollercoaster.Path
 import Mathlib.Topology.UnitInterval
 
 
@@ -51,14 +54,18 @@ def homeomorph {t : Y} : Slice X t ≃ₜ X where
 
 open Topology
 
-theorem isEmbedding_incl (t : Y) : IsEmbedding (incl (X := X) t) :=
+theorem isEmbedding_proj {t : Y} : IsEmbedding (@proj X _ t) :=
+  homeomorph.isEmbedding
+
+
+theorem isEmbedding_incl (t : Y) : IsEmbedding (@incl X _ t) :=
   homeomorph.symm.isEmbedding
 
 
-def incl' (t : Y) : X → X × Y := Subtype.val ∘ (incl (X := X) t)
+def incl' (t : Y) : X → X × Y := Subtype.val ∘ (@incl X _ t)
 
 
-theorem isEmbedding_incl' (t : Y) : IsEmbedding (incl' (X := X) t) :=
+theorem isEmbedding_incl' (t : Y) : IsEmbedding (@incl' X _ t) :=
   IsEmbedding.subtypeVal.comp (isEmbedding_incl t)
 
 
@@ -259,16 +266,22 @@ end slice_portal
 
 
 
+
+
+
 open Topology TopologicalSpace
 
 
-def matSpaceHomeomorphT (h_bijective : Function.Bijective
-  (Sides.map (S := 𝒮 F (Sₜ 0 S)) (Y := @Slice X I 0) IsEmbedding.subtypeVal)) :
-    MatSpaceₜ γ Γ 0 ≃ₜ {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 0} where
+def bijProjT (F : Set (PortalMap X Y)) (S : Set (Y × I)) (t : I) : Prop :=
+  Function.Bijective <| Sides.map (S := 𝒮 F (Sₜ t S)) (Y := @Slice X I t) Slice.isEmbedding_proj
+
+
+def matSpaceHomeomorphT {t : I} (h_bijective : bijProjT F S t) :
+    MatSpaceₜ γ Γ t ≃ₜ {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = t} where
   toFun m := by
     #check Classical.choose m.exists_rep
     #check Equiv.ofBijective _ h_bijective |>.invFun
-    --⟨, sorry⟩
+    sorry
   invFun := sorry
   left_inv := sorry
   right_inv := sorry
@@ -278,9 +291,6 @@ def matSpaceHomeomorphT (h_bijective : Function.Bijective
 
 
 
-def 𝒪 : Set (Opens (X × I)) :=
-  {U | ∃ (p : X) (t : I) (R : ComponentRealizer U (𝒮 (ℱ F) S) (p, t)),
-    (combinedGluingPattern γ Γ).respects_realizer R}
 
 
 
@@ -306,7 +316,7 @@ theorem exists_finite_subcover_𝒪_of_fiber (p : X) :
 
 
 
-def 𝒯 (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
+def 𝒯 (hγ : (𝒢 γ Γ).isLocallyConsistent) (a : Sides (𝒮 F (Sₜ 0 S)))
   (t : I) (α : SidesAt (𝒮 (ℱ F) S) (a.center, t)) : Equiv.Perm F := by
 
 
@@ -315,14 +325,74 @@ def 𝒯 (hγ : (combinedGluingPattern γ Γ).isLocallyConsistent) (a : Sides (�
 
     sorry
 
+#check Continuous.quotient_lift
 
 
-def surface_independence (hγ : combinedGluingPattern γ Γ |>.isLocallyConsistent)
-  (h0 : Function.Bijective <| Sides.map (S := S) (Y := @Slice Y I 0) IsEmbedding.subtypeVal)
-  (h1 : Function.Bijective <| Sides.map (S := S) (Y := @Slice Y I 1) IsEmbedding.subtypeVal) :
-    MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 := by
+open Classical in noncomputable def fiberTransportFunction
+  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p))
+  (hγ : (𝒢 γ Γ).isLocallyConsistent) (a : Sides (𝒮 (ℱ F) S))
+  (R : RespectedRealizerRollercoaster (𝒢 γ Γ) a.center ⟨a.center.1, 1⟩) :
+    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 1} := by
 
-  sorry
+  let Ca0 := Chariot.mk (𝒢 γ Γ ⟨a, rfl⟩ ·) ((𝒢 γ Γ).trans ⟨a, rfl⟩ · ·)
+  have h0 : Ca0.allSymmetric := fun _ ↦ Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩
+
+  /-let transfer_formatted {U : ⊤} (p q : U.1) (C : Chariot (𝒢 γ Γ) p) :
+      Chariot (𝒢 γ Γ) q := by
+        apply C.transfer
+        · #check U.2.2
+          sorry
+        · sorry
+        · sorry
+
+  let allSymmetric_transfer_formatted
+    {U : Opens.carrier '' 𝒪 γ Γ} {p q : U.1} (C : Chariot (𝒢 γ Γ) p) (hC : C.allSymmetric) :
+      transfer_formatted p q C |>.allSymmetric := by
+    unfold transfer_formatted
+    simp only
+    #check C.allSymmetric_transfer hC
+    apply C.allSymmetric_transfer hC
+-/
+  let Ca1 := R.coaster.jumpAll fun {U} p q ↦ Chariot.transfer
+  have h1 : Ca1.allSymmetric := R.jumpAll_induction
+    transfer_formatted h0 allSymmetric_transfer_formatted
+
+  let m := Ca1.toMatSpace h1
+  exact ⟨m, by
+    -- use h_nonempty to pick a side x of ⟨a.center.1, 1⟩ and transport it by the permutation Ca1 x
+    -- use transport (Ca1 x) x
+    -- there should be a lemma like "⟦transport (Ca1 x) x⟧ = m" in the Chariot file
+    -- we need transport to preserve the t=1. this is a property of our extruded F
+
+    sorry⟩
+
+
+def surface_independence_helper (hγ : (𝒢 γ Γ).isLocallyConsistent) :
+    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 0} ≃ₜ
+    {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = 1} where
+  toFun := fun ⟨m, hm⟩ ↦ by
+    -- build a rollercoaster R
+    choose a ham ha0 using Set.mem_setOf.mp hm
+    -- build a's Chariot C
+    -- jumpAll C across R
+    -- do C.toMatSpace
+    -- Quotient this whole process
+    sorry
+  invFun := sorry
+  left_inv := sorry
+  right_inv := sorry
+  continuous_toFun := sorry
+  continuous_invFun := sorry
+
+
+
+def surface_independence (hγ : (𝒢 γ Γ).isLocallyConsistent)
+  (h0 : bijProjT F S 0) (h1 : bijProjT F S 1) :
+    MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 :=
+  (matSpaceHomeomorphT γ Γ h0).trans <|
+  (surface_independence_helper γ Γ hγ).trans
+  (matSpaceHomeomorphT γ Γ h1).symm
+
 
 
 #check surface_independence

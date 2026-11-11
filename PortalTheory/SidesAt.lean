@@ -57,4 +57,8 @@ noncomputable def restrict {U : Opens X} (hp : p ∈ U := by assumption) :
   Subtype.eq σ.1.restrict_lift
 
 
+instance instNonemptyCenter {S : Set X} (σ : Sides S) : Nonempty (SidesAt S σ.center) :=
+  ⟨⟨σ, rfl⟩⟩
+
+
 end SidesAt

@@ -49,7 +49,7 @@ theorem exists_strictMono [TopologicalSpace α] [LinearOrder α] [OrderTopology 
         exact ⟨link hx hyU ++ R₀, by
           intro a b hab
           apply lt_of_eq_of_lt'
-            (getElem_pts_append_right _ _ <| Nat.one_le_of_lt hab).symm
+            (getElem_pts_append_right _ _ (Nat.one_le_of_lt hab) _).symm
           let m := a.1
           match ha : m with
           | 0 =>
