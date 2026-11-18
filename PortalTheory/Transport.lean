@@ -230,13 +230,19 @@ noncomputable def transport' : Sides (𝒮 F S) :=
   σ.restrict.transport P |>.lift
 
 
-@[simp] theorem center_transport'_comm :
+theorem center_transport'_comm :
   (σ.transport' P).center = (σ.restrict.transport P).center :=
     σ.restrict.transport P |>.lift_comm
 
 
 @[simp] theorem center_transport'_mem : (σ.transport' P).center ∈ 𝒰 F :=
   σ.center_transport'_comm P ▸ σ.restrict.center_transport_mem P
+
+
+@[simp] theorem center_transport' :
+  (σ.transport' P).center = Portal.transport P σ.restrict.center :=
+    (σ.center_transport'_comm P).trans <| Subtype.val_inj.mpr <| σ.restrict.center_transport_comm P
+
 
 
 theorem transport'_mul : σ.transport' (P * Q) =
@@ -255,7 +261,10 @@ noncomputable def SidesAt.transport {p : 𝒰 F} :
 
 noncomputable def SidesAt.transport' {p : 𝒰 F} (σ : SidesAt (𝒮 F S) p) :
   SidesAt (𝒮 F S) (Portal.transport P p) :=
-    ⟨Sides.transport' P σ.1 <| σ.2.symm ▸ p.2, sorry⟩
+    haveI := σ.2.symm ▸ p.2
+    ⟨Sides.transport' P σ.1, (σ.1.center_transport' P).trans <|
+      congr_arg (Subtype.val ∘ Portal.transport P)
+        (σ.1.restrict_comm.trans (Subtype.coe_eq_of_eq_mk σ.2.symm).symm)⟩
 
 
 
@@ -270,13 +279,13 @@ theorem transport_relevant {p : 𝒰 F} (f : relevant_portal_maps F p) :
 
 
 
-theorem rusto_transport_eq {a : Sides (𝒮 F S)} {f : F} (hf : a.center ∈ f.1.range) :
-    restricted_union_side_to_original (a.restrict (U := f.1.opens_range) hf) =
-    restricted_union_side_to_original (a.restrict (range_subset_𝒰 f hf)
+theorem rusto_transport_eq {σ : Sides (𝒮 F S)} {f : F} (hf : σ.center ∈ f.1.range) :
+    restricted_union_side_to_original (σ.restrict (U := f.1.opens_range) hf) =
+    restricted_union_side_to_original (σ.restrict (range_subset_𝒰 f hf)
       |>.transport P |>.lift.restrict (U := (P.1 f).1.opens_range)
       ((Sides.lift_comm _ |>.trans <| congr_arg Subtype.val <|
         Sides.center_transport_comm P _) ▸
-        (val_transport_mem_range P <| a.restrict_comm (range_subset_𝒰 f hf) ▸ hf))) :=
+        (val_transport_mem_range P <| σ.restrict_comm (range_subset_𝒰 f hf) ▸ hf))) :=
   by sorry
 
 

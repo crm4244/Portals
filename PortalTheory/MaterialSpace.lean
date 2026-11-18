@@ -59,7 +59,7 @@ theorem simultaneous_transport
     (rusto_transport_eq P <| a.2.symm ▸ f.2) (rusto_transport_eq P <| b.2.symm ▸ f.2)
 
 
-private noncomputable abbrev getSymmetricGluingPerm {p} (a b : SidesAt (𝒮 F S) p) :
+noncomputable abbrev getSymmetricGluingPerm {p} (a b : SidesAt (𝒮 F S) p) :
   (𝒢 γ Γ).closure_range :=
     ⟨𝒢 γ Γ a b, Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩⟩
 

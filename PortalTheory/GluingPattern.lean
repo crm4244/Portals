@@ -77,8 +77,24 @@ def respects_realizer {U : Opens X} {p : X} (R : ComponentRealizer U S p) : Prop
     γ (R.sidesAtTransfer hq a) (R.sidesAtTransfer hq b) = γ a b
 
 
+theorem respects_of_subset {p : X} {U : Opens X} {RU : ComponentRealizer U S p}
+  (hU : γ.respects_realizer RU) {V : Opens X} (RV : ComponentRealizer V S p) (hVU : V ≤ U) :
+    γ.respects_realizer RV :=
+  fun hqV a b ↦ have h := sidesAtTransfer_eq_of_subset RU RV hVU hqV
+    congr_arg₂ map (h a) (h b) |>.trans (hU (hVU hqV) a b)
+
+
 def isLocallyConsistent : Prop :=
   ∀ {p : X}, ∃ (U : Opens X) (R : ComponentRealizer U S p), γ.respects_realizer R
+
+
+theorem has_respected_realizer_basis (hγ : γ.isLocallyConsistent)
+  (realizer_basis : has_realizer_basis S) {p : X} {U : Opens X} (hpU : p ∈ U) :
+    ∃ (V : Opens X) (R : ComponentRealizer V S p), p ∈ V ∧ V ≤ U ∧ γ.respects_realizer R :=
+  let ⟨V, RV, hV⟩ := hγ (p := p)
+  let ⟨W, RW, hpW, hWUV⟩ := realizer_basis (p := p) (U := U ⊓ V) ⟨hpU, RV.1⟩
+  let ⟨hWU, hWV⟩ := le_inf_iff.mp hWUV
+  ⟨W, RW, hpW, hWU, γ.respects_of_subset hV RW hWV⟩
 
 
 def closure_range : Subgroup G := Subgroup.closure

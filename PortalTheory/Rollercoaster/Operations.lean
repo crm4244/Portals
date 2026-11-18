@@ -7,7 +7,22 @@ variable {α : Type*} {𝒰 : Set (Set α)} {a b : α}
 variable {R : Rollercoaster 𝒰 a b}
 
 
+section cast_endpoints
 
+def cast_endpoints {a' b' : α} (ha : a' = a) (hb : b' = b) : Rollercoaster 𝒰 a' b' where
+  points := R.points
+  regions := R.regions
+  len_rgs_add_one_eq_len_pts := R.len_rgs_add_one_eq_len_pts
+  mem_rgs := R.mem_rgs
+  succ_mem_rgs := R.succ_mem_rgs
+  head_pts_eq := ha ▸ R.head_pts_eq
+  getLast_pts_eq := hb ▸ R.getLast_pts_eq
+
+
+@[simp] theorem len_pts_cast {a' b' : α} (ha : a' = a) (hb : b' = b) :
+  (R.cast_endpoints ha hb).points.length = R.points.length := rfl
+
+end cast_endpoints
 
 
 section drop
@@ -211,11 +226,11 @@ def reverse : Rollercoaster 𝒰 b a where
 
 
 theorem reverse_trivial : (trivial 𝒰 a).reverse = trivial 𝒰 a := rfl
-theorem isTrivial_reverse : R.isTrivial → R.reverse.isTrivial := sorry
+/-theorem isTrivial_reverse : R.isTrivial → R.reverse.isTrivial := sorry
 theorem isTrivial_of_isTrivial_reverse : R.reverse.isTrivial → R.isTrivial := sorry
 theorem isTrivial_reverse_iff : R.reverse.isTrivial ↔ R.isTrivial :=
   ⟨isTrivial_of_isTrivial_reverse, isTrivial_reverse⟩
-
+-/
 
 end reverse
 
@@ -248,7 +263,7 @@ open Classical in noncomputable def map : Rollercoaster 𝒰' (m a) (m b) where
       ⟨R.points[n + 1]' (by simp [← R.len_rgs_add_one_eq_len_pts, hn]), R.succ_mem_rgs ⟨n, hn⟩, rfl⟩
 
 
-@[simp] theorem length_map : (R.map h).points.length = R.points.length :=
+@[simp] theorem len_pts_map : (R.map h).points.length = R.points.length :=
   List.length_map _
 
 
@@ -256,7 +271,7 @@ theorem len_rgs_map : (R.map h).regions.length = R.regions.length := sorry
 
 
 @[simp] theorem getElem_pts_map (n : Fin (R.map h).points.length) :
-  (R.map h).points[n] = m (R.points[n]' (R.length_map h ▸ n.2)) :=
+  (R.map h).points[n] = m (R.points[n]' (R.len_pts_map h ▸ n.2)) :=
     List.getElem_map _
 
 
@@ -338,7 +353,7 @@ theorem len_pts_append_ge : R.points.length ≤ (R ++ R').points.length :=
 
 @[simp] theorem getElem_pts_append_left {i : ℕ} (h : i < R.points.length) :
     (R ++ R').points[i]'(lt_of_lt_of_le h <| len_pts_append_ge R R') = R.points[i] :=
-  List.getElem_append_left h |>.trans rfl
+  List.getElem_append_left h
 
 
 @[simp] theorem getElem_pts_append_right {i : ℕ} (h₁ : R.points.length - 1 ≤ i)

@@ -143,44 +143,134 @@ variable [TopologicalSpace α]
 
 
 
-def follows (π : C(I, α)) : Prop := ∃ i : Fin R.points.length → I,
+def follows (π : Path a b) : Prop := ∃ i : Fin R.points.length → I,
   π ∘ i = R.points.get ∧
   StrictMono i ∧
   i ⟨0, R.len_pts_pos⟩ = 0 ∧
   i ⟨R.points.length - 1, Nat.pred_lt R.len_pts_ne_zero⟩ = 1 ∧
-  ∀ (x : I) (n : Fin R.regions.length),
-    i ⟨n, n.2.trans R.len_rgs_lt_len_pts⟩ ≤ x ∧
-    x ≤ i ⟨n.succ, R.len_rgs_add_one_eq_len_pts ▸ Nat.succ_lt_succ n.2⟩ →
-      π x ∈ R.regions[n].1
+  ∀ (t : I) (n : Fin R.regions.length),
+    i ⟨n, n.2.trans R.len_rgs_lt_len_pts⟩ ≤ t ∧
+    t ≤ i ⟨n.succ, R.len_rgs_add_one_eq_len_pts ▸ Nat.succ_lt_succ n.2⟩ →
+      π t ∈ R.regions[n].1
 
 
 
 theorem not_follows_of_isTrivial (h_trivial : R.isTrivial) (π : Path a b) :
   ¬R.follows π :=
-    fun ⟨_, _, _, h0, h1, _⟩ ↦ by
+    fun ⟨_, _, _, h0, h1, _⟩ ↦
       have h : R.points.length - 1 = 0 := len_pts_eq_one_of_isTrivial h_trivial ▸ tsub_self _
-      apply zero_ne_one' I <| h0.symm.trans <| congr_arg _ (Fin.mk_eq_mk.mpr h.symm) |>.trans h1
+      zero_ne_one' I <| h0.symm.trans <| congr_arg _ (Fin.mk_eq_mk.mpr h.symm) |>.trans h1
+
+
+
+theorem cast_follows {a' b' : α} (ha : a' = a) (hb : b' = b)
+  {π : Path a' b'} (hR : R.follows (π.cast ha.symm hb.symm)) :
+    (R.cast_endpoints ha hb).follows π :=
+  ⟨hR.choose ∘ Fin.cast (R.len_pts_cast ha hb), hR.choose_spec⟩
+
+
+
+theorem append_follows {π : Path a b} (hR : R.follows π)
+  {c : α} {R' : Rollercoaster 𝒰 b c} {π' : Path b c} (hR' : R'.follows π') :
+    (R ++ R').follows (π.trans π') := by
+
+  let fst_half (t : I) : I := ⟨t / 2, by linarith [t.2.1], by linarith [t.2.2]⟩
+  have fst_half_le_half (t : I) : (fst_half t).1 ≤ 1 / 2 :=
+    div_le_div_of_nonneg_right t.2.2 zero_le_two
+
+  let snd_half (t : I) : I := ⟨(t + 1) / 2, by linarith [t.2.1], by linarith [t.2.2]⟩
+
+  use fun ⟨n, hn⟩ ↦ if hn' : n < R.points.length then fst_half <| hR.choose ⟨n, hn'⟩
+    else snd_half <| hR'.choose ⟨n - (R.points.length - 1), Nat.sub_lt_left_of_lt_add
+      (Nat.pred_le R.points.length |>.trans <| le_of_not_gt hn')
+      (lt_of_lt_of_eq (R.len_pts_append R' ▸ hn) <|
+        Nat.sub_add_comm <| Nat.succ_le_of_lt R.len_pts_pos)⟩
+
+  have : 1 < R'.points.length := lt_of_le_of_ne' (Nat.succ_le_of_lt R'.len_pts_pos)
+    (fun h ↦ not_follows_of_isTrivial (R'.isTrivial_of_len_pts_eq_one h) _ hR')
+
+  split_ands
+  · ext ⟨n, hn⟩
+
+    --unfold
+    simp only [Path.trans, Path.coe_mk', ContinuousMap.coe_mk, Function.comp_apply]
+
+    --apply ite_eq_iff'.mpr
+    if h : n < R.points.length then
+      rw [dif_pos h]
+      apply dif_pos (div_le_div_of_nonneg_right (hR.choose ⟨n, h⟩).2.2 zero_le_two) |>.trans
+      unfold fst_half
+      simp only
+
+
+      exact (by
+        simp only [Function.comp_apply]
+        apply π.extend_extends sorry |>.trans
+        apply congr_arg π
+        apply Subtype.eq
+        simp only
+        #check mul_div_cancel
+        sorry : _ = _).trans <| (congr_fun hR.choose_spec.1 ⟨n, h⟩).trans (R.getElem_pts_append_left R' h).symm
+      --rw [mul_div_cancel 2 _]
+
+      --sorry
+    else
+      rw [dif_neg h]
+      split
+      · sorry
+      · unfold snd_half HAppend.hAppend instHAppend Rollercoaster.append
+
+        simp?
+
+        --[List.getElem_append_right' R.points ]
+
+        --rw [mul_div_cancel]
+
+        --#check
+        --simp?
+
+
+        sorry
+  · sorry
+  · exact (dif_pos R.len_pts_pos).trans <| Subtype.eq <| div_eq_zero_iff.mpr <|
+      Or.inl <| Subtype.mk.inj hR.choose_spec.2.2.1
+  · simp only [len_pts_append]
+    exact (dif_neg <| by omega).trans <| (congr_arg snd_half <|
+      (congr_arg hR'.choose <| Fin.mk_eq_mk.mpr (have := R.len_pts_pos; by omega)).trans
+        hR'.choose_spec.2.2.2.1).trans (by simp [snd_half] : snd_half 1 = 1)
+  · intro t ⟨n, hn⟩ ⟨h_mega_1, h_mega_2⟩
+    simp only at ⊢ h_mega_1 h_mega_2
+    #check R.getElem_pts_append_left
+    #check hR.choose_spec.2.2.2.2
+
+
+    sorry
 
 
 
 theorem exists_of_path (h_open : ∀ U : 𝒰, IsOpen U.1)
-  (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U) (π : C(I, α)) :
-    ∃ R : Rollercoaster 𝒰 (π 0) (π 1), R.follows π :=
+  (h_cover : ∀ x : α, ∃ U ∈ 𝒰, x ∈ U) (π : Path a b) :
+    ∃ R : Rollercoaster 𝒰 a b, R.follows π :=
   let 𝒰' : Set (Set I) := {U' | ∃ (U : 𝒰) (x : I), connectedComponentIn (π ⁻¹' U) x = U'}
   let ⟨R, hR⟩ := exists_bot_to_top (𝒰 := 𝒰')
     (fun ⟨_, U, x, rfl⟩ ↦ π.continuous.isOpen_preimage U (h_open U) |>.connectedComponentIn)
-    (fun x ↦ let ⟨U, hU, hx⟩ := h_cover <| π x; ⟨_, ⟨⟨U, hU⟩, x, rfl⟩, mem_connectedComponentIn hx⟩)
+    (fun x ↦ let ⟨U, hU, hx⟩ := h_cover (π x); ⟨_, ⟨⟨U, hU⟩, x, rfl⟩, mem_connectedComponentIn hx⟩)
   have hmap : ∀ U' : 𝒰', ∃ U ∈ 𝒰, ⇑π '' U' ⊆ U := fun ⟨_, ⟨U, h⟩, x, rfl⟩ ↦
     ⟨U, h, Set.image_subset_iff.mpr <| connectedComponentIn_subset (π ⁻¹' U) x⟩
-  ⟨@map I 𝒰' 0 1 R α π 𝒰 hmap, (R.points[·]), funext (R.getElem_pts_map hmap · |>.symm),
-    fun a b hab ↦ hR <| Fin.cast_lt_cast (R.length_map hmap) |>.mpr hab,
+  let R' := @map I 𝒰' 0 1 R α π 𝒰 hmap
+  have hR' : (@map I 𝒰' 0 1 R α π 𝒰 hmap).follows (π.cast π.source' π.target') := ⟨
+    (R.points[·]), funext (R.getElem_pts_map hmap · |>.symm),
+    fun a b hab ↦ hR <| (Fin.cast_lt_cast <| R.len_pts_map hmap).mpr hab,
     by simp only [Fin.getElem_fin, getElem_zero]; rfl,
-    by simp only [length_map, Fin.getElem_fin, getElem_len_pts_sub_one]; rfl,
+    by simp only [len_pts_map, Fin.getElem_fin, getElem_len_pts_sub_one]; rfl,
     fun x n hx ↦ Set.mem_preimage.mp <| Set.image_subset_iff.mp (R.getElem_rgs_map hmap n) <|
       have hn : n < R.regions.length := lt_of_lt_of_eq n.2 <| R.len_rgs_map hmap
-      have hOrdConnected : Set.OrdConnected <| R.regions[n]'hn |>.1 :=
+      have hOrdConnected : Set.OrdConnected (R.regions[n]'hn).1 :=
         let ⟨_, _, _, rfl⟩ := R.regions[n]'hn; isPreconnected_connectedComponentIn.ordConnected
       hOrdConnected.out' (R.mem_rgs ⟨n, hn⟩) (R.succ_mem_rgs ⟨n, hn⟩) hx⟩
+  ⟨R'.cast_endpoints π.source'.symm π.target'.symm,
+    R'.cast_follows π.source'.symm π.target'.symm hR'⟩
+
 
 
 
@@ -253,14 +343,9 @@ instance instSetoidRel : Setoid (Rollercoaster 𝒰 a b) :=
   ⟨rel f, instEquivalenceRel f⟩
 
 
-theorem append_reverse_rel_trivial : rel f (R ++ R.reverse) (trivial _ _) := by
-  apply R.induction_take rfl
-  unfold rel jumpAll
-  simp?
 
-  intro _ _ _
-
-  sorry
+-- maybe use a "link 𝒰 a a" instead so follows is possible?
+theorem append_reverse_rel_trivial : rel f (R ++ R.reverse) (trivial _ _) := sorry
 
 
 

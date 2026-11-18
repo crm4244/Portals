@@ -1,6 +1,5 @@
 import PortalTheory.MaterialSpace
 import PortalTheory.Chariot
-import PortalTheory.RealizerRollercoaster
 import PortalTheory.Rollercoaster.Path
 import Mathlib.Topology.UnitInterval
 
@@ -35,10 +34,10 @@ theorem incl_proj {t : Y} (x : Slice X t) : incl t x.proj = x :=
 variable [TopologicalSpace X] [TopologicalSpace Y]
 
 
-theorem continuous_proj {t : Y} : Continuous (@proj X _ t) :=
+theorem continuous_proj {t : Y} : Continuous (@proj X Y t) :=
   continuous_fst.comp continuous_subtype_val
 
-theorem continuous_incl (t : Y) : Continuous (@incl X _ t) :=
+theorem continuous_incl (t : Y) : Continuous (@incl X Y t) :=
   Continuous.prodMk_left t |>.subtype_mk _
 
 
@@ -54,18 +53,18 @@ def homeomorph {t : Y} : Slice X t ≃ₜ X where
 
 open Topology
 
-theorem isEmbedding_proj {t : Y} : IsEmbedding (@proj X _ t) :=
+theorem isEmbedding_proj {t : Y} : IsEmbedding (@proj X Y t) :=
   homeomorph.isEmbedding
 
 
-theorem isEmbedding_incl (t : Y) : IsEmbedding (@incl X _ t) :=
+theorem isEmbedding_incl (t : Y) : IsEmbedding (@incl X Y t) :=
   homeomorph.symm.isEmbedding
 
 
-def incl' (t : Y) : X → X × Y := Subtype.val ∘ (@incl X _ t)
+def incl' (t : Y) : X → X × Y := Subtype.val ∘ (@incl X Y t)
 
 
-theorem isEmbedding_incl' (t : Y) : IsEmbedding (@incl' X _ t) :=
+theorem isEmbedding_incl' (t : Y) : IsEmbedding (@incl' X Y t) :=
   IsEmbedding.subtypeVal.comp (isEmbedding_incl t)
 
 
@@ -110,7 +109,7 @@ variable {F : Set (PortalMap X Y)}
 
 variable {S : Set (Y × I)}
 variable (γ : GluingPattern S (Equiv.Perm (ℱ F)))
-variable (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F)))
+variable (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → Equiv.Perm (ℱ F))
 variable [CombineTrans γ Γ] [TransportSymmetry (𝒢 γ Γ).closure_range]
 
 #check MatSpace γ Γ
@@ -133,7 +132,7 @@ noncomputable abbrev γₜ (γ : GluingPattern S (Equiv.Perm (ℱ F))) :
   trans _ _ _ := Equiv.permCongr_symm _ ▸ Equiv.permCongr_mul _ _ _
     |>.symm.trans <| congr_arg _ <| γ.trans _ _ _
 
-noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → (Equiv.Perm (ℱ F))) :
+noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → Equiv.Perm (ℱ F)) :
   GeneralizedMultiset (Equiv.Perm F) → (Equiv.Perm F) :=
     fun 𝒰 ↦ (extrude_equiv I F).symm.permCongr <| Γ <| 𝒰.map
       (fun G ↦ ⟨G.index, fun i ↦ (extrude_equiv I F).permCongr (G.val i)⟩)
@@ -272,37 +271,59 @@ end slice_portal
 open Topology TopologicalSpace
 
 
+
+def sideSlice (S : Set (X × I)) (t : I) : Set (Sides S) := {a | a.center.2 = t}
+
+
+def to_sideSlice (F : Set (PortalMap X Y)) (S : Set (Y × I)) (t : I) :
+  Sides (𝒮 F (Sₜ t S)) → sideSlice (𝒮 (ℱ F) S) t :=
+    Set.codRestrict (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) (sideSlice (𝒮 (ℱ F) S) t)
+      (fun x ↦ congr_arg Prod.snd (x.map_comm _) |>.trans x.center.2)
+
+
+noncomputable def to_sideSlice_homeomorph {t : I}
+  (h_bijective : Function.Bijective (to_sideSlice F S t)) :
+    Sides (𝒮 F (Sₜ t S)) ≃ₜ sideSlice (𝒮 (ℱ F) S) t :=
+  ⟨Equiv.ofBijective _ h_bijective, by sorry, by sorry⟩
+
+
+-- theorem to_sideSlice preserves matspace_rel
+-- theorem t-projection is independent of rep
+
+
+def matSlice (t : I) : Set (MatSpace γ Γ) := {m | m.out ∈ sideSlice (𝒮 (ℱ F) S) t} -- gotta Quot this out
+
+noncomputable def to_matSlice (t : I) : MatSpaceₜ γ Γ t → matSlice γ Γ t := by
+  intro m
+  use Quotient.map (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) sorry m
+
+  unfold matSlice
+
+  sorry
+
+
+def to_matSlice_homeomorph {t : I} (h_bijective : Function.Bijective (to_sideSlice F S t))
+  : MatSpaceₜ γ Γ t ≃ₜ matSlice γ Γ t := sorry
+
+
+
+variable (hγ : (𝒢 γ Γ).isLocallyConsistent)
+variable (realizer_basis : has_realizer_basis (𝒮 (ℱ F) S))
+variable (sidesAt_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p))
+
+
+
+
 def 𝒪 : Set (Set (X × I)) :=
   {U | ∃ (hU : IsOpen U) (p : X × I) (R : ComponentRealizer ⟨U, hU⟩ (𝒮 (ℱ F) S) p),
     (𝒢 γ Γ).respects_realizer R}
 
 
-def matSlice (t : I) := {m : MatSpace γ Γ | ∃ x, m = ⟦x⟧ ∧ x.center.2 = t}
-
-
-
-def bijProjT (F : Set (PortalMap X Y)) (S : Set (Y × I)) (t : I) : Prop :=
-  Function.Bijective <| Sides.map (S := 𝒮 F (Sₜ t S)) (Y := @Slice X I t) Slice.isEmbedding_proj
-
-
-def matSpaceHomeomorphT {t : I} (h_bijective : bijProjT F S t) :
-    MatSpaceₜ γ Γ t ≃ₜ matSlice γ Γ t where
-  toFun m := by
-    #check Classical.choose m.exists_rep
-    #check Equiv.ofBijective _ h_bijective |>.invFun
-    sorry
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
-  continuous_toFun := sorry
-  continuous_invFun := sorry
-
-
-
-
-section fiberTransport
-
-variable [h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p)]
+omit [TransportSymmetry (𝒢 γ Γ).closure_range] in
+include hγ realizer_basis in theorem 𝒪_cover (p : X × I) : ∃ U ∈ 𝒪 γ Γ, p ∈ U :=
+  let ⟨⟨U, isOpen_U⟩, R, hpU, _, hU⟩ :=
+    (𝒢 γ Γ).has_respected_realizer_basis hγ realizer_basis (trivial : p ∈ ⊤)
+  ⟨U, ⟨isOpen_U, p, R, hU⟩, hpU⟩
 
 
 
@@ -316,86 +337,120 @@ private noncomputable def chariot_transfer'
 private def chariot_allSymmetric_transfer'
   {U : 𝒪 γ Γ} {p q : U.1} (C : Chariot (𝒢 γ Γ) p)
   (hC : C.allSymmetric) :
-    (chariot_transfer' γ Γ p q C).allSymmetric :=
+    (chariot_transfer' γ Γ sidesAt_nonempty p q C ).allSymmetric :=
   C.allSymmetric_transfer hC U.2.2.choose_spec.2 p.2 q.2
 
+-- this was written by Claude AI
+noncomputable def segment (t0 t1 : I) : Path t0 t1 where
+  toFun τ := Set.projIcc 0 1 zero_le_one ((1 - τ) * t0 + τ * t1)
+  continuous_toFun := by fun_prop
+  source' := by simp
+  target' := by simp
 
 
 
-noncomputable def fiberTransport {a : Sides (𝒮 (ℱ F) S)}
-  (R : Rollercoaster (𝒪 γ Γ) a.center (a.center.1, 1)) :
-    matSlice γ Γ 1 :=
+noncomputable def fiberTransport {t0 : I} (m : matSlice γ Γ t0) (t1 : I) : MatSpace γ Γ :=
+  let p := m.1.out.center.1
+  let a : SidesAt (𝒮 (ℱ F) S) (p, t0) := ⟨m.1.out, Prod.mk_inj.mpr ⟨rfl, m.2⟩⟩
 
-  let Ca0 : Chariot (𝒢 γ Γ) a.center := ⟨(𝒢 γ Γ ⟨a, rfl⟩ ·), ((𝒢 γ Γ).trans ⟨a, rfl⟩ · ·)⟩
-  let Ca1 : Chariot (𝒢 γ Γ) (a.center.1, 1) := R.jumpAll (chariot_transfer' γ Γ) Ca0
+  let R : Rollercoaster (𝒪 γ Γ) (p, t0) (p, t1) := Rollercoaster.exists_of_path
+    (·.2.1) (𝒪_cover γ Γ hγ realizer_basis) ((Path.refl p).prod (segment t0 t1)) |>.choose
 
-  have h0 : Ca0.allSymmetric := fun _ ↦ Subgroup.mem_closure_of_mem ⟨_, _, _, rfl⟩
-  have h1 : Ca1.allSymmetric := R.jumpAll_induction
-    (chariot_transfer' γ Γ) h0 (chariot_allSymmetric_transfer' γ Γ)
+  let Ca0 : Chariot (𝒢 γ Γ) (p, t0) := ⟨(𝒢 γ Γ a ·), ((𝒢 γ Γ).trans a · ·)⟩
+  let Ca1 : Chariot (𝒢 γ Γ) (p, t1) := R.jumpAll (chariot_transfer' γ Γ sidesAt_nonempty) Ca0
 
-  ⟨Ca1.toMatSpace h1, ⟨_, rfl, by
-    split
-    · -- we need transport to preserve the t=1. this is a property of our extruded F
-      sorry
-    · exact congr_arg Prod.snd (h_nonempty (a.center.1, 1)).some.2⟩⟩
+  have h0 : Ca0.allSymmetric := (Subgroup.mem_closure_of_mem ⟨(p, t0), a, ·, rfl⟩)
+  have h1 : Ca1.allSymmetric := R.jumpAll_induction (chariot_transfer' γ Γ sidesAt_nonempty)
+    h0 (chariot_allSymmetric_transfer' γ Γ sidesAt_nonempty)
 
-
--- this one is independent of the choice of Rollercoaster
-noncomputable def fiberTransport' (a : Sides (𝒮 (ℱ F) S)) :=
-  Quotient.lift
-    (s := Rollercoaster.instSetoidRel (chariot_transfer' γ Γ))
-    (fiberTransport γ Γ (a := a))
-    (fun _ _ _ ↦ Subtype.mk_eq_mk.mpr <| Quotient.eq.mpr <| Or.inl rfl)
-
-
--- this one is independent of the choice of representative side a
-noncomputable def fiberTransport'' : MatSpace γ Γ → matSlice γ Γ 1 :=
-  Quotient.lift (s := matSpaceSetoid γ Γ)
-    (fun a ↦ fiberTransport' γ Γ a (
-      -- choose the rollercoaster following the fiber path using Rollercoaster.exists_follows
-      sorry))
-    (fun a b h ↦ by
-      --
-      sorry)
-
-
--- this one includes initial slice data, and then ignores it
-noncomputable def fiberTransport''' : matSlice γ Γ 0 → matSlice γ Γ 1 :=
-  fun ⟨m, _⟩ ↦ fiberTransport'' γ Γ m
-
-
-
-theorem continuous_fiberTransport''' (hγ : (𝒢 γ Γ).isLocallyConsistent) :
-  Continuous (fiberTransport''' γ Γ) := sorry
-
-
-end fiberTransport
+  Ca1.toMatSpace h1
 
 
 
 
+theorem fiberTransport_mem_slice {t0 : I} (m : matSlice γ Γ t0) (t1 : I) :
+  fiberTransport γ Γ hγ realizer_basis sidesAt_nonempty m t1 ∈ matSlice γ Γ t1 := by
+
+  unfold matSlice --Quotient.out Quot.out
+  simp?
+
+  let p := m.1.out.center.1
+
+  if h : (p, t1) ∈ 𝒰 (ℱ F) then
+    /-rw [dif_pos h]
+    rw [Sides.center_transport' _ _ (sidesAt_nonempty _ |>.some.2 ▸ h)]
+    --rw [Sides.restrict_comm _ _]
+    --rw [transport_eq_transportOf]
+    --simp only
+    --unfold transportOf
 
 
-private noncomputable def surface_independence_helper
-  (hγ : (𝒢 γ Γ).isLocallyConsistent)
-  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p)) :
-    matSlice γ Γ 0 ≃ₜ matSlice γ Γ 1 where
-  toFun := fiberTransport''' γ Γ
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
-  continuous_toFun := continuous_fiberTransport''' γ Γ hγ
-  continuous_invFun := sorry
+    -- we need transport to preserve the t=1. this is a property of our extruded F
+    -/
+    sorry
+  else
+    unfold fiberTransport Chariot.toMatSpace Chariot.toMatSpace_apply
+    simp only
+    exact sorry --dif_neg h ▸ congr_arg Prod.snd (sidesAt_nonempty (p, t1)).some.2
 
 
 
-noncomputable def surface_independence (hγ : (𝒢 γ Γ).isLocallyConsistent)
-  (h_nonempty : ∀ p, Nonempty (SidesAt (𝒮 (ℱ F) S) p))
-  (h0 : bijProjT F S 0) (h1 : bijProjT F S 1) :
+
+
+-- this one has the ending-time data and takes t0 explicitly
+noncomputable def fiberTransport' (t0 t1 : I) (m : matSlice γ Γ t0) : matSlice γ Γ t1 :=
+  ⟨fiberTransport γ Γ hγ realizer_basis sidesAt_nonempty m t1,
+    fiberTransport_mem_slice γ Γ hγ realizer_basis sidesAt_nonempty m t1⟩
+
+
+
+
+
+
+
+theorem fiberTransport'_symm_leftInv (t0 t1 : I) :
+  Function.LeftInverse
+    (fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t1 t0)
+    (fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t0 t1) := by
+  intro ⟨m', hx⟩
+  induction m' using Quotient.inductionOn with | _ x => _
+  apply Subtype.eq
+  apply Quotient.sound
+  split
+  · right
+    -- use rel_of_homotopic
+    sorry
+  · left
+    -- because theres only one side on that point
+    sorry
+
+
+
+theorem continuous_fiberTransport' (t0 t1 : I) :
+  Continuous (fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t0 t1) := by
+  -- this will be hard
+  sorry
+
+
+
+
+private noncomputable def surface_independence_helper (t0 t1 : I) :
+    matSlice γ Γ t0 ≃ₜ matSlice γ Γ t1 where
+  toFun := fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t0 t1
+  invFun := fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t1 t0
+  left_inv := fiberTransport'_symm_leftInv γ Γ hγ realizer_basis sidesAt_nonempty t0 t1
+  right_inv := fiberTransport'_symm_leftInv γ Γ hγ realizer_basis sidesAt_nonempty t1 t0
+  continuous_toFun := continuous_fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t0 t1
+  continuous_invFun := continuous_fiberTransport' γ Γ hγ realizer_basis sidesAt_nonempty t1 t0
+
+
+noncomputable def surface_independence
+  (h0 : Function.Bijective (to_sideSlice F S 0))
+  (h1 : Function.Bijective (to_sideSlice F S 1)) :
     MatSpaceₜ γ Γ 0 ≃ₜ MatSpaceₜ γ Γ 1 :=
-  (matSpaceHomeomorphT γ Γ h0).trans <|
-  (surface_independence_helper γ Γ hγ h_nonempty).trans
-  (matSpaceHomeomorphT γ Γ h1).symm
+  (to_matSlice_homeomorph γ Γ h0).trans <|
+  (surface_independence_helper γ Γ hγ realizer_basis sidesAt_nonempty 0 1).trans
+  (to_matSlice_homeomorph γ Γ h1).symm
 
 
 

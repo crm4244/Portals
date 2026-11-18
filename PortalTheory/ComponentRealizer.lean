@@ -34,6 +34,11 @@ def ComponentRealizer (U : Opens X) (S : Set X) (hub : X) : Prop :=
 -/
 
 
+
+def has_realizer_basis (S : Set X) : Prop :=
+  ∀ {p : X} {U : Opens X}, p ∈ U → ∃ (V : Opens X) (_ : ComponentRealizer V S p), p ∈ V ∧ V ≤ U
+
+
 namespace ComponentRealizer
 
 variable {U : Opens X} {S : Set X} {p : X}
@@ -114,12 +119,16 @@ theorem center_sidesTransfer_eq (R : ComponentRealizer U S p)
 
 
 noncomputable def sidesAtTransfer (R : ComponentRealizer U S p)
-  {q : X} (hq : q ∈ U) (σ : SidesAt S q) : SidesAt S p :=
-    let hσ : σ.1.center ∈ U := σ.2.symm ▸ hq
-    ⟨R.sidesTransfer σ.1 hσ, R.center_sidesTransfer_eq σ.1 hσ⟩
+  {q : X} (hq : q ∈ U) (σ : SidesAt S q) :
+    SidesAt S p :=
+  let hσ : σ.1.center ∈ U := σ.2.symm ▸ hq
+  ⟨R.sidesTransfer σ.1 hσ, R.center_sidesTransfer_eq σ.1 hσ⟩
 
 
-
+theorem sidesAtTransfer_eq_of_subset (RU : ComponentRealizer U S p)
+  {V : Opens X} (RV : ComponentRealizer V S p) (hV : V ≤ U)
+  {q : X} (hq : q ∈ V) (σ : SidesAt S q) :
+    RV.sidesAtTransfer hq σ = RU.sidesAtTransfer (hV hq) σ := sorry
 
 
 
