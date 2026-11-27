@@ -96,7 +96,7 @@ private theorem extrude_injective [Nonempty Z] : Function.Injective (extrude (X 
 
 -- use OfLeftInverse?
 private noncomputable def extrude_equiv [Nonempty Z] (F : Set (PortalMap X Y)) :
-  F ≃ Set.range (fun f : F ↦ extrude Z f.1) :=
+  F ≃ Set.range fun f : F ↦ extrude Z f.1 :=
     Equiv.ofInjective _ <| Subtype.restrict_injective (· ∈ F) <| extrude_injective Z
 
 
@@ -141,7 +141,7 @@ noncomputable abbrev Γₜ (Γ : GeneralizedMultiset (Equiv.Perm (ℱ F)) → Eq
 
 
 noncomputable abbrev symmetricPermsₜ : Subgroup (Equiv.Perm F) :=
-  (𝒢 γ Γ).closure_range.map (extrude_equiv I F).permCongrHom.symm.toMonoidHom
+  (𝒢 γ Γ).closure_range.map (extrude_equiv I F).permCongrHom.symm
 
 
 
@@ -216,33 +216,64 @@ instance : CombineTrans (γₜ t γ) (Γₜ Γ) where
     sorry
 
 
+theorem map_slicePerms_eq : (𝒢 (γₜ t γ) (Γₜ Γ)).closure_range.map (extrude_equiv I F).permCongrHom =
+  (𝒢 γ Γ).closure_range :=
+    Subgroup.ext fun P ↦ by
+    let hom := (extrude_equiv I F).permCongrHom
+    --unfold symmetricPermsₜ
+    apply Subgroup.mem_map.trans
+    apply Iff.intro
+    · exact fun ⟨P', hP', hP⟩ ↦
+        -- hmm maybe better to not do it this way
+        -- unfold γₜ and Γₜ instead
+        Subgroup.mem_closure.mpr fun K hK ↦
+        let ⟨x, hx, hxP'⟩ := Subgroup.mem_map.mp <| Subgroup.mem_closure.mp hP' (K.map hom.symm) (by
+          intro _ _
+
+
+          sorry)
+        hP ▸ hxP' ▸ (hom.apply_symm_apply x).symm ▸ hx
+    · exact fun hP ↦ ⟨hom.symm P, by
+
+        sorry, by
+
+        sorry⟩
+
+
+theorem symmetricPerms_eq_slicePerms : symmetricPermsₜ γ Γ = (𝒢 (γₜ t γ) (Γₜ Γ)).closure_range :=
+  Subgroup.map_symm_eq_iff_map_eq _ |>.mp (map_slicePerms_eq γ Γ t)
+
+
 
 instance : TransportSymmetry (X := X) (Y := Y) (𝒢 (γₜ t γ) (Γₜ Γ)).closure_range where
   symmetry P f g q hf hg := by
 
-    let f' := extrude_equiv I F f
-    let g' := extrude_equiv I F g
-    let P' : (𝒢 γ Γ).closure_range := ⟨(extrude_equiv I F).permCongr P, sorry⟩
+    let ext_f := extrude_equiv I F
+    let f' := ext_f f
+    let g' := ext_f g
+    let P' : (𝒢 γ Γ).closure_range := ⟨ext_f.permCongr P,
+      (map_slicePerms_eq γ Γ t).symm ▸ Subgroup.mem_map_of_mem _ P.2⟩
 
-    have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (extrude_equiv I F l).1.range :=
-      ⟨(l.1.inv ⟨q, hl⟩, 0), Prod.map_apply _ _ _ _ |>.trans <|
+    have h_prod_mem {l : F} (hl : q ∈ l.1.range) : (q, 0) ∈ (ext_f l).1.range :=
+      ⟨(l.1.inv ⟨q, hl⟩, 0), (Prod.map_apply _ _ _ _).trans <|
         Prod.eq_iff_fst_eq_snd_eq.mpr ⟨l.1.inv_right ⟨q, hl⟩, rfl⟩⟩
 
     have h := ‹TransportSymmetry (𝒢 γ Γ).closure_range›.symmetry
       P' f' g' (q, 0) (h_prod_mem hf) (h_prod_mem hg)
 
     unfold transportOf at h ⊢
-    unfold P' f' g' at h
+    unfold P' f' g' ext_f at h
     unfold extrude_equiv at h
-    simp only [Equiv.ofInjective_apply, Equiv.permCongr_apply, Equiv.ofInjective_symm_apply] at h
+    simp [Equiv.ofInjective_apply, Equiv.permCongr_apply,
+      Equiv.ofInjective_symm_apply] at h
     unfold extrude Prod.map at h
-    simp only [Prod.mk.injEq] at h
+    simp [Prod.mk.injEq] at h
     apply And.left at h
 
     have h_final {l : F} (hl : q ∈ l.1.range) :
       ((extrude I l.1).inv ⟨(q, 0), h_prod_mem hl⟩).1 = l.1.inv ⟨q, hl⟩ :=
         l.1.2.injective <| Eq.trans
-          (by simpa only using congr_arg Prod.fst <| extrude_equiv I F l |>.1.inv_right _)
+          (by simpa only using congr_arg Prod.fst <| (ext_f l).1.inv_right _)
           (l.1.inv_right ⟨q, hl⟩).symm
 
     exact (h_final hf) ▸ (h_final hg) ▸ h
@@ -275,6 +306,10 @@ open Topology TopologicalSpace
 def sideSlice (S : Set (X × I)) (t : I) : Set (Sides S) := {a | a.center.2 = t}
 
 
+theorem snd_center_sideSlice (t : I) (a : sideSlice S t) :
+  a.1.center.2 = t := a.2
+
+
 def to_sideSlice (F : Set (PortalMap X Y)) (S : Set (Y × I)) (t : I) :
   Sides (𝒮 F (Sₜ t S)) → sideSlice (𝒮 (ℱ F) S) t :=
     Set.codRestrict (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) (sideSlice (𝒮 (ℱ F) S) t)
@@ -287,24 +322,48 @@ noncomputable def to_sideSlice_homeomorph {t : I}
   ⟨Equiv.ofBijective _ h_bijective, by sorry, by sorry⟩
 
 
--- theorem to_sideSlice preserves matspace_rel
--- theorem t-projection is independent of rep
+theorem rel_toSideSlice_of_rel (t : I) (a b) (h_rel : matspace_rel (γₜ t γ) (Γₜ Γ) a b) :
+  matspace_rel γ Γ (to_sideSlice F S t a) (to_sideSlice F S t b) := sorry
 
 
-def matSlice (t : I) : Set (MatSpace γ Γ) := {m | m.out ∈ sideSlice (𝒮 (ℱ F) S) t} -- gotta Quot this out
 
-noncomputable def to_matSlice (t : I) : MatSpaceₜ γ Γ t → matSlice γ Γ t := by
-  intro m
-  use Quotient.map (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) sorry m
 
-  unfold matSlice
+#check fun (t : I) ↦ Quotient.map (sa := matSpaceSetoid (γₜ t γ) (Γₜ Γ)) (sb := matSpaceSetoid γ Γ)
+  (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) (rel_toSideSlice_of_rel γ Γ t · ·)
+
+
+theorem hobbf (a b) (h_rel : matspace_rel γ Γ a b) : a.center.2 = b.center.2 := by
 
   sorry
 
 
-def to_matSlice_homeomorph {t : I} (h_bijective : Function.Bijective (to_sideSlice F S t))
-  : MatSpaceₜ γ Γ t ≃ₜ matSlice γ Γ t := sorry
+def matSlice (t : I) : Set (MatSpace γ Γ) := {m | Quotient.lift (·.center.2) (hobbf γ Γ) m = t}
 
+noncomputable def to_matSlice {t : I} (h_bijective : Function.Bijective (to_sideSlice F S t)) :
+  MatSpaceₜ γ Γ t → matSlice γ Γ t := by
+
+  intro m
+  use Quotient.map (sa := matSpaceSetoid (γₜ t γ) (Γₜ Γ)) (sb := matSpaceSetoid γ Γ)
+    (Sides.map (Y := Slice X t) IsEmbedding.subtypeVal) (rel_toSideSlice_of_rel γ Γ t) m
+  induction m using Quotient.inductionOn with | _ x =>
+
+  simp only [matSlice, Quotient.map_mk, Set.mem_setOf_eq, Quotient.lift_mk]
+  apply Eq.trans (congr_arg Prod.snd <| sorry)
+  apply snd_center_sideSlice (S := 𝒮 (ℱ F) S) t ⟨x, _⟩
+  simp only [sideSlice]
+
+
+  exact Eq.trans sorry (snd_center_sideSlice t ⟨x, sorry⟩)
+
+
+
+  sorry
+
+
+def to_matSlice_homeomorph {t : I} (h_bijective : Function.Bijective (to_sideSlice F S t)) :
+  MatSpaceₜ γ Γ t ≃ₜ matSlice γ Γ t := sorry
+
+  --toFun := to_matSlice γ Γ
 
 
 variable (hγ : (𝒢 γ Γ).isLocallyConsistent)
